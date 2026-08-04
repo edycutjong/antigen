@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v1.0.2 (2026-08-04)
+
+### Bug Fixes
+
+- **ci**: Point production env at antigen.edycu.dev and auto-stamp release badge
+  ([`6e89d37`](https://github.com/edycutjong/antigen/commit/6e89d3719594944c6dc09e20c9300b31df3c7273))
+
+- **docs**: Rename mermaid classDef 'graph' to 'store'
+  ([`d806538`](https://github.com/edycutjong/antigen/commit/d806538dcfdf0a63b67ef1023141fe7290d822c3))
+
+
 ## v1.0.1 (2026-08-04)
 
 ### Bug Fixes
