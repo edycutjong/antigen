@@ -165,7 +165,7 @@ jobs:
         with:
           ref: main # deploy the version-bumped HEAD produced by the release job
           fetch-depth: 0 # need tags so the release badge can be stamped from git describe
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "20"
       - name: Install Vercel CLI
