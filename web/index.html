@@ -149,6 +149,16 @@ strong { color: var(--text-hi); font-weight: 600; }
 }
 .site-nav a:hover { color: var(--text-hi); text-decoration: none; }
 .header-cta { margin-left: 8px; }
+.ver-tag {
+  margin-left: 12px; display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 11px; border-radius: 999px;
+  border: 1px solid rgba(46, 229, 157, 0.4); background: rgba(46, 229, 157, 0.07);
+  color: var(--primary); font-family: var(--font-mono); font-size: 0.78rem;
+  letter-spacing: 0.02em; white-space: nowrap; text-decoration: none;
+  transition: background .15s ease, border-color .15s ease, transform .1s ease;
+}
+.ver-tag:hover { background: rgba(46, 229, 157, 0.14); border-color: rgba(46, 229, 157, 0.7); }
+.ver-tag:active { transform: translateY(1px); }
 
 /* --- Buttons -------------------------------------------------------------- */
 .btn {
@@ -637,7 +647,8 @@ strong { color: var(--text-hi); font-weight: 600; }
       <a href="#ci">In CI</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <a class="btn btn-ghost btn-sm header-cta" href="https://github.com/edycutjong/antigen" data-tbd="repo-not-pushed" rel="noopener">GitHub ↗</a>
+    <a class="ver-tag" href="https://github.com/edycutjong/antigen/releases/latest" rel="noopener" aria-label="Latest release on GitHub">v1.0.0 ↗</a>
+    <a class="btn btn-ghost btn-sm header-cta" href="https://github.com/edycutjong/antigen" rel="noopener">GitHub ↗</a>
   </div>
 </header>
 
@@ -666,7 +677,7 @@ strong { color: var(--text-hi); font-weight: 600; }
           <span>hijack prompts obeyed after the cure — same stock agent, cold, <strong>by construction</strong></span>
         </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="https://github.com/edycutjong/antigen" data-tbd="repo-not-pushed" rel="noopener">View the code ↗</a>
+          <a class="btn btn-primary" href="https://github.com/edycutjong/antigen" rel="noopener">View the code ↗</a>
           <a class="btn btn-ghost" href="#demo-video-tbd" data-tbd="demo-video-not-recorded">Watch the demo<span class="soon-tag">soon</span></a>
         </div>
         <p class="hero-proof" aria-label="Proof summary">
@@ -1174,7 +1185,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <button class="copy-btn" type="button" data-copy="./run.sh" aria-label="Copy the command ./run.sh">COPY</button>
       </div>
       <div class="final-actions">
-        <a class="btn btn-primary" href="https://github.com/edycutjong/antigen" data-tbd="repo-not-pushed" rel="noopener">Get Antigen on GitHub ↗</a>
+        <a class="btn btn-primary" href="https://github.com/edycutjong/antigen" rel="noopener">Get Antigen on GitHub ↗</a>
         <a class="btn btn-ghost" href="https://datahub.devpost.com/" rel="noopener">The hackathon on Devpost ↗</a>
       </div>
     </div>
@@ -1199,7 +1210,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <nav aria-label="Project links">
           <h3>Project</h3>
           <ul>
-            <li><a href="https://github.com/edycutjong/antigen" data-tbd="repo-not-pushed" rel="noopener">GitHub repository ↗</a></li>
+            <li><a href="https://github.com/edycutjong/antigen" rel="noopener">GitHub repository ↗</a></li>
             <li><a href="#demo-video-tbd" data-tbd="demo-video-not-recorded">Demo video<span class="soon-tag">soon</span></a></li>
             <li><a href="pitch.html">Pitch deck</a></li>
             <li><a href="https://datahub.devpost.com/" rel="noopener">Devpost hackathon ↗</a></li>

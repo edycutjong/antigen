@@ -125,13 +125,26 @@ flowchart TB
 
     VIC -->|hijack| GMS
     GMS --> SWEEP
-    DET --> CURE
-    BR --> CURE
+    DET -->|injection loci| CURE
+    BR -->|blast radius| CURE
     CURE -->|write-back| GMS
     GMS -.->|cold re-run: 0/12| VIC
 
     VER["verify.py<br/>Part A · graph-state gate &lt;30s<br/>Part B · hijack &lt;pre&gt;/12 → 0/12"]
     VER -.proves.-> GMS
+
+    classDef danger fill:#2A0E14,stroke:#F43F5E,color:#FFD7DE;
+    classDef graph  fill:#0C1B14,stroke:#5FB89A,color:#CFEFE1;
+    classDef read   fill:#241B06,stroke:#FFB020,color:#FFE6B0;
+    classDef cure   fill:#07231A,stroke:#2EE59D,color:#C9FFE9;
+    classDef proof  fill:#07231A,stroke:#2EE59D,color:#C9FFE9;
+    class VIC danger;
+    class GMS graph;
+    class S,GE,GD,GL,BR,DET read;
+    class UD,AT,ASP,SD cure;
+    class VER proof;
+    style SWEEP fill:#1C1503,stroke:#FFB020,color:#FFE6B0;
+    style CURE fill:#05190F,stroke:#2EE59D,color:#C9FFE9;
 ```
 
 Antigen adds **no server of its own** — it calls DataHub through the Agent Context Kit

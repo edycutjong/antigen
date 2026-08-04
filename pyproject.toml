@@ -4,9 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "antigen-datahub"
-version = "0.1.0"
+version = "1.0.0"
 description = "A prompt-injection immune system for the DataHub metadata graph."
 readme = "README.md"
+# NOTE: bumped by python-semantic-release from Conventional Commits — do not hand-edit.
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Antigen" }]
@@ -18,7 +19,7 @@ dependencies = []
 [project.optional-dependencies]
 live = [
   "datahub-agent-context[langchain]==1.6.0.17",
-  "acryl-datahub==1.6.0.6",
+  "acryl-datahub==1.6.0.17",
 ]
 demo = [
   "langchain>=0.3",
@@ -80,13 +81,6 @@ version_toml = ["pyproject.toml:project.version"]
 tag_format = "v{version}"
 commit_message = "chore(release): v{version} [skip ci]"
 build_command = "" # no package build/publish — versioning, changelog & tag only
-allow_zero_version = true
-major_on_zero = false
 
 [tool.semantic_release.branches.main]
 match = "main"
-
-[tool.semantic_release.commit_parser_options]
-allowed_tags = ["feat", "fix", "perf", "docs", "style", "refactor", "test", "build", "ci", "chore"]
-minor_tags = ["feat"]
-patch_tags = ["fix", "perf"]
