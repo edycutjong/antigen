@@ -79,7 +79,7 @@ omit = ["antigen/_testkit/*"]
 version_toml = ["pyproject.toml:project.version"]
 tag_format = "v{version}"
 commit_message = "chore(release): v{version} [skip ci]"
-build_command = false
+build_command = "" # no package build/publish — versioning, changelog & tag only
 allow_zero_version = true
 major_on_zero = false
 
