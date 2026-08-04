@@ -176,7 +176,15 @@ jobs:
       - name: Deploy prebuilt to production
         id: deploy
         run: |
-          url=$(vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN")
+          # `vercel deploy` prints the production URL within seconds, then keeps
+          # polling until the deployment is READY — which can stall the runner for
+          # many minutes. The prebuilt output is already uploaded once the URL is
+          # printed, so we cap the wait and treat a captured URL as success.
+          set +e
+          out=$(timeout 150 vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" 2>&1)
+          printf '%s\n' "$out"
+          url=$(printf '%s\n' "$out" | grep -Eo 'https://[a-z0-9._-]+\.vercel\.app' | tail -n1)
+          if [ -z "$url" ]; then echo "::error::No Vercel deployment URL captured"; exit 1; fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "🚀 Deployed web/ to production: $url"
       - name: Pipeline summary
