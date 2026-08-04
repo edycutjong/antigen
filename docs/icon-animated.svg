@@ -1,0 +1,152 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img"
+     aria-label="Antigen animated icon: a hexagonal immune cell detects an infected metadata node, scans it, quarantines it, and defuses it">
+  <!-- Master timeline: 6s. All SMIL uses dur="6s" repeatCount="indefinite";
+       CSS keyframes run on the same 6s so layers stay in sync.
+       Loop hygiene: whole story fades out 96-100% and in 0-2%. -->
+  <defs>
+    <linearGradient id="iaBrand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2EE59D"/>
+      <stop offset="100%" stop-color="#FFB020"/>
+    </linearGradient>
+    <linearGradient id="iaCore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#2EE59D"/>
+      <stop offset="100%" stop-color="#0FA870"/>
+    </linearGradient>
+    <linearGradient id="iaBeam" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2EE59D" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#2EE59D" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#2EE59D" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="iaGlow" x="-70%" y="-70%" width="240%" height="240%">
+      <feGaussianBlur stdDeviation="16"/>
+    </filter>
+    <clipPath id="iaHexClip">
+      <polygon points="256,66 420.5,161 420.5,351 256,446 91.5,351 91.5,161"/>
+    </clipPath>
+    <style>
+      .pop { transform-box: fill-box; transform-origin: center; animation: 6s cubic-bezier(.2,1.4,.4,1) infinite; }
+      .pop-core { animation-name: ia-pop-core; }
+      .pop-top { animation-name: ia-pop-top; }
+      .pop-left { animation-name: ia-pop-left; }
+      .pop-right { animation-name: ia-pop-right; }
+      .glitch { animation: ia-glitch 6s linear infinite; }
+      @keyframes ia-pop-core { 0%, 18% { transform: scale(0); } 23% { transform: scale(1.18); } 26%, 100% { transform: scale(1); } }
+      @keyframes ia-pop-top { 0%, 22% { transform: scale(0); } 26% { transform: scale(1.22); } 29%, 100% { transform: scale(1); } }
+      @keyframes ia-pop-left { 0%, 24% { transform: scale(0); } 28% { transform: scale(1.22); } 31%, 100% { transform: scale(1); } }
+      @keyframes ia-pop-right { 0%, 26% { transform: scale(0); } 30% { transform: scale(1.22); } 33%, 100% { transform: scale(1); } }
+      @keyframes ia-glitch {
+        0%, 33% { transform: translate(0, 0); }
+        34% { transform: translate(-4px, 2px); }
+        35% { transform: translate(3px, -2px); }
+        36% { transform: translate(-3px, -1px); }
+        37% { transform: translate(3px, 1px); }
+        38%, 100% { transform: translate(0, 0); }
+      }
+      @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+    </style>
+  </defs>
+
+  <!-- everything lives in one group so the loop restart never hard-cuts -->
+  <g>
+    <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+             values="0;1;1;0" keyTimes="0;0.02;0.96;1"/>
+
+    <!-- membrane fill plate -->
+    <polygon points="256,66 420.5,161 420.5,351 256,446 91.5,351 91.5,161" fill="#06150E">
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;1;1" keyTimes="0;0.03;0.10;1"/>
+    </polygon>
+
+    <!-- membrane stroke draws itself in (seam starts mid-edge so the closed
+         loop shows no notch; round caps blend the meeting point) -->
+    <path d="M 338.25 113.5 L 420.5 161 L 420.5 351 L 256 446 L 91.5 351 L 91.5 161 L 256 66 Z"
+          fill="none" stroke="url(#iaBrand)" stroke-width="26" stroke-linejoin="round"
+          stroke-linecap="round" pathLength="100" stroke-dasharray="100">
+      <animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite"
+               values="100;100;0;0" keyTimes="0;0.03;0.15;1"/>
+    </path>
+
+    <!-- inner membrane hairline -->
+    <polygon points="256,104 387,180 387,332 256,408 125,332 125,180"
+             fill="none" stroke="#2EE59D" stroke-opacity="0.18" stroke-width="4" stroke-linejoin="round">
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;1;1" keyTimes="0;0.12;0.19;1"/>
+    </polygon>
+
+    <!-- graph edges draw in, staggered -->
+    <g stroke="#2EE59D" stroke-opacity="0.55" stroke-width="14" stroke-linecap="round" fill="none">
+      <line x1="256" y1="262" x2="256" y2="152" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite"
+                 values="100;100;0;0" keyTimes="0;0.14;0.20;1"/>
+      </line>
+      <line x1="256" y1="262" x2="166" y2="330" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite"
+                 values="100;100;0;0" keyTimes="0;0.16;0.22;1"/>
+      </line>
+      <line x1="256" y1="262" x2="346" y2="330" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite"
+                 values="100;100;0;0" keyTimes="0;0.18;0.24;1"/>
+      </line>
+    </g>
+
+    <!-- infection ripple burst (behind the top node) -->
+    <circle cx="256" cy="148" r="10" fill="none" stroke="#F43F5E" stroke-width="4">
+      <animate attributeName="r" dur="6s" repeatCount="indefinite"
+               values="10;10;52;52" keyTimes="0;0.33;0.43;1"/>
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;0.8;0;0" keyTimes="0;0.33;0.36;0.43;1"/>
+    </circle>
+
+    <!-- top node: healthy -> infected (red, glitch) -> quarantined amber -->
+    <g class="glitch">
+      <g class="pop pop-top">
+        <circle cx="256" cy="148" r="25" fill="#2EE59D">
+          <animate attributeName="fill" dur="6s" repeatCount="indefinite" calcMode="discrete"
+                   values="#2EE59D;#F43F5E;#FFB020;#FFB020" keyTimes="0;0.33;0.67;1"/>
+        </circle>
+        <circle cx="256" cy="148" r="10" fill="#06150E"/>
+      </g>
+    </g>
+
+    <!-- quarantine ring draws around the infected node -->
+    <circle cx="256" cy="148" r="40" fill="none" stroke="#FFB020" stroke-width="6"
+            stroke-linecap="round" pathLength="100" stroke-dasharray="100"
+            transform="rotate(-90 256 148)">
+      <animate attributeName="stroke-dashoffset" dur="6s" repeatCount="indefinite"
+               values="100;100;0;0" keyTimes="0;0.58;0.70;1"/>
+      <animate attributeName="stroke-opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;0.75;0.45;0.45" keyTimes="0;0.58;0.70;0.78;1"/>
+    </circle>
+
+    <!-- healthy nodes -->
+    <g class="pop pop-left">
+      <circle cx="166" cy="330" r="23" fill="#2EE59D"/>
+      <circle cx="166" cy="330" r="9" fill="#06150E"/>
+    </g>
+    <g class="pop pop-right">
+      <circle cx="346" cy="330" r="23" fill="#2EE59D"/>
+      <circle cx="346" cy="330" r="9" fill="#06150E"/>
+    </g>
+
+    <!-- scan beam sweeps the cell top -> bottom -->
+    <g clip-path="url(#iaHexClip)">
+      <rect x="104" width="304" height="9" rx="4.5" fill="url(#iaBeam)">
+        <animate attributeName="y" dur="6s" repeatCount="indefinite"
+                 values="80;80;80;424;424" keyTimes="0;0.02;0.42;0.58;1"/>
+        <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+                 values="0;0;1;1;0;0" keyTimes="0;0.42;0.44;0.56;0.585;1"/>
+      </rect>
+    </g>
+
+    <!-- immune core with glow breath at the end of the loop -->
+    <circle cx="256" cy="262" r="47" fill="#2EE59D" filter="url(#iaGlow)">
+      <animate attributeName="opacity" dur="6s" repeatCount="indefinite"
+               values="0;0;0.35;0.35;0.8;0.4;0.4" keyTimes="0;0.20;0.26;0.74;0.84;0.94;1"/>
+    </circle>
+    <g class="pop pop-core">
+      <circle cx="256" cy="262" r="47" fill="url(#iaCore)"/>
+      <circle cx="256" cy="262" r="20" fill="#04100B"/>
+      <circle cx="256" cy="262" r="8" fill="#2EE59D"/>
+    </g>
+  </g>
+</svg>

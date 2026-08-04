@@ -1,0 +1,321 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img"
+     aria-label="Antigen — a prompt-injection immune system for the DataHub metadata graph. A poisoned catalog entity is detected, quarantined, defused and certified; stock-agent hijack rate drops from 5/5 to 0/5.">
+  <!-- Master timeline: 8s. Every SMIL animate uses dur="8s" repeatCount="indefinite";
+       CSS keyframes run on the same 8s (auroras deliberately slower: 16/19s alternate).
+       Wordmark = outlined Space Grotesk 700 paths (opentype.js pipeline) — no webfonts.
+       Loop hygiene: the right-hand story layer fades out 96-100% and in 0-2%. -->
+  <defs>
+    <linearGradient id="hWord" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="132" y2="0">
+      <stop offset="0%" stop-color="#2EE59D"/>
+      <stop offset="100%" stop-color="#FFB020"/>
+    </linearGradient>
+    <linearGradient id="hBeamV" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2EE59D" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#2EE59D" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#2EE59D" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="hSweep" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="hBlurAurora" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="42"/>
+    </filter>
+    <filter id="hBlurComet" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <filter id="hGlowSoft" x="-120%" y="-120%" width="340%" height="340%">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+    <pattern id="hGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#2EE59D" stroke-opacity="0.05" stroke-width="1"/>
+    </pattern>
+    <clipPath id="hPlate">
+      <rect x="8" y="8" width="1264" height="304" rx="22"/>
+    </clipPath>
+    <!-- clip for the shimmer: the outlined "gen" glyphs at their final position -->
+    <clipPath id="hGenClip">
+      <g transform="translate(210,172)">
+        <path d="M3.31 -17.71L3.31 -17.71L3.31 -18.86Q3.31 -24.48 5.54 -28.48Q7.78 -32.47 11.48 -34.6Q15.19 -36.72 19.58 -36.72L19.58 -36.72Q24.48 -36.72 27 -34.99Q29.52 -33.26 30.67 -31.39L30.67 -31.39L31.97 -31.39L31.97 -35.71L40.9 -35.71L40.9 6.34Q40.9 10.01 38.74 12.2Q36.58 14.4 32.98 14.4L32.98 14.4L9.07 14.4L9.07 6.48L29.81 6.48Q31.82 6.48 31.82 4.32L31.82 4.32L31.82 -4.97L30.53 -4.97Q29.81 -3.82 28.51 -2.63Q27.22 -1.44 25.06 -0.65Q22.9 0.14 19.58 0.14L19.58 0.14Q15.19 0.14 11.48 -1.98Q7.78 -4.1 5.54 -8.1Q3.31 -12.1 3.31 -17.71M22.18 -7.78L22.18 -7.78Q26.35 -7.78 29.16 -10.44Q31.97 -13.1 31.97 -17.93L31.97 -17.93L31.97 -18.65Q31.97 -23.54 29.2 -26.17Q26.42 -28.8 22.18 -28.8L22.18 -28.8Q18 -28.8 15.19 -26.17Q12.38 -23.54 12.38 -18.65L12.38 -18.65L12.38 -17.93Q12.38 -13.1 15.19 -10.44Q18 -7.78 22.18 -7.78M67.25 1.01L67.25 1.01Q61.92 1.01 57.85 -1.26Q53.78 -3.53 51.52 -7.67Q49.25 -11.81 49.25 -17.42L49.25 -17.42L49.25 -18.29Q49.25 -23.9 51.48 -28.04Q53.71 -32.18 57.74 -34.45Q61.78 -36.72 67.1 -36.72L67.1 -36.72Q72.36 -36.72 76.25 -34.38Q80.14 -32.04 82.3 -27.9Q84.46 -23.76 84.46 -18.29L84.46 -18.29L84.46 -15.19L58.46 -15.19Q58.61 -11.52 61.2 -9.22Q63.79 -6.91 67.54 -6.91L67.54 -6.91Q71.35 -6.91 73.15 -8.57Q74.95 -10.22 75.89 -12.24L75.89 -12.24L83.3 -8.35Q82.3 -6.48 80.39 -4.28Q78.48 -2.09 75.31 -0.54Q72.14 1.01 67.25 1.01M58.54 -21.96L58.54 -21.96L75.24 -21.96Q74.95 -25.06 72.76 -26.93Q70.56 -28.8 67.03 -28.8L67.03 -28.8Q63.36 -28.8 61.2 -26.93Q59.04 -25.06 58.54 -21.96M101.59 0L92.52 0L92.52 -35.71L101.45 -35.71L101.45 -31.03L102.74 -31.03Q103.61 -32.9 105.98 -34.6Q108.36 -36.29 113.18 -36.29L113.18 -36.29Q117.36 -36.29 120.49 -34.38Q123.62 -32.47 125.35 -29.12Q127.08 -25.78 127.08 -21.31L127.08 -21.31L127.08 0L118.01 0L118.01 -20.59Q118.01 -24.62 116.03 -26.64Q114.05 -28.66 110.38 -28.66L110.38 -28.66Q106.2 -28.66 103.9 -25.88Q101.59 -23.11 101.59 -18.14L101.59 -18.14L101.59 0"/>
+      </g>
+    </clipPath>
+    <style>
+      .h-sans { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+      .h-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+      .h-pop { transform-box: fill-box; transform-origin: center; animation: 8s cubic-bezier(.2,1.4,.4,1) infinite; }
+      .hp-p { animation-name: h-pop-p; }
+      .hp-1 { animation-name: h-pop-1; }
+      .hp-2 { animation-name: h-pop-2; }
+      .hp-3 { animation-name: h-pop-3; }
+      .hp-4 { animation-name: h-pop-4; }
+      .hp-5 { animation-name: h-pop-5; }
+      .hp-badge { animation-name: h-pop-badge; }
+      .hp-chip { animation-name: h-pop-chip; }
+      .hp-seal { animation-name: h-pop-seal; }
+      .h-glitch { animation: h-glitch 8s linear infinite; }
+      .h-metric { animation: h-metric 8s ease-in-out infinite; }
+      .h-aurora-a { animation: h-drift-a 16s ease-in-out infinite alternate; }
+      .h-aurora-b { animation: h-drift-b 19s ease-in-out infinite alternate; }
+      @keyframes h-pop-p { 0%, 3.5% { transform: scale(0); } 6.5% { transform: scale(1.25); } 8.5%, 100% { transform: scale(1); } }
+      @keyframes h-pop-1 { 0%, 3% { transform: scale(0); } 6% { transform: scale(1.2); } 8%, 100% { transform: scale(1); } }
+      @keyframes h-pop-2 { 0%, 4.5% { transform: scale(0); } 7.5% { transform: scale(1.2); } 9.5%, 100% { transform: scale(1); } }
+      @keyframes h-pop-3 { 0%, 6% { transform: scale(0); } 9% { transform: scale(1.2); } 11%, 100% { transform: scale(1); } }
+      @keyframes h-pop-4 { 0%, 7.5% { transform: scale(0); } 10.5% { transform: scale(1.2); } 12.5%, 100% { transform: scale(1); } }
+      @keyframes h-pop-5 { 0%, 9% { transform: scale(0); } 12% { transform: scale(1.2); } 14%, 100% { transform: scale(1); } }
+      @keyframes h-pop-badge { 0%, 52% { transform: scale(0); } 55% { transform: scale(1.14); } 56.5%, 100% { transform: scale(1); } }
+      @keyframes h-pop-chip { 0%, 66% { transform: scale(0); } 69% { transform: scale(1.12); } 70.5%, 100% { transform: scale(1); } }
+      @keyframes h-pop-seal {
+        0%, 82% { transform: scale(0) rotate(-10deg); }
+        85% { transform: scale(1.12) rotate(3deg); }
+        86.5%, 100% { transform: scale(1) rotate(-2deg); }
+      }
+      @keyframes h-glitch {
+        0%, 15.5% { transform: translate(0, 0); }
+        16.5% { transform: translate(-3px, 2px); }
+        17.5% { transform: translate(3px, -2px); }
+        18.5% { transform: translate(-2px, -1px); }
+        19.5%, 100% { transform: translate(0, 0); }
+      }
+      @keyframes h-metric { 0%, 100% { opacity: 0.72; } 25% { opacity: 1; } 50% { opacity: 0.72; } 75% { opacity: 1; } }
+      @keyframes h-drift-a { from { transform: translate(0, 0); } to { transform: translate(-70px, 34px); } }
+      @keyframes h-drift-b { from { transform: translate(0, 0); } to { transform: translate(80px, -26px); } }
+      @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+    </style>
+  </defs>
+
+  <!-- ====================== BACKDROP ====================== -->
+  <rect x="8" y="8" width="1264" height="304" rx="22" fill="#050D09"/>
+  <g clip-path="url(#hPlate)">
+    <rect x="8" y="8" width="1264" height="304" fill="url(#hGrid)"/>
+    <circle class="h-aurora-a" cx="1080" cy="26" r="170" fill="#2EE59D" opacity="0.10" filter="url(#hBlurAurora)"/>
+    <circle class="h-aurora-b" cx="420" cy="330" r="190" fill="#FFB020" opacity="0.06" filter="url(#hBlurAurora)"/>
+    <!-- one skewed beam sweep per loop -->
+    <g>
+      <animateTransform attributeName="transform" type="translate" dur="8s" repeatCount="indefinite"
+                        values="-300 0;-300 0;1500 0;1500 0" keyTimes="0;0.30;0.55;1"/>
+      <rect x="0" y="-70" width="170" height="460" fill="url(#hSweep)" transform="skewX(-16)"/>
+    </g>
+  </g>
+  <rect x="8" y="8" width="1264" height="304" rx="22" fill="none" stroke="#FFFFFF" stroke-opacity="0.08"/>
+
+  <!-- ====================== LEFT: BRAND (persistent) ====================== -->
+  <!-- mini mark -->
+  <g transform="translate(64,34) scale(0.1055)">
+    <polygon points="256,66 420.5,161 420.5,351 256,446 91.5,351 91.5,161"
+             fill="#06150E" stroke="#2EE59D" stroke-width="30" stroke-linejoin="round"/>
+    <g stroke="#2EE59D" stroke-opacity="0.55" stroke-width="16" stroke-linecap="round">
+      <line x1="256" y1="262" x2="256" y2="152"/>
+      <line x1="256" y1="262" x2="166" y2="330"/>
+      <line x1="256" y1="262" x2="346" y2="330"/>
+    </g>
+    <circle cx="256" cy="148" r="40" fill="none" stroke="#FFB020" stroke-opacity="0.45" stroke-width="8"/>
+    <circle cx="256" cy="148" r="27" fill="#FFB020"/>
+    <circle cx="166" cy="330" r="24" fill="#2EE59D"/>
+    <circle cx="346" cy="330" r="24" fill="#2EE59D"/>
+    <circle cx="256" cy="262" r="48" fill="#2EE59D">
+      <animate attributeName="fill-opacity" dur="8s" repeatCount="indefinite"
+               values="1;0.75;1;0.75;1" keyTimes="0;0.25;0.5;0.75;1"/>
+    </circle>
+    <circle cx="256" cy="262" r="20" fill="#04100B"/>
+  </g>
+
+  <!-- outlined wordmark: "Anti" near-white + "gen" gradient (Space Grotesk 700, size 72) -->
+  <g transform="translate(64,172)" fill="#EAF9F1">
+    <path d="M11.09 0L1.3 0L14.54 -50.4L31.1 -50.4L44.35 0L34.56 0L31.82 -11.09L13.82 -11.09L11.09 0M22.18 -44.42L16.06 -19.87L29.59 -19.87L23.47 -44.42L22.18 -44.42M59.76 0L50.69 0L50.69 -35.71L59.62 -35.71L59.62 -31.03L60.91 -31.03Q61.78 -32.9 64.15 -34.6Q66.53 -36.29 71.35 -36.29L71.35 -36.29Q75.53 -36.29 78.66 -34.38Q81.79 -32.47 83.52 -29.12Q85.25 -25.78 85.25 -21.31L85.25 -21.31L85.25 0L76.18 0L76.18 -20.59Q76.18 -24.62 74.2 -26.64Q72.22 -28.66 68.54 -28.66L68.54 -28.66Q64.37 -28.66 62.06 -25.88Q59.76 -23.11 59.76 -18.14L59.76 -18.14L59.76 0M117.79 0L107.71 0Q104.18 0 101.99 -2.2Q99.79 -4.39 99.79 -8.06L99.79 -8.06L99.79 -28.22L90.86 -28.22L90.86 -35.71L99.79 -35.71L99.79 -46.8L108.86 -46.8L108.86 -35.71L118.66 -35.71L118.66 -28.22L108.86 -28.22L108.86 -9.65Q108.86 -7.49 110.88 -7.49L110.88 -7.49L117.79 -7.49L117.79 0M135.94 0L126.86 0L126.86 -35.71L135.94 -35.71L135.94 0M131.4 -39.89L131.4 -39.89Q128.95 -39.89 127.26 -41.47Q125.57 -43.06 125.57 -45.65L125.57 -45.65Q125.57 -48.24 127.26 -49.82Q128.95 -51.41 131.4 -51.41L131.4 -51.41Q133.92 -51.41 135.58 -49.82Q137.23 -48.24 137.23 -45.65L137.23 -45.65Q137.23 -43.06 135.58 -41.47Q133.92 -39.89 131.4 -39.89"/>
+  </g>
+  <g transform="translate(210,172)" fill="url(#hWord)">
+    <path d="M3.31 -17.71L3.31 -17.71L3.31 -18.86Q3.31 -24.48 5.54 -28.48Q7.78 -32.47 11.48 -34.6Q15.19 -36.72 19.58 -36.72L19.58 -36.72Q24.48 -36.72 27 -34.99Q29.52 -33.26 30.67 -31.39L30.67 -31.39L31.97 -31.39L31.97 -35.71L40.9 -35.71L40.9 6.34Q40.9 10.01 38.74 12.2Q36.58 14.4 32.98 14.4L32.98 14.4L9.07 14.4L9.07 6.48L29.81 6.48Q31.82 6.48 31.82 4.32L31.82 4.32L31.82 -4.97L30.53 -4.97Q29.81 -3.82 28.51 -2.63Q27.22 -1.44 25.06 -0.65Q22.9 0.14 19.58 0.14L19.58 0.14Q15.19 0.14 11.48 -1.98Q7.78 -4.1 5.54 -8.1Q3.31 -12.1 3.31 -17.71M22.18 -7.78L22.18 -7.78Q26.35 -7.78 29.16 -10.44Q31.97 -13.1 31.97 -17.93L31.97 -17.93L31.97 -18.65Q31.97 -23.54 29.2 -26.17Q26.42 -28.8 22.18 -28.8L22.18 -28.8Q18 -28.8 15.19 -26.17Q12.38 -23.54 12.38 -18.65L12.38 -18.65L12.38 -17.93Q12.38 -13.1 15.19 -10.44Q18 -7.78 22.18 -7.78M67.25 1.01L67.25 1.01Q61.92 1.01 57.85 -1.26Q53.78 -3.53 51.52 -7.67Q49.25 -11.81 49.25 -17.42L49.25 -17.42L49.25 -18.29Q49.25 -23.9 51.48 -28.04Q53.71 -32.18 57.74 -34.45Q61.78 -36.72 67.1 -36.72L67.1 -36.72Q72.36 -36.72 76.25 -34.38Q80.14 -32.04 82.3 -27.9Q84.46 -23.76 84.46 -18.29L84.46 -18.29L84.46 -15.19L58.46 -15.19Q58.61 -11.52 61.2 -9.22Q63.79 -6.91 67.54 -6.91L67.54 -6.91Q71.35 -6.91 73.15 -8.57Q74.95 -10.22 75.89 -12.24L75.89 -12.24L83.3 -8.35Q82.3 -6.48 80.39 -4.28Q78.48 -2.09 75.31 -0.54Q72.14 1.01 67.25 1.01M58.54 -21.96L58.54 -21.96L75.24 -21.96Q74.95 -25.06 72.76 -26.93Q70.56 -28.8 67.03 -28.8L67.03 -28.8Q63.36 -28.8 61.2 -26.93Q59.04 -25.06 58.54 -21.96M101.59 0L92.52 0L92.52 -35.71L101.45 -35.71L101.45 -31.03L102.74 -31.03Q103.61 -32.9 105.98 -34.6Q108.36 -36.29 113.18 -36.29L113.18 -36.29Q117.36 -36.29 120.49 -34.38Q123.62 -32.47 125.35 -29.12Q127.08 -25.78 127.08 -21.31L127.08 -21.31L127.08 0L118.01 0L118.01 -20.59Q118.01 -24.62 116.03 -26.64Q114.05 -28.66 110.38 -28.66L110.38 -28.66Q106.2 -28.66 103.9 -25.88Q101.59 -23.11 101.59 -18.14L101.59 -18.14L101.59 0"/>
+  </g>
+  <!-- shimmer sweeping under the gradient word's clip -->
+  <g clip-path="url(#hGenClip)">
+    <g>
+      <animateTransform attributeName="transform" type="translate" dur="8s" repeatCount="indefinite"
+                        values="0 0;0 0;360 0;360 0" keyTimes="0;0.20;0.36;1"/>
+      <rect x="150" y="108" width="30" height="96" fill="#FFFFFF" opacity="0.45" transform="skewX(-18)"/>
+    </g>
+  </g>
+
+  <!-- tagline (system sans; stays inside x < 560) -->
+  <text class="h-sans" x="64" y="212" font-size="17" fill="#8FB3A3">A prompt-injection immune system</text>
+  <text class="h-sans" x="64" y="234" font-size="17" fill="#8FB3A3">for the DataHub metadata graph.</text>
+
+  <!-- pulsing hero-metric line -->
+  <text class="h-mono h-metric" x="64" y="268" font-size="14.5" font-weight="600" fill="#FFB020"
+        letter-spacing="0.5">HIJACK 5/5 → 0/5 · 12/12 DEFUSED · &lt;30s PROOF</text>
+
+  <!-- tech-stack line -->
+  <text class="h-mono" x="64" y="293" font-size="12" fill="#47635A"
+        letter-spacing="0.5">DataHub · Agent Context Kit · LangChain · Python · SHA-256</text>
+
+  <!-- ====================== RIGHT: PRODUCT STORY (loop-fades) ====================== -->
+  <g>
+    <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+             values="0;1;1;0" keyTimes="0;0.02;0.96;1"/>
+
+    <!-- graph edges draw in -->
+    <g stroke="#2EE59D" stroke-opacity="0.30" stroke-width="2" fill="none">
+      <line x1="830" y1="150" x2="700" y2="84" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="8s" repeatCount="indefinite" values="100;100;0;0" keyTimes="0;0.02;0.07;1"/>
+      </line>
+      <line x1="830" y1="150" x2="700" y2="216" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="8s" repeatCount="indefinite" values="100;100;0;0" keyTimes="0;0.03;0.08;1"/>
+      </line>
+      <line x1="830" y1="150" x2="955" y2="84" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="8s" repeatCount="indefinite" values="100;100;0;0" keyTimes="0;0.04;0.09;1"/>
+      </line>
+      <line x1="830" y1="150" x2="955" y2="216" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="8s" repeatCount="indefinite" values="100;100;0;0" keyTimes="0;0.05;0.10;1"/>
+      </line>
+      <line x1="955" y1="84" x2="1090" y2="150" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="8s" repeatCount="indefinite" values="100;100;0;0" keyTimes="0;0.06;0.11;1"/>
+      </line>
+      <line x1="955" y1="216" x2="1090" y2="150" pathLength="100" stroke-dasharray="100">
+        <animate attributeName="stroke-dashoffset" dur="8s" repeatCount="indefinite" values="100;100;0;0" keyTimes="0;0.07;0.12;1"/>
+      </line>
+    </g>
+
+    <!-- payload comet drops into the customers node -->
+    <g opacity="0">
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+               values="0;0;1;1;0;0" keyTimes="0;0.115;0.125;0.16;0.175;1"/>
+      <circle r="5" fill="#F43F5E" filter="url(#hBlurComet)">
+        <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.115;0.17;1"
+                       path="M 830 34 L 830 128"/>
+      </circle>
+    </g>
+
+    <!-- infection ripple -->
+    <circle cx="830" cy="150" r="10" fill="none" stroke="#F43F5E" stroke-width="2.5">
+      <animate attributeName="r" dur="8s" repeatCount="indefinite" values="10;10;46;46" keyTimes="0;0.165;0.24;1"/>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;0.8;0;0" keyTimes="0;0.165;0.19;0.24;1"/>
+    </circle>
+
+    <!-- healthy nodes -->
+    <g class="h-pop hp-1"><circle cx="700" cy="84" r="13" fill="#0C2A1D" stroke="#2EE59D" stroke-width="2.5"/><circle cx="700" cy="84" r="4" fill="#2EE59D"/></g>
+    <g class="h-pop hp-2"><circle cx="700" cy="216" r="13" fill="#0C2A1D" stroke="#2EE59D" stroke-width="2.5"/><circle cx="700" cy="216" r="4" fill="#2EE59D"/></g>
+    <g class="h-pop hp-3"><circle cx="955" cy="84" r="13" fill="#0C2A1D" stroke="#2EE59D" stroke-width="2.5"/><circle cx="955" cy="84" r="4" fill="#2EE59D"/></g>
+    <g class="h-pop hp-4"><circle cx="955" cy="216" r="13" fill="#0C2A1D" stroke="#2EE59D" stroke-width="2.5"/><circle cx="955" cy="216" r="4" fill="#2EE59D"/></g>
+    <g class="h-pop hp-5">
+      <circle cx="1090" cy="150" r="15" fill="#0C2A1D" stroke="#2EE59D" stroke-width="2.5"/>
+      <circle cx="1090" cy="150" r="5" fill="#2EE59D"/>
+    </g>
+
+    <!-- soft glow behind the poisoned node during the final breath -->
+    <circle cx="830" cy="150" r="26" fill="#2EE59D" filter="url(#hGlowSoft)">
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+               values="0;0;0.5;0.15;0.15" keyTimes="0;0.80;0.88;0.95;1"/>
+    </circle>
+
+    <!-- the poisoned node: healthy -> infected -> defused -->
+    <g class="h-glitch">
+      <g class="h-pop hp-p">
+        <circle cx="830" cy="150" r="22" fill="#0C2A1D" stroke="#2EE59D" stroke-width="3">
+          <animate attributeName="stroke" dur="8s" repeatCount="indefinite" calcMode="discrete"
+                   values="#2EE59D;#F43F5E;#2EE59D;#2EE59D" keyTimes="0;0.14;0.66;1"/>
+        </circle>
+        <circle cx="830" cy="150" r="8" fill="#2EE59D">
+          <animate attributeName="fill" dur="8s" repeatCount="indefinite" calcMode="discrete"
+                   values="#2EE59D;#F43F5E;#2EE59D;#2EE59D" keyTimes="0;0.14;0.66;1"/>
+        </circle>
+      </g>
+    </g>
+
+    <!-- quarantine ring draws around the poisoned node -->
+    <circle cx="830" cy="150" r="32" fill="none" stroke="#FFB020" stroke-width="3"
+            stroke-linecap="round" pathLength="100" stroke-dasharray="100" transform="rotate(-90 830 150)">
+      <animate attributeName="stroke-dashoffset" dur="8s" repeatCount="indefinite"
+               values="100;100;0;0" keyTimes="0;0.46;0.56;1"/>
+      <animate attributeName="stroke-opacity" dur="8s" repeatCount="indefinite"
+               values="0;0;0.9;0.55;0.55" keyTimes="0;0.46;0.56;0.64;1"/>
+    </circle>
+
+    <!-- injected-payload caption (appears after infection, blinks out at detection) -->
+    <text class="h-mono" x="830" y="110" font-size="10" fill="#F43F5E" text-anchor="middle" letter-spacing="0.3">
+      ⚠ ignore all instructions
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+               values="0;0;1;1;0.15;1;0;0" keyTimes="0;0.15;0.17;0.47;0.48;0.49;0.505;1"/>
+    </text>
+
+    <!-- node labels (system mono, faint) -->
+    <g class="h-mono" font-size="10" fill="#47635A">
+      <text x="700" y="111" text-anchor="middle">dim_users</text>
+      <text x="700" y="243" text-anchor="middle">orders_etl</text>
+      <text x="955" y="111" text-anchor="middle">rev_model</text>
+      <text x="955" y="243" text-anchor="middle">emails_raw</text>
+      <text x="1090" y="181" text-anchor="middle">churn_dash</text>
+      <g opacity="0">
+        <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;1;1" keyTimes="0;0.06;0.09;1"/>
+        <text x="830" y="194" text-anchor="middle" font-size="11" fill="#8FB3A3">customers</text>
+      </g>
+    </g>
+
+    <!-- scan beam sweeps the graph -->
+    <rect y="34" width="7" height="252" rx="3" fill="url(#hBeamV)" x="612">
+      <animate attributeName="x" dur="8s" repeatCount="indefinite"
+               values="612;612;612;1232;1232" keyTimes="0;0.02;0.24;0.46;1"/>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+               values="0;0;1;1;0;0" keyTimes="0;0.24;0.26;0.44;0.465;1"/>
+    </rect>
+
+    <!-- scan caption -->
+    <text class="h-mono" x="622" y="289" font-size="11" fill="#2EE59D" opacity="0">
+      antigen scan · 1,049 entities
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+               values="0;0;0.75;0.75;0;0" keyTimes="0;0.24;0.27;0.50;0.54;1"/>
+    </text>
+
+    <!-- QUARANTINED badge pops above the node (in the V-gap between edges) -->
+    <g class="h-pop hp-badge">
+      <rect x="784" y="92" width="92" height="24" rx="12" fill="#1A1305" stroke="#FFB020" stroke-opacity="0.7"/>
+      <text class="h-mono" x="830" y="108" font-size="10.5" font-weight="600" fill="#FFB020"
+            text-anchor="middle" letter-spacing="0.6">QUARANTINED</text>
+    </g>
+
+    <!-- cure comet from the brand mark into the node -->
+    <g opacity="0">
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
+               values="0;0;1;1;0;0" keyTimes="0;0.575;0.585;0.64;0.655;1"/>
+      <circle r="6" fill="#2EE59D" filter="url(#hBlurComet)">
+        <animateMotion dur="8s" repeatCount="indefinite" keyPoints="0;0;1;1" keyTimes="0;0.575;0.65;1"
+                       path="M 596 150 L 802 150"/>
+      </circle>
+    </g>
+
+    <!-- sha256 chip below the cured node -->
+    <g class="h-pop hp-chip">
+      <rect x="784" y="202" width="92" height="24" rx="12" fill="#072115" fill-opacity="0.9" stroke="#2EE59D" stroke-opacity="0.7"/>
+      <text class="h-mono" x="830" y="218" font-size="10.5" font-weight="600" fill="#2EE59D"
+            text-anchor="middle" letter-spacing="0.4">sha256 ✓</text>
+    </g>
+
+    <!-- certification halos ripple across the clean nodes -->
+    <circle cx="700" cy="84" r="16" fill="none" stroke="#2EE59D" stroke-width="2">
+      <animate attributeName="r" dur="8s" repeatCount="indefinite" values="16;16;27;27" keyTimes="0;0.76;0.80;1"/>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;0.7;0;0" keyTimes="0;0.76;0.775;0.80;1"/>
+    </circle>
+    <circle cx="955" cy="84" r="16" fill="none" stroke="#2EE59D" stroke-width="2">
+      <animate attributeName="r" dur="8s" repeatCount="indefinite" values="16;16;27;27" keyTimes="0;0.79;0.83;1"/>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;0.7;0;0" keyTimes="0;0.79;0.805;0.83;1"/>
+    </circle>
+    <circle cx="700" cy="216" r="16" fill="none" stroke="#2EE59D" stroke-width="2">
+      <animate attributeName="r" dur="8s" repeatCount="indefinite" values="16;16;27;27" keyTimes="0;0.82;0.86;1"/>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;0.7;0;0" keyTimes="0;0.82;0.835;0.86;1"/>
+    </circle>
+    <circle cx="955" cy="216" r="16" fill="none" stroke="#2EE59D" stroke-width="2">
+      <animate attributeName="r" dur="8s" repeatCount="indefinite" values="16;16;27;27" keyTimes="0;0.85;0.89;1"/>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;0.7;0;0" keyTimes="0;0.85;0.865;0.89;1"/>
+    </circle>
+    <circle cx="1090" cy="150" r="18" fill="none" stroke="#2EE59D" stroke-width="2">
+      <animate attributeName="r" dur="8s" repeatCount="indefinite" values="18;18;30;30" keyTimes="0;0.88;0.92;1"/>
+      <animate attributeName="opacity" dur="8s" repeatCount="indefinite" values="0;0;0.7;0;0" keyTimes="0;0.88;0.895;0.92;1"/>
+    </circle>
+
+    <!-- 12/12 DEFUSED seal -->
+    <g class="h-pop hp-seal">
+      <rect x="1050" y="236" width="176" height="30" rx="15" fill="#072115" fill-opacity="0.9" stroke="#2EE59D" stroke-opacity="0.8" stroke-width="1.5"/>
+      <text class="h-mono" x="1138" y="256" font-size="12.5" font-weight="600" fill="#2EE59D"
+            text-anchor="middle" letter-spacing="0.8">12/12 DEFUSED ✓</text>
+    </g>
+  </g>
+</svg>

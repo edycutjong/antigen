@@ -1,0 +1,92 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "antigen-datahub"
+version = "0.1.0"
+description = "A prompt-injection immune system for the DataHub metadata graph."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Antigen" }]
+keywords = ["datahub", "prompt-injection", "owasp-llm01", "metadata", "security", "mcp"]
+
+# The core (detector + engine + verify Part A) needs no third-party deps.
+dependencies = []
+
+[project.optional-dependencies]
+live = [
+  "datahub-agent-context[langchain]==1.6.0.17",
+  "acryl-datahub==1.6.0.6",
+]
+demo = [
+  "langchain>=0.3",
+  "langchain-anthropic>=0.2",
+]
+dev = [
+  "pytest>=8",
+  "pytest-cov>=5",
+  "ruff>=0.6",
+  "mypy>=1.10",
+  "pip-audit>=2.7",
+  "python-semantic-release>=9",
+]
+
+[project.scripts]
+antigen = "antigen.cli:main"
+
+[tool.setuptools]
+packages = ["antigen", "antigen._testkit"]
+py-modules = ["verify", "bench", "victim_agent", "seed_corpus", "seed_near_miss"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["antigen-scan"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Data files: the attack payloads, near-miss corpus, and compliance regexes are
+# intentionally verbatim single-line strings — wrapping them hurts auditability.
+"antigen/corpus.py" = ["E501"]
+"antigen/nearmiss.py" = ["E501"]
+"victim_agent.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true      # datahub / langchain are optional live-only deps
+warn_unused_ignores = false
+# The engine is intentionally duck-typed at the Gateway seam; keep mypy advisory.
+check_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["antigen"]
+omit = ["antigen/_testkit/*"]
+
+# ── Automatic semantic versioning (Conventional Commits) ──────────────────────
+# feat: -> minor · fix:/perf: -> patch · feat!/BREAKING CHANGE -> major.
+# The GitHub Actions "release" job runs `semantic-release version` on pushes to
+# main: it bumps project.version below, regenerates CHANGELOG.md, commits with
+# [skip ci], tags vX.Y.Z, and publishes a GitHub Release.
+[tool.semantic_release]
+version_toml = ["pyproject.toml:project.version"]
+tag_format = "v{version}"
+commit_message = "chore(release): v{version} [skip ci]"
+build_command = false
+allow_zero_version = true
+major_on_zero = false
+
+[tool.semantic_release.branches.main]
+match = "main"
+
+[tool.semantic_release.commit_parser_options]
+allowed_tags = ["feat", "fix", "perf", "docs", "style", "refactor", "test", "build", "ci", "chore"]
+minor_tags = ["feat"]
+patch_tags = ["fix", "perf"]

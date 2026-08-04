@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Antigen icon: hexagonal immune-cell shield around a metadata graph with one quarantined node">
+  <!-- Best-of-both-worlds colors: the CSS variable wins when _tokens.css is
+       loaded; the hex fallback applies when rasterized standalone. -->
+  <defs>
+    <linearGradient id="agBrand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="var(--primary, #2EE59D)"/>
+      <stop offset="100%" stop-color="var(--accent, #FFB020)"/>
+    </linearGradient>
+    <linearGradient id="agCore" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="var(--primary, #2EE59D)"/>
+      <stop offset="100%" stop-color="#0FA870"/>
+    </linearGradient>
+    <filter id="agGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="14" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- hexagonal cell membrane (shield) -->
+  <polygon points="256,66 420.5,161 420.5,351 256,446 91.5,351 91.5,161"
+           fill="#06150E" stroke="url(#agBrand)" stroke-width="26"
+           stroke-linejoin="round"/>
+  <!-- inner membrane hairline -->
+  <polygon points="256,104 387,180 387,332 256,408 125,332 125,180"
+           fill="none" stroke="var(--primary, #2EE59D)" stroke-opacity="0.18"
+           stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- metadata graph edges -->
+  <g stroke="var(--primary, #2EE59D)" stroke-opacity="0.55" stroke-width="14" stroke-linecap="round">
+    <line x1="256" y1="262" x2="256" y2="152"/>
+    <line x1="256" y1="262" x2="166" y2="330"/>
+    <line x1="256" y1="262" x2="346" y2="330"/>
+  </g>
+
+  <!-- quarantined node (top): biohazard-amber with quarantine ring -->
+  <circle cx="256" cy="148" r="40" fill="none"
+          stroke="var(--accent, #FFB020)" stroke-opacity="0.45" stroke-width="6"/>
+  <circle cx="256" cy="148" r="25" fill="var(--accent, #FFB020)"/>
+  <circle cx="256" cy="148" r="10" fill="#06150E"/>
+
+  <!-- certified-safe nodes -->
+  <circle cx="166" cy="330" r="23" fill="var(--primary, #2EE59D)"/>
+  <circle cx="166" cy="330" r="9" fill="#06150E"/>
+  <circle cx="346" cy="330" r="23" fill="var(--primary, #2EE59D)"/>
+  <circle cx="346" cy="330" r="9" fill="#06150E"/>
+
+  <!-- central immune core -->
+  <g filter="url(#agGlow)">
+    <circle cx="256" cy="262" r="47" fill="url(#agCore)"/>
+  </g>
+  <circle cx="256" cy="262" r="20" fill="#04100B"/>
+  <circle cx="256" cy="262" r="8" fill="var(--primary, #2EE59D)"/>
+</svg>

@@ -1,0 +1,36 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Test / coverage / tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage/
+coverage.xml
+htmlcov/
+
+# Antigen runtime artifacts (live seeding)
+.antigen-locus-map.json
+
+# Node (assets tooling only)
+node_modules/
+
+# OS
+.DS_Store
+
+# Vercel
+.vercel
+
+# Root-level asset kitchen only — the deployed site lives in web/public/ (tracked)
+docs/assets
