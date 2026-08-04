@@ -230,10 +230,13 @@ strong { color: var(--text-hi); font-weight: 600; }
   gap: 56px; align-items: center;
 }
 .hero h1 {
-  font-size: clamp(2.4rem, 5.4vw, 3.9rem);
-  letter-spacing: -0.028em;
+  font-size: clamp(2.3rem, 4.9vw, 3.5rem);
+  letter-spacing: -0.03em;
+  line-height: 1.06;
   margin: 0 0 20px;
 }
+/* keep "A prompt-injection" from breaking at its hyphen onto two lines */
+.hero h1 .nb { white-space: nowrap; }
 .hero h1 .grad {
   background: var(--gradient-text);
   -webkit-background-clip: text; background-clip: text; color: transparent;
@@ -660,7 +663,7 @@ strong { color: var(--text-hi); font-weight: 600; }
       <div>
         <p class="eyebrow">OWASP LLM01 · Prompt injection · Metadata graph</p>
         <h1 id="hero-title">
-          <span class="grad">A prompt-injection</span><br />
+          <span class="grad nb">A prompt-injection</span><br />
           <span class="green">immune system</span><br />
           <span class="grad">for the DataHub metadata&nbsp;graph.</span>
         </h1>
