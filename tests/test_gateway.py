@@ -337,7 +337,7 @@ def test_register_properties(monkeypatch):
 # Live-path branches: setup emits, document reassembly, nested lineage envelopes
 # --------------------------------------------------------------------------- #
 
-def test_ensure_tag_creates_missing_tag_once(monkeypatch):
+def test_ensure_tag_creates_the_missing_tag_exactly_once(monkeypatch):
     """DataHub rejects applying a tag URN that does not exist yet, so add_tags
     must create it first — and must not re-emit it for every subsequent asset."""
     emitted = []
@@ -382,7 +382,7 @@ def test_ensure_tag_skips_emit_when_tag_already_exists(monkeypatch):
     assert emitted == []
 
 
-def test_graph_returns_none_without_base_sdk(monkeypatch):
+def test_graph_returns_none_when_base_sdk_is_absent(monkeypatch):
     """No base SDK installed → degrade to tool-only, never raise."""
     import builtins
     real_import = builtins.__import__
