@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.0.8 (2026-08-08)
+
+### Bug Fixes
+
+- **docs**: Correct the tag reserved-characters claim; it does not reproduce
+  ([`fe7bdf7`](https://github.com/edycutjong/antigen/commit/fe7bdf718249469458ebd35bc661d6fc33fe4ed4))
+
+
 ## v1.0.7 (2026-08-08)
 
 ### Bug Fixes
