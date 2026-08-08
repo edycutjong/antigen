@@ -340,6 +340,7 @@ behavior breaks — this is the engine, not decoration.
 | 6 | `add_tags` | **MUTATION** | `injection-quarantined` on poisoned entities; `agent-safe-certified` on the clean remainder; `injection-blast-radius:<urn>` on downstream consumers |
 | 7 | `add_structured_properties` | **MUTATION** | typed `antigen.contentSha256` (tamper-evidence) + `antigen.payloadSha256` (irreversible forensic hash) + `antigen.lastScanned` |
 | 8 | `save_document` | **MUTATION** | files a forensic incident (hashes + repo pointer, **no payload**) into `Antigen/Incidents`; overwrites the 2 poisoned KB docs **in place** with their defused form (addressed by **URN** — the only identity the live tool honours; omit it and DataHub mints a *new* document, leaving the poisoned original readable) |
+| 9 | `search_documents` | READ | enumerates KB document URNs — the live `grep_documents` requires an explicit `urns` list, so without this the document sweep has nothing to hunt over (`gateway.py::_document_urns`) |
 
 The cure lands **in the graph itself** — tags, structured properties, forensic KB docs —
 so the security state is queryable through the same catalog every agent already uses. No
@@ -347,7 +348,26 @@ side database, no second system of record. That is the *"contribute back to the 
 behavior the rubric rewards, applied to a security problem **no shipped DataHub feature
 addresses.** (One non-agent-tool call is honest to name: the one-time structured-property
 *definition* setup in `register_properties.py`, a base `acryl-datahub` emit — it is setup,
-not one of the 8 agent tools.)
+not one of the 9 agent tools.)
+
+**Don't take the table's word for it — grep the transcript.**
+[`docs/live-tool-transcript.json`](docs/live-tool-transcript.json) records **every** SDK
+call from a real run against a live `datahub docker quickstart` **GMS v1.7.0** (commit
+`7f81ccb`, `acryl-datahub 1.6.0.6`): request kwargs and responses, 1,049 records,
+**229 Agent Context Kit tool calls, 0 failed** —
+
+```
+get_entities 58 · update_description 46 · add_tags 34 · save_document 32
+add_structured_properties 24 · search 11 · get_lineage 10 · grep_documents 7 · search_documents 7
+```
+
+The 820 base `acryl-datahub` `DataHubGraph` calls (seeding, property definitions, the
+`editableSchemaMetadata` overlay) are counted **separately** in the same file, so the
+"9 agent tools" claim above stays exactly true.
+[`docs/live-run.log`](docs/live-run.log) is the console output of that run — including a
+first `verify.py --live` attempt that **failed** on an OpenSearch index race (`11/12`
+loci) before the cure ran, and passed `12/12` on the immediate retry. Both are kept: the
+gate fails closed, and a proof artifact that only shows the happy path is worth less.
 
 ![Four DataHub write-backs per hit — the cure lives in the graph](docs/screenshots/04-cure-writeback.png)
 
