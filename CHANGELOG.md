@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.0.3 (2026-08-08)
+
+### Bug Fixes
+
+- **site**: Pin outputDirectory so Vercel stops publishing web/public/ as the root
+  ([`eff7400`](https://github.com/edycutjong/antigen/commit/eff740004aecd8d06f5c2bb485e8ade3266c8dcd))
+
+### Code Style
+
+- **site**: Keep "A prompt-injection" on one line in the hero
+  ([`cb7da71`](https://github.com/edycutjong/antigen/commit/cb7da71ac13d5d3fab7698409465814daa3b0996))
+
+
 ## v1.0.2 (2026-08-04)
 
 ### Bug Fixes
