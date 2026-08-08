@@ -446,7 +446,7 @@ docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 - [x] Deterministic stdlib detector (scored rule + Unicode `Cf`-strip pre-pass)
 - [x] 4-mutation cure that writes the security state back into the graph
 - [x] `verify.py` LLM-independent graph-state gate · 79 tests · 100% coverage
-- [x] Responsible-disclosure RFC drafted, incl. 3 reproducible SDK findings (`docs/RFC-output-sanitization.md`)
+- [x] Responsible-disclosure RFC drafted, incl. 3 reproducible Agent-Context-Kit findings — 1 of which also applies to `mcp-server-datahub` `main` (`docs/RFC-output-sanitization.md`)
 - [x] `antigen-scan` DataHub Skill written (`antigen-scan/SKILL.md`)
 - [ ] File the RFC upstream to `mcp-server-datahub`
 - [ ] Full TR39 homoglyph / confusables coverage

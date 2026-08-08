@@ -95,6 +95,16 @@ reproductions, not as bug claims — each may be intentional. They matter to thi
 because each one weakens a *defender's* ability to detect or remediate injected text
 through the agent tool surface alone.
 
+> **Scope, re-verified against `acryldata/mcp-server-datahub` `main` on 2026-08-08.**
+> These are observations about the **Agent Context Kit** surface at the versions pinned
+> above — the surface Antigen integrates against — not about `mcp-server-datahub`, which
+> already handles two of them. **Finding 1** does not apply there: `gql/entity_details.gql`
+> requests `editableSchemaMetadata` and `graphql_helpers.py` merges it into schema fields as
+> `editedDescription`. **Finding 3** does not apply either: `save_document` returns an
+> `author` field and `SAVE_DOCUMENT_RESTRICT_UPDATES` defaults to restricting updates to
+> agent-created documents. **Finding 2 does still apply to `mcp-server-datahub` `main`**, and
+> is the one carried into the upstream discussion.
+
 ## Finding 1 — a column description can be written but not read back
 
 `update_description(entity_urn=…, column_path=…)` succeeds and persists, but the write
@@ -200,5 +210,7 @@ on a spoofable string.
   returns" needs its own type filter. (`mlFeature` and `corpGroup` were accepted in the
   same run, so the supported set is not obvious from the tool signature.)
 
-All three findings and the notes above are reproducible from the Antigen repository; the
+All three findings and the notes above are reproducible from the Antigen repository against
+the Agent Context Kit versions pinned at the top of this appendix (see the scope note there
+for which ones also apply to `mcp-server-datahub` `main`); the
 contract they describe is pinned in `tests/test_gateway.py` against recorded live payloads.
