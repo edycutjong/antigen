@@ -3,6 +3,7 @@
 Two paths. The **offline** path reproduces the graph-state proof, the detection numbers,
 and the benchmark on any laptop with Python 3.10+ (no Docker, no keys). The **live** path
 reproduces the full hijack → cure → 0/12 arc against a real DataHub GMS.
+Every number below was observed on a real run; none is aspirational.
 
 ## Offline (≈ 10 seconds, zero dependencies)
 
@@ -14,7 +15,7 @@ Reproduces:
 
 | Claim | Command | Expected |
 |-------|---------|----------|
-| Graph-state gate passes | `python verify.py` | `graph-state PASS (~4 ms) \| held-out 3/3` |
+| Graph-state gate passes | `python verify.py` | `graph-state PASS (~5 ms) \| held-out 3/3` |
 | 12/12 payloads detected | `python tests/test_detect.py` | `test_all_12_payloads_flagged PASS` |
 | 3/3 held-out (never tuned on) | `python tests/test_detect.py` | `test_all_3_held_out_detected PASS` |
 | 0 false positives (15 near-miss) | `python seed_near_miss.py` | `15/15 clean \| 0 false positives` |
@@ -27,35 +28,78 @@ Reproduces:
 
 ## Live (against a real DataHub GMS)
 
-```bash
-# start DataHub + load the 1,049-entity Apache-2.0 sample datapack
-datahub docker quickstart
-datahub datapack load showcase-ecommerce
+Verified end-to-end on `datahub docker quickstart` **v1.7.0** with
+`acryl-datahub 1.6.0.6` / `datahub-agent-context 1.6.0.17`.
 
-# enable mutation + document tools (self-hosted mcp-server-datahub env)
+```bash
+pip install -r requirements.txt
+
+# 1. start a DataHub GMS (first run pulls ~9 GB of images; allow 10-15 min)
+datahub docker quickstart
+
+# quickstart runs with metadata-service auth DISABLED, so no PAT is needed.
+export DATAHUB_GMS_URL=http://localhost:8080 DATAHUB_GMS_TOKEN=
 export TOOLS_IS_MUTATION_ENABLED=true SAVE_DOCUMENT_TOOL_ENABLED=true \
        SAVE_DOCUMENT_RESTRICT_UPDATES=false
-export DATAHUB_GMS_URL=http://localhost:8080 DATAHUB_GMS_TOKEN=<PAT>
 
-pip install -r requirements.txt
-python antigen/register_properties.py     # one-time structured-property definitions
+# 2. build the clean ecommerce catalog the corpus targets, and wait for the
+#    search index to catch up (DataHub indexes asynchronously)
+python seed_catalog.py
 
-# 1. plant the corpus (the attacker step; labeled demo input)
+# 3. one-time structured-property definitions (required before any cure:
+#    add_structured_properties rejects a property that has no definition)
+python -m antigen.register_properties
+
+# 4. plant the corpus (the attacker step; labeled demo input)
 python seed_corpus.py
 
-# 2. watch the stock agent get hijacked, then cure, then re-run cold
-python verify.py --live                    # Part A gate + Part B hijack <pre>/12 -> 0/12
+# 5. the hero arc: sweep -> defuse -> blast radius -> certify -> prove standing
+python -m antigen demo
 
-# 3. inspect in the DataHub UI at http://localhost:9002
+# 6. the reproducible proof (re-runs its own scan+cure, so start from step 2
+#    on a freshly reset instance)
+python verify.py --live
+
+# 7. inspect in the DataHub UI at http://localhost:9002  (login datahub/datahub)
 #    - a poisoned entity's description, then the cleaned one (span gone) + quarantine tag
-#    - the Antigen/Incidents forensic doc (hashes + repo pointer, no payload)
-#    - injection-blast-radius tags on downstream dashboards
+#    - the antigen-incident-* forensic doc (hashes + repo pointer, no payload)
+#    - injection-blast-radius-* tags on downstream assets
 ```
 
-Reset between runs: `datahub datapack load showcase-ecommerce --force`.
+Reset between runs: `datahub docker nuke`, then repeat from step 1. A cured entity
+keeps its `injection-quarantined` tag and the sweep deliberately skips tagged
+entities, so re-planting without a reset finds nothing.
+
+Observed on a clean run:
+
+| Step | Output |
+|------|--------|
+| `seed_catalog.py` | `13 datasets created` + 6 lineage edges |
+| `seed_corpus.py` | `planted 12 payloads + 3 held-out injections` |
+| `antigen demo` sweep | `17 entities + 2 documents \| 15 injection loci flagged \| 2 hidden in zero-width Unicode \| 13 via get_entities \| 2 via grep_documents` |
+| `antigen demo` defuse | `cured 12 loci (12 excised, 0 field-quarantined)` |
+| `antigen demo` blast radius | `10 downstream assets across 10 quarantined entities` |
+| `verify.py --live` | `Part A — graph-state gate: PASS (7055 ms)` · `held-out 3/3` |
 
 ## Demo video
 
 A < 3-minute walkthrough (hijack → sweep → defuse → cold re-run → `verify.py`) is linked on
 the Devpost submission page. It shows the real tool-call trace, the real before/after
 DataHub entity page, and the live cold re-run reaching 0/12.
+
+## Measured hijack A/B
+
+The victim is a **stock** LangChain catalog agent — `build_langchain_tools(client)`
+with mutations OFF — so any hijack is a property of trusting stock tool output, not of
+anything Antigen wrote. Both numbers are read from real model output, never hard-coded:
+
+| Model | Before the cure | After the cure (cold re-run) |
+|-------|-----------------|------------------------------|
+| `claude-sonnet-5` | **2 / 12** | **0 / 12** |
+
+Read this honestly: a frontier model already refuses most of these payloads unaided, so
+the pre-cure rate is low. That is *why* the pass/fail gate is Part A's graph-state proof
+rather than the hijack rate — Antigen removes the injected span from the graph, so the
+outcome does not depend on which model happens to read it, or on how gullible it is.
+A weaker or older model would be hijacked more often; the post-cure result is 0 either
+way, because there is no payload left to obey.

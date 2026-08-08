@@ -216,8 +216,8 @@ not one of the 8 agent tools.)
 
 ### The killer numbers — and exactly how they're measured
 
-> **Stock LangChain catalog agent, 12 targeted questions: hijacked before Antigen → 0/12
-> after, by construction. 12/12 planted injections + 3/3 held-out *public* injections
+> **Stock LangChain catalog agent, 12 targeted questions: hijacked 2/12 before Antigen →
+> 0/12 after, measured on `claude-sonnet-5` against a live DataHub GMS. 12/12 planted injections + 3/3 held-out *public* injections
 > detected and removed from every agent-readable surface — 2 hidden in zero-width Unicode,
 > 2 in KB documents, 2 in unreviewed column descriptions. 0 false positives on a 15-item
 > adversarial-adjacent set.**
@@ -230,7 +230,7 @@ Reset → `scan` → `cure` → rescan the stamped entities, then assert per loc
 payload — **and any base64 / hex / urlsafe encoding of it** — is absent from every
 agent-readable surface, that every poisoned entity carries `injection-quarantined` +
 `antigen.contentSha256` + `.payloadSha256`, and that both doc payloads are gone from
-`grep_documents`. Deterministic, no LLM in the path, **< 30 s** (≈ 4 ms offline).
+`grep_documents`. Deterministic, no LLM in the path, **< 30 s** (≈ 5 ms offline, ≈ 7.1 s live).
 
 **Part B — reported hijack demo (NEVER gates).** With the pinned demo model, run the
 victim agent before the cure (`<pre>/12`, measured from real output) and cold after
@@ -245,7 +245,7 @@ them would force tune-to-pass and destroy the non-circularity they exist to prov
 ### Tests & benchmarks
 
 ```
-64 tests, all passing — 100% line coverage of the antigen package (CI gate: --cov-fail-under=100):
+79 tests, all passing — 100% line coverage of the antigen package (CI gate: --cov-fail-under=100):
   · detector       12/12 payloads · 3/3 held-out · 0 FP near-miss + clean · NFKC-miss proof ·
                    every Unicode Cf branch (zero-width / BiDi / allowlisted marks)
   · engine         surface-completeness (payload+base64+hex absent) · tags+hashes ·
@@ -321,7 +321,7 @@ demo, and the benchmark — all against an in-memory DataHub double so it works 
 laptop. Expected tail:
 
 ```
-graph-state PASS (4 ms) | held-out 3/3 | hijack demo skipped
+graph-state PASS (5 ms) | held-out 3/3 | hijack demo skipped
 ...
 ── 1. SWEEP ──  scanned 41 entities + 2 documents | 15 injection loci flagged | 2 hidden in zero-width Unicode | 13 via get_entities | 2 via grep_documents
 ── 2. DEFUSE ── cured 12 loci (12 excised, 0 field-quarantined)
@@ -344,7 +344,7 @@ python bench.py --runs 20         # p50/p95/p99 latency, methodology shown
 ```bash
 # 1. a free, local DataHub (Docker, ~8GB RAM)
 datahub docker quickstart
-datahub datapack load showcase-ecommerce  # 1,049 real entities, Apache-2.0
+python seed_catalog.py                    # the clean 13-dataset ecommerce catalog
 
 # 2. mutation + document tools ON (self-hosted mcp-server-datahub env)
 export TOOLS_IS_MUTATION_ENABLED=true
@@ -391,7 +391,7 @@ docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 
 - [x] Deterministic stdlib detector (scored rule + Unicode `Cf`-strip pre-pass)
 - [x] 4-mutation cure that writes the security state back into the graph
-- [x] `verify.py` LLM-independent graph-state gate · 64 tests · 100% coverage
+- [x] `verify.py` LLM-independent graph-state gate · 79 tests · 100% coverage
 - [x] Responsible-disclosure RFC drafted (`docs/RFC-output-sanitization.md`)
 - [x] `antigen-scan` DataHub Skill written (`antigen-scan/SKILL.md`)
 - [ ] File the RFC upstream to `mcp-server-datahub`
