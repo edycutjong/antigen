@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v1.0.6 (2026-08-08)
+
+### Bug Fixes
+
+- **site,docs**: Wire the real demo video in, correct unsupported claims
+  ([`6f059bf`](https://github.com/edycutjong/antigen/commit/6f059bf7ed715c56ba9b2c42623e9bb2e99eab22))
+
+### Chores
+
+- **assets**: Losslessly recompress README screenshots
+  ([`6f2fa39`](https://github.com/edycutjong/antigen/commit/6f2fa3938547cf9b044adfdc88829ec44e40a961))
+
+### Documentation
+
+- Add live-GMS screenshots and demo b-roll to README
+  ([`3cc7680`](https://github.com/edycutjong/antigen/commit/3cc7680d76b1945b4b312f399d00a683524bbb26))
+
+- RFC filed upstream as acryldata/mcp-server-datahub#201
+  ([`8de70de`](https://github.com/edycutjong/antigen/commit/8de70de2a9237be9931abb7e4e57e3d4bf9592c4))
+
+- Scope RFC appendix findings to the surface they reproduce on
+  ([`362c252`](https://github.com/edycutjong/antigen/commit/362c2525c6496ca61c1374830dd2284b0360c88e))
+
+- Wire in the demo video
+  ([`03a090e`](https://github.com/edycutjong/antigen/commit/03a090e3b5b533e4ff211e0d156f3d376ce84e10))
+
+
 ## v1.0.5 (2026-08-08)
 
 ### Bug Fixes
