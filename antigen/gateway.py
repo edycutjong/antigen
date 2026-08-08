@@ -97,13 +97,14 @@ class Gateway(Protocol):
         """`add_structured_properties` — set typed structured-property values."""
 
     def save_document(self, title: str, content: str,
-                      parent: str = "Antigen/Incidents") -> None:
-        """`save_document` — write/overwrite a KB document, identified by (parent, title).
+                      parent: str = "Antigen/Incidents",
+                      urn: str | None = None) -> None:
+        """`save_document` — write/overwrite a KB document.
 
-        Matches the real tool's overwrite semantics: with
-        SAVE_DOCUMENT_RESTRICT_UPDATES=false, saving a document with an existing
-        (parent, title) replaces its body in place. Antigen never addresses a doc by
-        URN for writes, because the tool does not accept one.
+        Pass `urn` to overwrite an EXISTING document in place; without it a live
+        DataHub mints a brand-new document. Title is NOT an identity key on a live
+        GMS: curing a poisoned document without its URN leaves the poisoned original
+        readable and merely adds a clean copy next to it.
         """
 
     # -- convenience (single-entity read used by cure/rescan) ------------- #
@@ -126,11 +127,18 @@ class SdkGateway:
     that `antigen.detect` and the corpus stay importable without the SDK installed.
 
     The 8 LangChain BaseTools are indexed by `.name` and invoked with `.invoke({...})`.
-    Argument shapes below follow the documented tool signatures; the Day-1 SDK spike
-    (see specs/build-plan.md, mirrored in README "Setup") confirms them against the
-    installed package version and pins any that differ. Where a tool's exact kwargs
-    are version-sensitive, the call is wrapped so a mismatch surfaces loudly rather
-    than silently no-op'ing (the Day-4 kill-criterion).
+
+    Every argument name and response shape below was captured from a live
+    `datahub docker quickstart` GMS running acryl-datahub 1.6.0.6 /
+    datahub-agent-context 1.6.0.17, and is pinned by
+    tests/test_gateway.py::test_sdkgateway_read_and_mutation_methods. They are NOT
+    inferred from documentation: the real surface differs from the obvious guess in
+    ways that fail loudly (`offset`/`num_results` not `start`/`count`; `entity_urn`
+    not `urn`; `tag_urns` + `entity_urns` not `tags`), and in ways that fail SILENTLY
+    (results nest under `searchResults`; an edited description lives at
+    `editableProperties.description`; `grep_documents` returns match excerpts and no
+    document body at all). The silent ones are why this class is contract-tested
+    against recorded live payloads rather than hand-written fakes.
     """
 
     def __init__(self, client=None):
@@ -140,6 +148,8 @@ class SdkGateway:
         )
 
         self._client = client or DataHubClient.from_env()
+        self._tags_seen: set[str] = set()
+        self._graph_cache = None
         tools = build_langchain_tools(self._client, include_mutations=True)
         self._tools = {t.name: t for t in tools}
         missing = self._required_tools() - set(self._tools)
@@ -168,7 +178,8 @@ class SdkGateway:
         offset = 0
         page = 500
         while True:
-            res = self._call("search", query="*", start=offset, count=page)
+            # Real signature: query / offset / num_results (NOT start / count).
+            res = self._call("search", query="*", offset=offset, num_results=page)
             batch = _extract_urns(res)
             if not batch:
                 break
@@ -182,38 +193,156 @@ class SdkGateway:
         if not urns:
             return []
         raw = self._call("get_entities", urns=urns)
-        return [_parse_entity(item) for item in _as_list(raw)]
+        entities = [_parse_entity(item) for item in _as_list(raw)]
+        for ent in entities:
+            self._merge_editable_columns(ent)
+        return entities
+
+    def _merge_editable_columns(self, ent: Entity) -> None:
+        """Overlay column descriptions from the `editableSchemaMetadata` aspect.
+
+        `update_description(column_path=...)` writes there, but neither
+        `get_entities` nor `list_schema_fields` returns that aspect — they serve the
+        ingested `schemaMetadata` only. Without this overlay a column-level cure is
+        invisible to the very read path that has to verify it. This mirrors the
+        entity-level rule where `editableProperties.description` wins, and is a base
+        `acryl-datahub` aspect read (same category as the structured-property
+        definitions), not a 9th agent tool.
+        """
+        graph = self._graph()
+        if graph is None:
+            return
+        try:
+            from datahub.metadata.schema_classes import (  # type: ignore
+                EditableSchemaMetadataClass,
+            )
+            aspect = graph.get_aspect(entity_urn=ent.urn,
+                                      aspect_type=EditableSchemaMetadataClass)
+        except Exception:
+            return
+        if aspect is None:
+            return
+        for f in getattr(aspect, "editableSchemaFieldInfo", None) or []:
+            fp = getattr(f, "fieldPath", None)
+            if not fp or getattr(f, "description", None) is None:
+                continue
+            col = ent.columns.get(fp)
+            if col is None:
+                ent.columns[fp] = Column(field_path=fp, description=f.description)
+            else:
+                col.description = f.description
+
+    def _document_urns(self) -> list[str]:
+        """Enumerate KB document URNs — `grep_documents` requires an explicit urn list."""
+        try:
+            raw = self._call("search_documents", query="*", num_results=500)
+        except Exception:
+            return []
+        return _extract_urns(raw)
 
     def grep_documents(self, pattern: str) -> list[Document]:
-        raw = self._call("grep_documents", pattern=pattern)
+        # Real signature requires `urns`; there is no "grep the whole KB" mode, so
+        # enumerate documents first and grep that set.
+        urns = self._document_urns()
+        if not urns:
+            return []
+        raw = self._call("grep_documents", urns=urns, pattern=pattern)
         return [_parse_document(item) for item in _as_list(raw)]
 
     def get_lineage(self, urn: str, direction: str = "downstream",
                     hops: int = 2) -> list[str]:
-        raw = self._call("get_lineage", urn=urn, direction=direction, hops=hops)
+        # Real signature: upstream (bool) / max_hops — not direction / hops.
+        raw = self._call("get_lineage", urn=urn,
+                         upstream=(direction == "upstream"), max_hops=hops)
         return _extract_urns(raw)
 
     # -- MUTATION --------------------------------------------------------- #
     def update_description(self, urn: str, description: str,
                            field_path: str | None = None) -> None:
-        kwargs = {"urn": urn, "description": description}
+        kwargs = {"entity_urn": urn, "operation": "replace",
+                  "description": description}
         if field_path:
-            kwargs["sub_resource"] = field_path  # column-level edit
+            kwargs["column_path"] = field_path  # column-level edit
         self._call("update_description", **kwargs)
+
+    def _ensure_tag(self, tag_urn: str) -> None:
+        """Create the tag entity if absent.
+
+        DataHub rejects `batchAddTags` for a tag URN that does not yet exist
+        ("Failed to validate label ... Urn does not exist"). Creating a tag entity is
+        a base `acryl-datahub` emit, NOT part of the Agent Context Kit tool surface —
+        the same category as the structured-property definitions in
+        `register_properties.py`. It is listed there, not counted as an agent tool,
+        so the "8 agent tools" grounding claim stays honest. Blast-radius tags are
+        per-source and cannot be pre-registered, so this runs on the write path.
+        """
+        if tag_urn in self._tags_seen:
+            return
+        from datahub.emitter.mcp import MetadataChangeProposalWrapper  # type: ignore
+        from datahub.metadata.schema_classes import TagPropertiesClass  # type: ignore
+
+        graph = self._graph()
+        if graph is not None and not graph.exists(tag_urn):
+            graph.emit(MetadataChangeProposalWrapper(
+                entityUrn=tag_urn,
+                aspect=TagPropertiesClass(name=_tag_name(tag_urn)),
+            ))
+        self._tags_seen.add(tag_urn)
+
+    def _graph(self):
+        """The base DataHubGraph, for the reads/emits the tool surface lacks.
+
+        Returns None when the base SDK is unavailable, so the gateway degrades to
+        tool-only behaviour instead of raising.
+        """
+        if self._graph_cache is None:
+            import os
+
+            try:
+                from datahub.ingestion.graph.client import (  # type: ignore
+                    DatahubClientConfig,
+                    DataHubGraph,
+                )
+            except ImportError:
+                return None
+            self._graph_cache = DataHubGraph(DatahubClientConfig(
+                server=os.environ.get("DATAHUB_GMS_URL", "http://localhost:8080"),
+                token=os.environ.get("DATAHUB_GMS_TOKEN") or None,
+            ))
+        return self._graph_cache
 
     def add_tags(self, urn: str, tags: list[str],
                  field_path: str | None = None) -> None:
-        kwargs = {"urn": urn, "tags": tags}
+        # The tool takes tag URNs and parallel entity/column lists.
+        tag_urns = [_tag_urn(t) for t in tags]
+        for t in tag_urns:
+            self._ensure_tag(t)
+        kwargs = {"tag_urns": tag_urns, "entity_urns": [urn] * len(tag_urns)}
         if field_path:
-            kwargs["sub_resource"] = field_path
+            kwargs["column_paths"] = [field_path] * len(tag_urns)
         self._call("add_tags", **kwargs)
 
     def add_structured_properties(self, urn: str, properties: dict[str, str]) -> None:
-        self._call("add_structured_properties", urn=urn, properties=properties)
+        # property_values maps a fully-qualified property URN -> LIST of values.
+        # The engine passes bare qualified names ("antigen.contentSha256"), which the
+        # tool rejects ("Urn doesn't start with 'urn:'"), so qualify them here.
+        self._call("add_structured_properties",
+                   property_values={_property_urn(k): [v]
+                                    for k, v in properties.items()},
+                   entity_urns=[urn])
 
     def save_document(self, title: str, content: str,
-                      parent: str = "Antigen/Incidents") -> None:
-        self._call("save_document", title=title, content=content, parent=parent)
+                      parent: str = "Antigen/Incidents",
+                      urn: str | None = None) -> None:
+        # The tool has no `parent`; the folder is carried as a topic so the incident
+        # set stays grouped and greppable. Identity is the URN, NOT the title: a live
+        # save without `urn` mints a new document, which would leave the poisoned
+        # original in place and merely add a clean copy beside it.
+        kwargs = {"document_type": "Note", "title": title, "content": content,
+                  "topics": [parent] if parent else None}
+        if urn:
+            kwargs["urn"] = urn
+        self._call("save_document", **kwargs)
 
     def get_entity(self, urn: str) -> Entity | None:
         ents = self.get_entities([urn])
@@ -233,17 +362,53 @@ class SdkGateway:
 # Response parsing helpers (tolerant to dict/obj/JSON tool return shapes)
 # --------------------------------------------------------------------------- #
 
+#: Keys the live tools actually wrap their result lists in. `searchResults`,
+#: `upstreams` and `downstreams` are the real Agent Context Kit shapes — verified
+#: against acryl-datahub 1.6.x by tests/test_gateway_live_contract.py.
+_LIST_KEYS = (
+    "searchResults", "upstreams", "downstreams", "matches",
+    "entities", "results", "documents", "items",
+)
+
+
 def _as_list(raw) -> list:
     if raw is None:
         return []
     if isinstance(raw, list):
         return raw
     if isinstance(raw, dict):
-        for key in ("entities", "results", "documents", "items"):
-            if key in raw and isinstance(raw[key], list):
-                return raw[key]
+        for key in _LIST_KEYS:
+            if key not in raw:
+                continue
+            inner = raw[key]
+            if isinstance(inner, list):
+                return inner
+            # `get_lineage` wraps one level deeper: the value of `downstreams` /
+            # `upstreams` is itself a paged envelope holding `searchResults`.
+            if isinstance(inner, dict):
+                nested = _as_list(inner)
+                if nested and nested != [inner]:
+                    return nested
         return [raw]
     return [raw]
+
+
+def _tag_urn(tag: str) -> str:
+    """Accept a bare tag name or an already-qualified tag URN."""
+    return tag if tag.startswith("urn:li:tag:") else f"urn:li:tag:{tag}"
+
+
+def _tag_name(urn: str) -> str:
+    """Inverse of :func:`_tag_urn` — the engine compares bare names."""
+    return urn.split("urn:li:tag:", 1)[1] if urn.startswith("urn:li:tag:") else urn
+
+
+_PROP_PREFIX = "urn:li:structuredProperty:"
+
+
+def _property_urn(name: str) -> str:
+    """Accept a bare qualified name or an already-qualified structured-property URN."""
+    return name if name.startswith(_PROP_PREFIX) else f"{_PROP_PREFIX}{name}"
 
 
 def _get(obj, *keys, default=None):
@@ -260,35 +425,116 @@ def _extract_urns(raw) -> list[str]:
     for item in _as_list(raw):
         if isinstance(item, str):
             out.append(item)
-        else:
-            urn = _get(item, "urn", "entity_urn")
-            if urn:
-                out.append(urn)
+            continue
+        # `search` / lineage nest the payload one level down: {"entity": {"urn": ...}}
+        inner = _get(item, "entity", default=None)
+        if isinstance(inner, dict):
+            item = inner
+        urn = _get(item, "urn", "entity_urn")
+        if urn:
+            out.append(urn)
+    return out
+
+
+def _entity_description(item) -> str:
+    """Entity description across both shapes.
+
+    A live `get_entities` puts an edited description at
+    ``editableProperties.description`` and an ingested one at
+    ``properties.description``; the key is absent entirely when unset. The edited
+    value wins because that is what `update_description` writes — and therefore
+    what an agent reads back after a cure.
+    """
+    for container in ("editableProperties", "properties"):
+        blob = _get(item, container, default=None)
+        if isinstance(blob, dict) and blob.get("description"):
+            return blob["description"]
+    return _get(item, "description", "editableDescription", default="") or ""
+
+
+def _entity_tags(item) -> list[str]:
+    """Tag names from either a bare list or the live ``tags.tags[].tag.urn`` shape."""
+    raw = _get(item, "tags", default=[]) or []
+    if isinstance(raw, dict):
+        raw = raw.get("tags", []) or []
+    out: list[str] = []
+    for t in raw:
+        if isinstance(t, str):
+            out.append(_tag_name(t))
+            continue
+        tag = _get(t, "tag", default=None)
+        urn = _get(tag if isinstance(tag, dict) else t, "urn", "name", default="")
+        if urn:
+            out.append(_tag_name(urn))
+    return out
+
+
+def _entity_properties(item) -> dict[str, str]:
+    """Structured properties, flattening the live list-valued shape to scalars."""
+    raw = _get(item, "structured_properties", "structuredProperties", default={}) or {}
+    if isinstance(raw, dict) and "properties" in raw:
+        raw = raw["properties"]
+    out: dict[str, str] = {}
+    if isinstance(raw, dict):
+        items = list(raw.items())
+    else:  # live shape: [{structuredProperty:{urn, definition:{qualifiedName}}, values:[...]}]
+        items = []
+        for p in raw:
+            prop = _get(p, "structuredProperty", default={}) or {}
+            definition = _get(prop, "definition", default={}) or {}
+            key = (_get(definition, "qualifiedName", default="")
+                   or _get(prop, "qualifiedName", "urn", default="") or "")
+            key = key.replace(_PROP_PREFIX, "")
+            items.append((key, _get(p, "values", default=[]) or []))
+    for k, v in items:
+        if isinstance(v, list):
+            v = v[0] if v else ""
+        # Live values are wrapped: {"stringValue": "..."} / {"numberValue": 1}.
+        if isinstance(v, dict):
+            v = v.get("stringValue", v.get("numberValue", ""))
+        if k:
+            out[str(k)] = str(v)
     return out
 
 
 def _parse_entity(item) -> Entity:
     urn = _get(item, "urn", default="")
-    description = _get(item, "description", "editableDescription", default="") or ""
-    tags = _get(item, "tags", default=[]) or []
-    props = _get(item, "structured_properties", "structuredProperties", default={}) or {}
+    schema = _get(item, "schemaMetadata", default=None)
+    raw_cols = _get(item, "columns", "schema_fields", "fields", default=None)
+    if raw_cols is None and isinstance(schema, dict):
+        raw_cols = schema.get("fields", [])
     columns: dict[str, Column] = {}
-    for col in _get(item, "columns", "schema_fields", "fields", default=[]) or []:
+    for col in raw_cols or []:
         fp = _get(col, "field_path", "fieldPath", "path", default="")
         if fp:
             columns[fp] = Column(
                 field_path=fp,
                 description=_get(col, "description", default="") or "",
-                tags=_get(col, "tags", default=[]) or [],
+                tags=_entity_tags(col),
             )
-    return Entity(urn=urn, description=description, columns=columns,
-                  tags=list(tags), structured_properties=dict(props))
+    return Entity(urn=urn, description=_entity_description(item), columns=columns,
+                  tags=_entity_tags(item),
+                  structured_properties=_entity_properties(item))
 
 
 def _parse_document(item) -> Document:
+    content = _get(item, "content", "body", "text", default="") or ""
+    if not content:
+        # Live `grep_documents` returns no document body — only the matched spans, as
+        # `matches: [{excerpt, position}]`. Reassemble the readable text from those
+        # excerpts (deduped: the same span is reported per match position), otherwise
+        # every KB-document payload scans as empty and is silently missed.
+        seen: set[str] = set()
+        parts: list[str] = []
+        for m in _get(item, "matches", default=[]) or []:
+            excerpt = _get(m, "excerpt", "text", default="") or ""
+            if excerpt and excerpt not in seen:
+                seen.add(excerpt)
+                parts.append(excerpt)
+        content = "\n".join(parts)
     return Document(
         urn=_get(item, "urn", default=""),
         title=_get(item, "title", default="") or "",
-        content=_get(item, "content", "body", "text", default="") or "",
+        content=content,
         parent=_get(item, "parent", default="Shared") or "Shared",
     )

@@ -170,11 +170,12 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
         clean_with_banner = cleaned + banner
 
         if hit.locus is Locus.DOCUMENT:
-            # (4b) overwrite the poisoned KB document IN PLACE, by its own (parent,
-            # title) identity — the only key the real save_document tool accepts.
+            # (4b) overwrite the poisoned KB document IN PLACE, addressed by its own
+            # URN. Title is NOT an identity key on a live GMS — saving without the URN
+            # creates a second document and leaves the poisoned original readable.
             assert hit.doc_title is not None  # scan sets these for every doc hit
             gateway.save_document(title=hit.doc_title, content=clean_with_banner,
-                                  parent=hit.doc_parent or "Shared")
+                                  parent=hit.doc_parent or "Shared", urn=hit.urn)
             content_sha = _sha256(cleaned)
         else:
             # (1) update_description — the DEFUSE.

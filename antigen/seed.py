@@ -105,3 +105,36 @@ def corpus_fixtures() -> Fixtures:
                                 payload_text=p.injection,
                                 payload_id=p.id)
     return fixtures
+
+
+def align_document_fixtures(fixtures: Fixtures, report) -> Fixtures:
+    """Re-key KB-document fixtures onto the URNs the live graph actually assigned.
+
+    The corpus addresses a document by its intended URN
+    (`urn:li:document:<parent>/<title>`), but `save_document` accepts no URN — a live
+    DataHub mints its own (`urn:li:document:shared-<uuid>`). Keyed by the intended
+    URN, a document fixture therefore never matches a live hit, and both KB-document
+    payloads silently go uncured while every entity payload is fixed.
+
+    Documents are identified by title, which survives the round trip, so match on
+    that. Offline the URNs already agree and this is a no-op.
+    """
+    by_title = {
+        urn.rsplit("/", 1)[-1]: (key, fx)
+        for key, fx in fixtures.items()
+        for urn in [key[0]]
+        if urn.startswith("urn:li:document:")
+    }
+    if not by_title:
+        return fixtures
+
+    aligned = dict(fixtures)
+    for hit in report.hits:
+        title = getattr(hit, "doc_title", None)
+        if not title or title not in by_title:
+            continue
+        old_key, fx = by_title[title]
+        if hit.key != old_key:
+            aligned.pop(old_key, None)
+            aligned[hit.key] = fx
+    return aligned

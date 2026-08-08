@@ -194,9 +194,14 @@ def test_blast_radius_tags_downstream():
     poisoned = [p.urn for p in PAYLOADS if p.locus is not CorpusLocus.KB_DOCUMENT]
     br = map_blast_radius(gw, poisoned)
     assert br.total_downstream >= 3  # customers -> 2 direct + 1 at hop 2
-    # A downstream dashboard carries the informational blast-radius tag.
+    # A downstream dashboard carries the informational blast-radius tag. The name is
+    # hyphen-delimited, never `blast-radius:<urn>` — DataHub rejects `:`/`(`/`)`/`,`
+    # in a tag name, so the colon form cannot be created on a live GMS.
     dash = gw.get_entity("urn:li:dashboard:(looker,customer_360)")
-    assert any(t.startswith("injection-blast-radius:") for t in dash.tags)
+    blast = [t for t in dash.tags if t.startswith("injection-blast-radius-")]
+    assert blast, f"no blast-radius tag on downstream asset: {dash.tags}"
+    assert all(c not in t for t in blast for c in ":(),"), \
+        f"blast-radius tag carries characters DataHub rejects: {blast}"
 
 
 def test_multi_locus_entity_all_surfaces_cured():

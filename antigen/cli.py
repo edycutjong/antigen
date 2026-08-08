@@ -137,7 +137,7 @@ def cmd_demo(args) -> int:
     from .cure import cure
     from .rescan import rescan
     from .scan import scan
-    from .seed import corpus_fixtures
+    from .seed import align_document_fixtures, corpus_fixtures
 
     gw, fixtures = _gateway(args)
     if not fixtures:
@@ -148,6 +148,8 @@ def cmd_demo(args) -> int:
     print(report.summary())
 
     print("\n── 2. DEFUSE (4 write-backs per hit) ─────────────────────")
+    # A live GMS mints its own document URNs, so re-key doc fixtures onto them.
+    fixtures = align_document_fixtures(fixtures, report)
     hits = [h for h in report.hits if h.key in fixtures]
     result = cure(gw, hits, fixtures=fixtures, clock=_clock())
     print(result.summary())

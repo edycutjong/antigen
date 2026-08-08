@@ -29,6 +29,29 @@ DOC_GREP_PATTERN = (
     r"api[\s_-]?key|do\s+anything\s+now"
 )
 
+#: Title prefix of Antigen's own forensic incident records.
+INCIDENT_TITLE_PREFIX = "antigen-incident-"
+
+
+def is_own_incident(title: str | None) -> bool:
+    """True for Antigen's own incident ledger, which the sweep must not scan.
+
+    An incident report names the categories it remediated ("detection signals:
+    instruction-override, reveal-secret"). Those category names are themselves
+    detector triggers, so scanning our own ledger re-flags it — and because a cure
+    writes an incident record, curing one would emit another, forever.
+
+    This is the same exemption an antivirus grants its own quarantine store. The
+    record holds only irreversible hashes, never a payload, so exempting it cannot
+    hide attacker-controlled text.
+
+    Trade-off, stated plainly: the exemption is title-based, so an attacker who can
+    write a KB document could name it `antigen-incident-*` to avoid being scanned.
+    Closing that needs provenance the document tool does not expose (no author or
+    signature field) — it is written up in docs/RFC-output-sanitization.md.
+    """
+    return title is not None and title.startswith(INCIDENT_TITLE_PREFIX)
+
 _BATCH = 100
 
 
@@ -117,6 +140,8 @@ def scan(gateway: Gateway, *, skip_quarantined: bool = True,
     docs_scanned = 0
     if grep_documents:
         for doc in gateway.grep_documents(DOC_GREP_PATTERN):
+            if is_own_incident(doc.title):
+                continue
             docs_scanned += 1
             dd = detect(doc.content)
             if dd.flagged:

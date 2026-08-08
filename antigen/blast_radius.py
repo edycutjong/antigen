@@ -19,7 +19,25 @@ from .gateway import Gateway
 
 
 def _blast_tag(source_urn: str) -> str:
-    return f"injection-blast-radius:{source_urn}"
+    """A DataHub-legal tag naming the poisoned source this asset is downstream of.
+
+    A raw URN cannot be embedded: DataHub rejects `:`, `(`, `)` and `,` in a tag name
+    ("TagUrn name contains reserved characters"), so the obvious
+    `injection-blast-radius:<urn>` fails on a live GMS. Use the readable dataset name
+    plus a short digest of the full URN — legible in the UI, still unique per source,
+    and stable across runs so re-tagging stays idempotent.
+    """
+    import hashlib
+    import re
+
+    name = source_urn
+    if "," in source_urn:                       # dataset URNs: (platform,name,env)
+        parts = source_urn.split(",")
+        if len(parts) >= 2:
+            name = parts[1]
+    name = re.sub(r"[^A-Za-z0-9_.-]+", "-", name).strip("-")[:48]
+    digest = hashlib.sha256(source_urn.encode()).hexdigest()[:8]
+    return f"injection-blast-radius-{name}-{digest}"
 
 
 @dataclass

@@ -36,7 +36,11 @@ from antigen.corpus import Locus as CorpusLocus
 from antigen.cure import CONTENT_SHA_PROP, PAYLOAD_SHA_PROP, cure
 from antigen.detect import detect, encodings_of
 from antigen.scan import QUARANTINE_TAG, scan
-from antigen.seed import build_corpus_gateway, corpus_fixtures
+from antigen.seed import (
+    align_document_fixtures,
+    build_corpus_gateway,
+    corpus_fixtures,
+)
 
 
 class Failure(AssertionError):
@@ -61,6 +65,8 @@ def part_a(live: bool = False, verbose: bool = True) -> dict:
     t0 = time.perf_counter()
 
     report = scan(gw)
+    # A live GMS mints its own document URNs, so re-key doc fixtures onto them.
+    fixtures = align_document_fixtures(fixtures, report)
     corpus_hits = [h for h in report.hits if h.key in fixtures]
     _check(len(corpus_hits) == 12,
            f"scan flagged {len(corpus_hits)}/12 authored corpus loci")

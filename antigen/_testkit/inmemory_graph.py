@@ -113,7 +113,8 @@ class InMemoryGateway:
         ent.structured_properties.update(properties)
 
     def save_document(self, title: str, content: str,
-                      parent: str = "Antigen/Incidents") -> None:
+                      parent: str = "Antigen/Incidents",
+                      urn: str | None = None) -> None:
         # Overwrite in place by (parent, title), exactly like the real tool with
         # SAVE_DOCUMENT_RESTRICT_UPDATES=false.
         self.calls.append(("save_document", (parent, title)))
