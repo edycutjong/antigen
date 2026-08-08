@@ -205,8 +205,19 @@ not one of the 8 agent tools.)
 ### Open-source contribution
 
 - **Responsible-disclosure RFC** to `mcp-server-datahub` proposing an opt-in
-  output-sanitization hint for tool responses — drafted in
-  [`docs/RFC-output-sanitization.md`](docs/RFC-output-sanitization.md).
+  output-sanitization hint for tool responses —
+  [`docs/RFC-output-sanitization.md`](docs/RFC-output-sanitization.md). Its appendix
+  reports **three reproducible findings** from building a remediation loop on the live
+  tool surface (`acryl-datahub 1.6.0.6` / `datahub-agent-context 1.6.0.17`), each with a
+  repro and a suggested fix:
+  1. a **column description can be written but not read back** — `update_description`
+     lands in `editableSchemaMetadata`, which neither `get_entities` nor
+     `list_schema_fields` returns, so a scanner on the tool surface cannot see a
+     column-level payload at all;
+  2. **`grep_documents` returns no document body**, only matched excerpts, so detection
+     collapses to whatever regex the caller guessed in advance;
+  3. **documents carry no provenance**, so an agent's own records can only be excluded
+     from its own sweep by an attacker-writable title.
 - The `antigen` CLI is itself a reusable, installable control other DataHub builders can
   drop into CI.
 
@@ -392,7 +403,7 @@ docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 - [x] Deterministic stdlib detector (scored rule + Unicode `Cf`-strip pre-pass)
 - [x] 4-mutation cure that writes the security state back into the graph
 - [x] `verify.py` LLM-independent graph-state gate · 79 tests · 100% coverage
-- [x] Responsible-disclosure RFC drafted (`docs/RFC-output-sanitization.md`)
+- [x] Responsible-disclosure RFC drafted, incl. 3 reproducible SDK findings (`docs/RFC-output-sanitization.md`)
 - [x] `antigen-scan` DataHub Skill written (`antigen-scan/SKILL.md`)
 - [ ] File the RFC upstream to `mcp-server-datahub`
 - [ ] Full TR39 homoglyph / confusables coverage

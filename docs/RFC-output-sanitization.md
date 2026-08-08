@@ -83,3 +83,122 @@ The Antigen submission ships a working detector and an end-to-end remediation lo
 a deterministic `verify.py` graph-state proof. It is offered as the reference for the
 detection half of this RFC. Happy to open a PR wiring `_injection_hint` behind the flag if
 maintainers are interested in the direction.
+
+---
+
+# Appendix: three findings from building a remediation loop on the tool surface
+
+The following were found while implementing Antigen against a live
+`datahub docker quickstart` **v1.7.0**, using **`acryl-datahub 1.6.0.6`** and
+**`datahub-agent-context 1.6.0.17`**. They are reported as observed behaviour with
+reproductions, not as bug claims — each may be intentional. They matter to this RFC
+because each one weakens a *defender's* ability to detect or remediate injected text
+through the agent tool surface alone.
+
+## Finding 1 — a column description can be written but not read back
+
+`update_description(entity_urn=…, column_path=…)` succeeds and persists, but the write
+is not observable through any read tool in the kit.
+
+**Reproduction**
+
+```python
+tools = {t.name: t for t in build_langchain_tools(client, include_mutations=True)}
+urn = "urn:li:dataset:(urn:li:dataPlatform:hive,SampleHiveDataset,PROD)"
+
+tools["update_description"].invoke({
+    "entity_urn": urn, "column_path": "field_foo",
+    "operation": "replace", "description": "CANARY_VALUE",
+})
+# -> {'success': True, 'message': 'Description updated successfully'}
+
+tools["get_entities"].invoke({"urns": [urn]})       # schemaMetadata.fields[0].description
+tools["list_schema_fields"].invoke({"urn": urn})    # fields[0].description
+# -> both still return the ORIGINAL ingested description; "CANARY_VALUE" appears nowhere
+```
+
+The value is present on the entity — it lands in the **`editableSchemaMetadata`** aspect,
+retrievable only via a base-SDK aspect read:
+
+```python
+graph.get_aspect(entity_urn=urn, aspect_type=EditableSchemaMetadataClass)
+# -> editableSchemaFieldInfo=[{fieldPath: 'field_foo', description: 'CANARY_VALUE'}]
+```
+
+Note the asymmetry with entity-level descriptions, which **are** merged: an edited
+entity description surfaces at `editableProperties.description` in `get_entities`. Only
+the column case is missing.
+
+**Why it matters for injection defense.** A remediation agent cannot verify its own
+column-level fix through the tool surface — the read path keeps returning the poisoned
+ingested text, so the cure looks like it failed. Worse, the reverse also holds: an
+attacker who plants a payload via `update_description(column_path=…)` writes into an
+aspect that **no read tool returns**, so a scanner built on the tool surface cannot see
+it at all, while the DataHub UI renders the edited value to humans and agents that read
+the UI's GraphQL. Column descriptions are exactly where injections hide best — reviewers
+rarely expand the schema tab.
+
+**Suggested resolution.** Have `get_entities` and `list_schema_fields` overlay
+`editableSchemaMetadata` onto `schemaMetadata.fields[].description`, mirroring the
+existing entity-level `editableProperties` behaviour. Antigen currently works around this
+with a base-SDK aspect read (`antigen/gateway.py::_merge_editable_columns`).
+
+## Finding 2 — `grep_documents` returns no document body
+
+`grep_documents` returns only the spans that matched, as
+`matches: [{excerpt, position}]`. There is no `content` / `body` / `text` field, and no
+tool in the kit returns a full KB-document body.
+
+```jsonc
+{ "urn": "urn:li:document:shared-…", "title": "onboarding-guide",
+  "matches": [ {"excerpt": "…", "position": 0} ], "total_matches": 2 }
+```
+
+**Why it matters.** A scanner must supply the pattern it is looking for *before* it can
+see any text, so detection collapses to whatever regex the caller guessed. A scored
+detector cannot run over the document as a whole, and any payload phrased outside the
+pre-filter is invisible. It also makes the pre-filter security-relevant rather than a
+performance optimisation: Antigen has to pass a deliberately broad trigger alternation to
+`grep_documents` and only then apply its real scored rule to the reassembled excerpts.
+Sentence-level context is lost, which is precisely what distinguishes an imperative aimed
+at the reader from legitimate prose that merely contains "ignore".
+
+**Suggested resolution.** Either return the full body when the caller has read access, or
+add an explicit `get_document(urn)`.
+
+## Finding 3 — documents carry no provenance, so an agent's own records are unforgeable-in-reverse
+
+`save_document` accepts `document_type`, `title`, `content`, `urn`, `topics`, and
+relation fields — but nothing identifying the author, and the returned document exposes
+no creator or signature.
+
+**Why it matters.** Any agent writing remediation records into the catalog must exclude
+those records from its own sweep, or it re-scans its own output forever: an incident
+report that names the categories it remediated ("detection signals:
+instruction-override, reveal-secret") re-trips a detector on those very category names,
+and curing it emits another record. Without provenance the only available exclusion key
+is the title, which is attacker-writable — anyone who can create a KB document can name
+it with the agent's reserved prefix and be skipped by the scan. Antigen ships exactly this
+trade-off, documented at `antigen/scan.py::is_own_incident`.
+
+**Suggested resolution.** Expose the authoring principal (or an `agent_authored` flag) on
+documents created through the kit, so a defender can key trust on provenance rather than
+on a spoofable string.
+
+## Smaller notes
+
+- **Tag URNs must exist before they can be applied.** `add_tags` fails with
+  `Failed to validate label with urn urn:li:tag:X. Urn does not exist.` The kit has no
+  create-tag tool, so an agent that wants to tag anything needs a base-SDK emit. Same for
+  structured properties, which need a definition emitted before
+  `add_structured_properties` will accept a value.
+- **Tag names reject `:`, `(`, `)`, `,`** (`TagUrn name contains reserved characters`),
+  so a tag cannot embed a URN to reference another entity.
+- **`update_description` supports only some entity types.** `dataFlow` and `corpuser`
+  URNs are rejected with `Failed to update description. Unsupported resource type`,
+  though `search` returns them alongside datasets — so a sweep over "everything `search`
+  returns" needs its own type filter. (`mlFeature` and `corpGroup` were accepted in the
+  same run, so the supported set is not obvious from the tool signature.)
+
+All three findings and the notes above are reproducible from the Antigen repository; the
+contract they describe is pinned in `tests/test_gateway.py` against recorded live payloads.
