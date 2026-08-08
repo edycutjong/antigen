@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img"
-     aria-label="Antigen — a prompt-injection immune system for the DataHub metadata graph. A poisoned catalog entity is detected, quarantined, defused and certified; stock-agent hijack rate drops from 5/5 to 0/5.">
+     aria-label="Antigen — a prompt-injection immune system for the DataHub metadata graph. A poisoned catalog entity is detected, quarantined, defused and certified; stock-agent hijack rate drops from 2/12 to 0/12.">
   <!-- Master timeline: 8s. Every SMIL animate uses dur="8s" repeatCount="indefinite";
        CSS keyframes run on the same 8s (auroras deliberately slower: 16/19s alternate).
        Wordmark = outlined Space Grotesk 700 paths (opentype.js pipeline) — no webfonts.
@@ -142,7 +142,7 @@
 
   <!-- pulsing hero-metric line -->
   <text class="h-mono h-metric" x="64" y="268" font-size="14.5" font-weight="600" fill="#FFB020"
-        letter-spacing="0.5">HIJACK 5/5 → 0/5 · 12/12 DEFUSED · &lt;30s PROOF</text>
+        letter-spacing="0.5">HIJACK 2/12 → 0/12 · 12/12 DEFUSED · 7.1s LIVE</text>
 
   <!-- tech-stack line -->
   <text class="h-mono" x="64" y="293" font-size="12" fill="#47635A"
@@ -260,7 +260,7 @@
 
     <!-- scan caption -->
     <text class="h-mono" x="622" y="289" font-size="11" fill="#2EE59D" opacity="0">
-      antigen scan · 1,049 entities
+      antigen scan · 17 entities + 2 docs
       <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
                values="0;0;0.75;0.75;0;0" keyTimes="0;0.24;0.27;0.50;0.54;1"/>
     </text>

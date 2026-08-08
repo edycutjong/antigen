@@ -260,7 +260,7 @@
 
     <!-- scan caption -->
     <text class="h-mono" x="622" y="289" font-size="11" fill="#2EE59D" opacity="0">
-      antigen scan · 1,049 entities
+      antigen scan · 17 entities + 2 docs
       <animate attributeName="opacity" dur="8s" repeatCount="indefinite"
                values="0;0;0.75;0.75;0;0" keyTimes="0;0.24;0.27;0.50;0.54;1"/>
     </text>
