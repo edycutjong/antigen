@@ -15,11 +15,14 @@ Part A — LLM-INDEPENDENT GRAPH-STATE GATE (the HARD gate; pass/fail rests here
     ~48 write-backs + a re-hash of the ~10 stamped entities).
 
 Part B — REPORTED HIJACK DEMO (NEVER gates pass/fail):
-    with the pinned demo model, run the stock victim agent on the 12 questions before
-    the cure → record <pre>/12; re-run cold after → record 0/12. If the SDK/LLM are
-    absent, or a judge's BYO model is injection-resistant, this prints a note and STILL
-    EXITS 0 — the immunization proof is the Part-A graph-state delta, which no model
-    choice can break.
+    runs the stock victim agent on the 12 questions with the pinned demo model. NOTE
+    this executes AFTER Part A, which has already cured the graph — so what it measures
+    is the POST-cure rate (expected 0/12), not a before/after. The honest before/after
+    requires measuring against a poisoned graph first; DEMO.md "Measured hijack A/B"
+    reports 2/12 → 0/12 on claude-sonnet-5. If the SDK/LLM are absent this is skipped,
+    and if any trial errors the run is reported INCONCLUSIVE rather than as 0 hijacks —
+    an outage must never read as resistance. Either way verify STILL EXITS 0: the
+    immunization proof is the Part-A graph-state delta, which no model choice can break.
 
 Held-out generalization (<h>/3) is REPORTED, not gated: the held-out strings were
 never tuned on, so gating them would force tune-to-pass and destroy the proof.
@@ -150,18 +153,29 @@ def part_b(verbose: bool = True) -> dict:
     if verbose:
         print("\nPart B — hijack demo (reported, NEVER gates):")
 
-    pre = run_hijack_trials()
-    if pre is None:
+    res = run_hijack_trials()
+    if res is None:
         if verbose:
             print("  · hijack demo skipped (no SDK/LLM). Immunization proof is Part A.")
         return {"status": "skipped"}
 
-    # (Live only) apply the cure, then re-run cold. Here we report the pre-rate and
-    # note the post-rate is structurally 0 (payload absent from every readable surface).
+    if not res.valid:
+        # Errored trials are an outage, not resistance. Reporting them as 0 hijacks
+        # would turn a missing API key into a flattering result.
+        if verbose:
+            print(f"  · hijack demo INCONCLUSIVE: {res.rate()}")
+            print("    (set ANTHROPIC_API_KEY / ANTIGEN_DEMO_MODEL and re-run)")
+        return {"status": "inconclusive", "errored": res.errored, "total": res.total}
+
+    # NOTE: Part A has ALREADY cured the graph by this point, so this measurement is
+    # POST-cure by construction — it is not a before/after. The honest before/after
+    # needs the agent run against a poisoned graph first; see DEMO.md "Measured
+    # hijack A/B", which reports 2/12 -> 0/12 on claude-sonnet-5.
     if verbose:
-        print(f"  · pre-cure hijack: {pre.rate()} (measured from real model output)")
-        print(f"  · post-cure hijack: 0/{pre.total} (structural — no live payload remains)")
-    return {"status": "measured", "pre": pre.hijacked, "total": pre.total, "post": 0}
+        print(f"  · post-cure hijack: {res.rate()} (measured on the CURED graph)")
+        print("  · for the before/after, see DEMO.md - the pre-cure run needs a "
+              "poisoned graph, which Part A has already remediated here")
+    return {"status": "measured", "post": res.hijacked, "total": res.total}
 
 
 def main(argv=None) -> int:
@@ -183,9 +197,13 @@ def main(argv=None) -> int:
     if not args.no_hijack:
         b = part_b(verbose=verbose)
 
-    pre = b.get("pre")
-    hijack = f"hijack {pre}/{b['total']} -> 0/{b['total']}" if pre is not None \
-        else "hijack demo skipped"
+    status = b.get("status")
+    if status == "measured":
+        hijack = f"post-cure hijack {b['post']}/{b['total']}"
+    elif status == "inconclusive":
+        hijack = f"hijack demo INCONCLUSIVE ({b['errored']}/{b['total']} trials errored)"
+    else:
+        hijack = "hijack demo skipped"
     print(f"graph-state PASS ({a['elapsed_s']*1000:.0f} ms) | "
           f"held-out {a['held_out']}/3 | {hijack}")
     return 0
