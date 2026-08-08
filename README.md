@@ -405,7 +405,8 @@ export TOOLS_IS_MUTATION_ENABLED=true
 export SAVE_DOCUMENT_TOOL_ENABLED=true
 export SAVE_DOCUMENT_RESTRICT_UPDATES=false  # lets the 2 doc-locus cures overwrite
 export DATAHUB_GMS_URL=http://localhost:8080
-export DATAHUB_GMS_TOKEN=<your PAT from Settings -> Access Tokens>
+export DATAHUB_GMS_TOKEN=            # quickstart ships with auth DISABLED — no PAT needed.
+                                     # Set one only if you enabled metadata-service auth.
 
 # 3. install the live extras and run the whole thing
 pip install -r requirements.txt

@@ -681,7 +681,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         </p>
         <div class="hero-actions">
           <a class="btn btn-primary" href="https://github.com/edycutjong/antigen" rel="noopener">View the code ↗</a>
-          <a class="btn btn-ghost" href="#demo-video-tbd" data-tbd="demo-video-not-recorded">Watch the demo<span class="soon-tag">soon</span></a>
+          <a class="btn btn-ghost" href="https://youtu.be/rQas3GDPpfA" target="_blank" rel="noopener">Watch the demo ↗</a>
         </div>
         <p class="hero-proof" aria-label="Proof summary">
           <span><strong>12/12</strong> payloads defused</span>
@@ -698,7 +698,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <pre aria-hidden="true"><span class="cmd">./run.sh</span>
 <span class="dim">tests 26/26 · near-miss 15/15 clean</span>
 <span class="ok">graph-state PASS (4 ms) · held-out 3/3</span>
-<span class="dim">── SWEEP ───</span> 41 entities + 2 docs scanned
+<span class="dim">── SWEEP ───</span> 41 entities + 2 docs scanned  <span class="dim">(offline run)</span>
   <span class="bad">15 loci flagged</span> · <span class="warn">2 in zero-width Unicode</span>
   <span class="dim">13 get_entities · 2 grep_documents</span>
 <span class="dim">── DEFUSE ──</span> <span class="ok">12 loci cured</span> · span excised
@@ -1171,13 +1171,34 @@ strong { color: var(--text-hi); font-weight: 600; }
     </div>
   </section>
 
+  <!-- ============================== DEMO VIDEO ============================== -->
+  <section class="final-cta" id="demo-video" aria-labelledby="video-title">
+    <div class="wrap reveal">
+      <p class="eyebrow" style="justify-content:center;display:flex;">Watch it work</p>
+      <h2 id="video-title">The real DataHub UI, end to end.</h2>
+      <p class="lede">
+        Poisoned entity → sweep → defuse → blast radius → <code>verify.py --live</code>.
+        Two minutes, against a live <code>datahub docker quickstart</code>.
+      </p>
+      <div style="max-width:880px;margin:2rem auto 0;">
+        <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;">
+          <iframe
+            style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;"
+            src="https://www.youtube-nocookie.com/embed/rQas3GDPpfA"
+            title="Antigen — a prompt-injection immune system for DataHub"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen
+            loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- ============================== FINAL CTA ============================== -->
-  <!-- id demo-video-tbd: temporary landing target for the "Watch the demo"
-       links until the real video URL exists (see data-tbd markers). -->
-  <section class="final-cta" id="demo-video-tbd" aria-labelledby="cta-title">
+  <section class="final-cta" aria-labelledby="cta-title">
     <div class="wrap reveal">
       <p class="eyebrow" style="justify-content:center;display:flex;">Prove it yourself</p>
-      <h2 id="cta-title">Zero dependencies. No Docker. No keys.<br />Ten seconds.</h2>
+      <h2 id="cta-title">Zero dependencies. No Docker. No keys.<br />Seconds.</h2>
       <p class="lede">
         Clone the repo and run one command: the test suite, the false-positive
         gauntlet, <code>verify.py</code>, the full hero-arc demo and the
@@ -1214,7 +1235,7 @@ strong { color: var(--text-hi); font-weight: 600; }
           <h3>Project</h3>
           <ul>
             <li><a href="https://github.com/edycutjong/antigen" rel="noopener">GitHub repository ↗</a></li>
-            <li><a href="#demo-video-tbd" data-tbd="demo-video-not-recorded">Demo video<span class="soon-tag">soon</span></a></li>
+            <li><a href="https://youtu.be/rQas3GDPpfA" target="_blank" rel="noopener">Demo video ↗</a></li>
             <li><a href="pitch.html">Pitch deck</a></li>
             <li><a href="https://datahub.devpost.com/" rel="noopener">Devpost hackathon ↗</a></li>
           </ul>

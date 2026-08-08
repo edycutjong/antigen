@@ -213,4 +213,5 @@ on a spoofable string.
 All three findings and the notes above are reproducible from the Antigen repository against
 the Agent Context Kit versions pinned at the top of this appendix (see the scope note there
 for which ones also apply to `mcp-server-datahub` `main`); the
-contract they describe is pinned in `tests/test_gateway.py` against recorded live payloads.
+contract they describe is pinned in `tests/test_gateway.py` against response shapes captured
+from a live GMS (fixture values are synthetic; the nesting they assert is not).

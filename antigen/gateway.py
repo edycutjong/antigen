@@ -138,7 +138,8 @@ class SdkGateway:
     (results nest under `searchResults`; an edited description lives at
     `editableProperties.description`; `grep_documents` returns match excerpts and no
     document body at all). The silent ones are why this class is contract-tested
-    against recorded live payloads rather than hand-written fakes.
+    against response *shapes* captured from a live GMS (field values in the
+    fixtures are synthetic; the nesting they assert is not).
     """
 
     def __init__(self, client=None):
@@ -363,8 +364,8 @@ class SdkGateway:
 # --------------------------------------------------------------------------- #
 
 #: Keys the live tools actually wrap their result lists in. `searchResults`,
-#: `upstreams` and `downstreams` are the real Agent Context Kit shapes — verified
-#: against acryl-datahub 1.6.x by tests/test_gateway_live_contract.py.
+#: `upstreams` and `downstreams` are the real Agent Context Kit shapes, observed
+#: against acryl-datahub 1.6.x on a live GMS and pinned in tests/test_gateway.py.
 _LIST_KEYS = (
     "searchResults", "upstreams", "downstreams", "matches",
     "entities", "results", "documents", "items",

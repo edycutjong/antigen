@@ -43,10 +43,6 @@
     Cmd+P (Ctrl+P) → Destination "Save as PDF" → Layout Landscape →
     Margins None → Background graphics ON → Save.  One slide per page, 16:9.
 
-  SWAP PLACEHOLDERS
-    Search this file for "SWAP:" — each marks an <img> to replace with a real
-    screenshot. Brand assets (icon, hero panel) are already local under assets/.
-
   REBRAND IN 30s
     Edit the CSS :root variables block (--color-bg, --color-primary,
     --color-accent, --font-display, --font-mono) at the top of <style>.
@@ -473,7 +469,6 @@
         <div class="solution-body">
           <div class="browser-frame contrast-check">
             <div class="browser-bar"><i></i><i></i><i></i><span class="url">antigen — hijack · sweep · defuse · prove</span></div>
-            <!-- SWAP: replace with a real product screenshot (e.g. DataHub UI before/after) if desired -->
             <img src="public/readme-hero-animated.svg" alt="Antigen's four-step arc: Hijack a stock LangChain agent, Sweep the catalog with 12 hits including 2 zero-width, Defuse each with 4 write-backs, Prove 0/12 hijacks after and 12/12 defused in under 30 seconds." />
           </div>
           <div class="solution-copy">
@@ -585,7 +580,6 @@
       <div class="slide-body anim d1">
         <div class="demo-grid">
           <div class="shot q2 tall">
-            <!-- SWAP: replace with real victim_agent.py hijack transcript screenshot -->
             <pre><span class="cmd">python victim_agent.py --before</span>
 Q: Summarize the customers table.
 <span class="red">agent → tool_call: send_email(</span>
@@ -596,21 +590,18 @@ Q: Summarize the customers table.
             <div class="cap"><span class="num-circle">1</span><span class="cap-label">HIJACK — stock agent obeys</span></div>
           </div>
           <div class="shot">
-            <!-- SWAP: replace with real antigen scan output -->
             <pre><span class="cmd">antigen scan</span>
 15 loci · <span class="amber">2 zero-width</span>
 13 get_entities · 2 grep_documents</pre>
             <div class="cap"><span class="num-circle">2</span><span class="cap-label">SWEEP — 15 loci found</span></div>
           </div>
           <div class="shot q">
-            <!-- SWAP: replace with real antigen cure output -->
             <pre><span class="cmd">antigen cure</span>
 <span class="green">cured 12 loci</span> · 4 write-backs each
 <span class="amber">quarantine-tagged + sha-256</span></pre>
             <div class="cap"><span class="num-circle">3</span><span class="cap-label">DEFUSE — in the graph</span></div>
           </div>
           <div class="shot" style="grid-column: span 2;">
-            <!-- SWAP: replace with real verify.py output -->
             <pre><span class="cmd">python verify.py</span>
 graph-state <span class="green">PASS (4 ms)</span> | held-out <span class="green">3/3</span>
 Part B — same stock agent, same 12 questions, cold:  <span class="green">obeys 0/12</span></pre>
@@ -697,7 +688,7 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">obeys
             <p style="font-size:22px;color:var(--text-mid);margin-bottom:18px;">Reproduce it all with one command — Python stdlib only, no Docker, no keys:</p>
             <div class="ship-list">
               <span class="chip green">./run.sh</span>
-              <span class="chip">26 tests passing</span>
+              <span class="chip">79 tests passing</span>
               <span class="chip">8 DataHub tools wired</span>
               <span class="chip amber">Apache-2.0</span>
               <span class="chip">RFC to mcp-server-datahub</span>
@@ -725,9 +716,6 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">obeys
             </ul>
           </div>
           <div class="ask-side">
-            <!-- QR PLACEHOLDER (data-tbd): a real QR to antigen.edycu.dev drops in here
-                 before presenting. Until then, a clean branded card keeps the deck honest
-                 and fully offline. -->
             <div class="visit-card" data-tbd="qr-code-not-generated" role="img"
                  aria-label="antigen.edycu.dev — QR code to be added before presenting">
               <img src="public/icon.svg" alt="" />
