@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v1.0.5 (2026-08-08)
+
+### Bug Fixes
+
+- **verify**: An errored hijack trial is not a resisted one
+  ([`a213372`](https://github.com/edycutjong/antigen/commit/a213372374c50b5eabc899008403c595290d915d))
+
+- **verify**: Explain the already-cured state instead of a bare FAIL
+  ([`72165ee`](https://github.com/edycutjong/antigen/commit/72165eed82cbd1e58b509da5a9b3b07cf3a040f8))
+
+### Documentation
+
+- **demo**: Note the live path is verified with auth on and off
+  ([`fddce32`](https://github.com/edycutjong/antigen/commit/fddce320787ebf7103739fae03fee58daeed662c))
+
+- **rfc**: Add three reproducible findings from the live tool surface
+  ([`3655cc1`](https://github.com/edycutjong/antigen/commit/3655cc15b4be730e764a932ba465335a85c18af4))
+
+
 ## v1.0.4 (2026-08-08)
 
 ### Bug Fixes
