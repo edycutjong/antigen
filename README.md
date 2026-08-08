@@ -448,7 +448,7 @@ docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 - [x] `verify.py` LLM-independent graph-state gate · 79 tests · 100% coverage
 - [x] Responsible-disclosure RFC drafted, incl. 3 reproducible Agent-Context-Kit findings — 1 of which also applies to `mcp-server-datahub` `main` (`docs/RFC-output-sanitization.md`)
 - [x] `antigen-scan` DataHub Skill written (`antigen-scan/SKILL.md`)
-- [ ] File the RFC upstream to `mcp-server-datahub`
+- [x] RFC filed upstream to `mcp-server-datahub` ([acryldata/mcp-server-datahub#201](https://github.com/acryldata/mcp-server-datahub/issues/201))
 - [ ] Full TR39 homoglyph / confusables coverage
 - [ ] Optional LLM second-layer classifier (behind the deterministic rule; never gating)
 - [ ] Non-English injection coverage
