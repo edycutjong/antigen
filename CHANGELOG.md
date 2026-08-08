@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v1.0.4 (2026-08-08)
+
+### Bug Fixes
+
+- **gateway**: Make the live DataHub path actually work
+  ([`75322b5`](https://github.com/edycutjong/antigen/commit/75322b5d87b008282777a6c40a230761dc83db43))
+
+### Documentation
+
+- Reconcile every claimed number with measured reality
+  ([`ff1be4d`](https://github.com/edycutjong/antigen/commit/ff1be4d3c05169f6396d0faa1e5e5ed7d394f433))
+
+### Testing
+
+- Rename two tests that trip TruffleHog's Lob detector
+  ([`bc2f323`](https://github.com/edycutjong/antigen/commit/bc2f32397ebfcb9b426d82222d7f5905c0447249))
+
+
 ## v1.0.3 (2026-08-08)
 
 ### Bug Fixes
