@@ -621,6 +621,7 @@ docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 - [x] Responsible-disclosure RFC drafted, incl. 3 reproducible Agent-Context-Kit findings — 1 of which also applies to `mcp-server-datahub` `main` (`docs/RFC-output-sanitization.md`)
 - [x] `antigen-scan` DataHub Skill written (`antigen-scan/SKILL.md`)
 - [x] RFC filed upstream to `mcp-server-datahub` ([acryldata/mcp-server-datahub#201](https://github.com/acryldata/mcp-server-datahub/issues/201))
+- [x] Docs PR opened upstream — corrects `update_description`'s supported-type list, which misstated DataHub's resolver in both directions ([acryldata/mcp-server-datahub#202](https://github.com/acryldata/mcp-server-datahub/pull/202))
 - [ ] Full TR39 homoglyph / confusables coverage
 - [ ] Optional LLM second-layer classifier (behind the deterministic rule; never gating)
 - [ ] Non-English injection coverage
