@@ -202,8 +202,13 @@ on a spoofable string.
   create-tag tool, so an agent that wants to tag anything needs a base-SDK emit. Same for
   structured properties, which need a definition emitted before
   `add_structured_properties` will accept a value.
-- **Tag names reject `:`, `(`, `)`, `,`** (`TagUrn name contains reserved characters`),
-  so a tag cannot embed a URN to reference another entity.
+- **Tag names cannot carry a URN intact.** Re-verified 2026-08-08 against the pinned SDK:
+  the characters are not *rejected* — `TagUrn` percent-encodes the reserved set
+  (`TagUrn("a,b")` → `urn:li:tag:a%2Cb`, `"a(b"` → `a%28b`) while `:` passes through
+  unchanged (`TagUrn("a:b")` → `urn:li:tag:a:b`). The practical constraint stands — a tag
+  cannot embed a URN and read back as written — but it is silent mangling, not an error.
+  (An earlier draft of this note reported a `reserved characters` rejection; that does not
+  reproduce, and the correction is recorded here rather than quietly dropped.)
 - **`update_description` supports only some entity types.** `dataFlow` and `corpuser`
   URNs are rejected with `Failed to update description. Unsupported resource type`,
   though `search` returns them alongside datasets — so a sweep over "everything `search`

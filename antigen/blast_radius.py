@@ -21,9 +21,10 @@ from .gateway import Gateway
 def _blast_tag(source_urn: str) -> str:
     """A DataHub-legal tag naming the poisoned source this asset is downstream of.
 
-    A raw URN cannot be embedded: DataHub rejects `:`, `(`, `)` and `,` in a tag name
-    ("TagUrn name contains reserved characters"), so the obvious
-    `injection-blast-radius:<urn>` fails on a live GMS. Use the readable dataset name
+    A raw URN cannot be embedded and survive: `TagUrn` percent-encodes the reserved set
+    (`,` `(` `)` become `%2C` `%28` `%29`) while `:` passes through, so the obvious
+    `injection-blast-radius:<urn>` comes back mangled — silently, not as an error.
+    Re-verified against the pinned SDK 2026-08-08. Use the readable dataset name
     plus a short digest of the full URN — legible in the UI, still unique per source,
     and stable across runs so re-tagging stays idempotent.
     """
