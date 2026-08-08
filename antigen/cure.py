@@ -50,6 +50,10 @@ BANNER = (BANNER_MARKER + " a prompt-injection payload was removed from this fie
 
 EVIDENCE_POINTER = "repo examples/payloads/{pid}.txt (out-of-band; not on the graph)"
 
+# Out-of-corpus hits have no checked-in payload file; the incident document holds
+# the evidence and the digest is the stable handle.
+ADHOC_EVIDENCE_POINTER = "the linked Antigen incident document (payload sha256 {sha}…)"
+
 
 def _sha256(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -145,7 +149,6 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
             seen_this_run.add(hit.urn)
 
         fx = fixtures.get(hit.key)
-        payload_id = fx.payload_id if fx else "adhoc"
 
         # --- decide clean text + removed payload --------------------------
         if fx is not None:
@@ -159,12 +162,18 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
             mode = "quarantine-field"
 
         payload_sha = _sha256(removed_payload)
+        # Fixture-backed hits carry a stable corpus id. Out-of-corpus hits are keyed
+        # by payload digest — a shared "adhoc" id would collapse every incident on a
+        # real catalog into one document title and overwrite each other's evidence.
+        payload_id = fx.payload_id if fx else f"adhoc-{payload_sha[:12]}"
         incident_title = f"antigen-incident-{payload_id}"
         incident_urn = f"urn:li:document:{INCIDENTS_FOLDER}/{incident_title}"
 
         banner = BANNER.format(
             date=timestamp,
-            evidence=EVIDENCE_POINTER.format(pid=payload_id),
+            # Only corpus payloads have a checked-in raw file to point at.
+            evidence=(EVIDENCE_POINTER.format(pid=payload_id) if fx is not None
+                      else ADHOC_EVIDENCE_POINTER.format(sha=payload_sha[:12])),
             rule=hit.detection.safe_summary,   # SAFE labels only, never payload text
         )
         clean_with_banner = cleaned + banner

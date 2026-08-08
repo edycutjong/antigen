@@ -68,7 +68,11 @@ def cmd_cure(args) -> int:
     gw, fixtures = _gateway(args)
     report = scan(gw)
     hits = report.hits
-    if args.fixtures == "corpus":
+    if args.fixtures == "corpus" and getattr(args, "offline", False):
+        # Offline demo only: restrict to the seeded corpus so the run is exactly
+        # reproducible. On a real catalog every hit must be cured — fixture-backed
+        # ones are excised, the rest fall through to whole-field quarantine.
+        # (Filtering here on a live gateway silently cured nothing.)
         hits = [h for h in report.hits if h.key in fixtures]
     result = cure(gw, hits, fixtures=fixtures, clock=_clock())
     print(result.summary())
