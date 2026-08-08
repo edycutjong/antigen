@@ -68,6 +68,24 @@ def part_a(live: bool = False, verbose: bool = True) -> dict:
     # A live GMS mints its own document URNs, so re-key doc fixtures onto them.
     fixtures = align_document_fixtures(fixtures, report)
     corpus_hits = [h for h in report.hits if h.key in fixtures]
+    if len(corpus_hits) != 12 and live:
+        # Distinguish "already cured" from "never seeded". Both leave the scan with
+        # too few corpus hits, but only one of them is an actual failure — and
+        # running `antigen demo` before `verify.py --live` is the obvious mistake,
+        # because verify performs its own scan+cure and needs a poisoned graph.
+        already = report.skipped_quarantined
+        hint = (
+            "the catalog is already CURED — `verify.py --live` runs its own "
+            f"scan+cure, so it needs a freshly poisoned graph ({already} entities "
+            "are quarantine-tagged and were skipped). Reset and re-seed:\n"
+            "      datahub docker nuke && datahub docker quickstart\n"
+            "      python seed_catalog.py && python -m antigen.register_properties\n"
+            "      python seed_corpus.py && python verify.py --live"
+        ) if already else (
+            "the corpus does not appear to be planted — run `python seed_catalog.py` "
+            "then `python seed_corpus.py` first (see DEMO.md)."
+        )
+        raise Failure(f"scan flagged {len(corpus_hits)}/12 authored corpus loci: {hint}")
     _check(len(corpus_hits) == 12,
            f"scan flagged {len(corpus_hits)}/12 authored corpus loci")
 
