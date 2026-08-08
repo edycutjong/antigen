@@ -23,7 +23,7 @@
   ![python](https://img.shields.io/badge/python-3.10%2B-3776AB)
   ![DataHub](https://img.shields.io/badge/DataHub-Agent%20Context%20Kit-1890FF)
   ![OWASP](https://img.shields.io/badge/OWASP-LLM01%20Prompt%20Injection-C1272D)
-  ![tests](https://img.shields.io/badge/tests-79%20passing-2EA043)
+  ![tests](https://img.shields.io/badge/tests-80%20passing-2EA043)
   ![coverage](https://img.shields.io/badge/coverage-100%25-2EA043)
   ![verify](https://img.shields.io/badge/verify.py-graph--state%20PASS-2EA043)
   [![License](https://img.shields.io/badge/license-Apache--2.0-green)](https://github.com/edycutjong/antigen/blob/main/LICENSE)
@@ -436,7 +436,7 @@ fail the run. This is the command a judge runs to reproduce the headline number.
 ### Tests & benchmarks
 
 ```
-79 tests, all passing — 100% line coverage of the antigen package (CI gate: --cov-fail-under=100):
+80 tests, all passing — 100% line coverage of the antigen package (CI gate: --cov-fail-under=100):
   · detector       12/12 payloads · 3/3 held-out · 0 FP near-miss + clean · NFKC-miss proof ·
                    every Unicode Cf branch (zero-width / BiDi / allowlisted marks)
   · engine         surface-completeness (payload+base64+hex absent) · tags+hashes ·
@@ -617,7 +617,7 @@ docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 
 - [x] Deterministic stdlib detector (scored rule + Unicode `Cf`-strip pre-pass)
 - [x] 4-mutation cure that writes the security state back into the graph
-- [x] `verify.py` LLM-independent graph-state gate · 79 tests · 100% coverage
+- [x] `verify.py` LLM-independent graph-state gate · 80 tests · 100% coverage
 - [x] Responsible-disclosure RFC drafted, incl. 3 reproducible Agent-Context-Kit findings — 1 of which also applies to `mcp-server-datahub` `main` (`docs/RFC-output-sanitization.md`)
 - [x] `antigen-scan` DataHub Skill written (`antigen-scan/SKILL.md`)
 - [x] RFC filed upstream to `mcp-server-datahub` ([acryldata/mcp-server-datahub#201](https://github.com/acryldata/mcp-server-datahub/issues/201))
