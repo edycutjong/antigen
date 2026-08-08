@@ -39,6 +39,12 @@ datahub docker quickstart
 
 # quickstart runs with metadata-service auth DISABLED, so no PAT is needed.
 export DATAHUB_GMS_URL=http://localhost:8080 DATAHUB_GMS_TOKEN=
+
+# Verified BOTH ways. If your GMS has METADATA_SERVICE_AUTH_ENABLED=true, mint a
+# Personal Access Token (UI -> Settings -> Access Tokens) and export it instead:
+#   export DATAHUB_GMS_TOKEN=eyJhbGciOi...
+# Antigen passes it through to every one of the 8 tools and to the base-SDK
+# aspect reads; nothing else changes.
 export TOOLS_IS_MUTATION_ENABLED=true SAVE_DOCUMENT_TOOL_ENABLED=true \
        SAVE_DOCUMENT_RESTRICT_UPDATES=false
 
