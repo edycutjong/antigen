@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v1.0.9 (2026-08-08)
+
+### Bug Fixes
+
+- **assets**: Correct inflated hijack and entity numbers across every image
+  ([`903d60c`](https://github.com/edycutjong/antigen/commit/903d60c347550acdbba02962e425c9b8f483a859))
+
+### Documentation
+
+- Add the live tool-call transcript judges can grep
+  ([`58bc301`](https://github.com/edycutjong/antigen/commit/58bc3016b66f86f1c4bf48b59095f4e764023ce0))
+
+- Record the upstream docs PR (acryldata/mcp-server-datahub#202)
+  ([`781b8b4`](https://github.com/edycutjong/antigen/commit/781b8b4faf3181fa5a2f2f921a9fb26f46010fcd))
+
+- **readme**: Engage the prior art and ground the threat in evidence
+  ([`050423b`](https://github.com/edycutjong/antigen/commit/050423bbe972ad962de6d8f659f5538ded93dcb6))
+
+
 ## v1.0.8 (2026-08-08)
 
 ### Bug Fixes
