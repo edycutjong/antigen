@@ -14,9 +14,8 @@
 
   [![Live Demo](https://img.shields.io/badge/Live-Demo-06b6d4?style=for-the-badge&logo=vercel)](https://antigen.edycu.dev)
   [![Pitch Deck](https://img.shields.io/badge/📊_Pitch-Deck-f59e0b?style=for-the-badge)](https://antigen.edycu.dev/pitch.html)
-  [![Demo Video](https://img.shields.io/badge/Demo_Video-Upcoming-ef4444?style=for-the-badge&logo=youtube&logoColor=white)](#)
+  [![Demo Video](https://img.shields.io/badge/Demo_Video-Watch-ef4444?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/rQas3GDPpfA)
   [![Built for DataHub](https://img.shields.io/badge/Devpost-Build_with_DataHub-8b5cf6?style=for-the-badge)](https://datahub.devpost.com/)
-  [![Devpost Submission](https://img.shields.io/badge/Devpost-Submission_Upcoming-003E54?style=for-the-badge&logo=devpost&logoColor=white)](#)
 
   <br/>
 
@@ -416,7 +415,7 @@ docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 
 - **Live (landing + pitch deck):** https://antigen.edycu.dev · deck at
   [`/pitch.html`](https://antigen.edycu.dev/pitch.html)
-- **Demo video:** coming soon (real UI: hijack → sweep → defuse → cold re-run → `verify.py`)
+- **Demo video:** https://youtu.be/rQas3GDPpfA (real DataHub UI: poisoned entity → sweep → defuse → blast radius → `verify.py --live`)
 
 ---
 

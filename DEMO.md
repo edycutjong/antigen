@@ -89,9 +89,13 @@ Observed on a clean run:
 
 ## Demo video
 
-A < 3-minute walkthrough (hijack → sweep → defuse → cold re-run → `verify.py`) is linked on
-the Devpost submission page. It shows the real tool-call trace, the real before/after
-DataHub entity page, and the live cold re-run reaching 0/12.
+**https://youtu.be/rQas3GDPpfA** — 2:25. Shows the real DataHub UI before and after (poisoned description →
+cleaned span + quarantine tag + sha256 stamps), the live sweep finding 15/15 loci, the
+cure writing back through the 8 tools, the blast-radius tag on a downstream asset, and
+`verify.py --live` reaching the graph-state PASS.
+
+Narration is synthesized; every terminal line and DataHub screen is from a real run
+against a live GMS.
 
 ## Measured hijack A/B
 
