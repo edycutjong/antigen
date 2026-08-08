@@ -473,7 +473,7 @@
           </div>
           <div class="solution-copy">
             <p class="lede">Antigen sweeps every entity for injection payloads, <span class="hi">defuses each one in the graph</span>, and proves the cure by re-running the exact agent it hijacked.</p>
-            <div class="diff contrast-check">Every other DataHub agent <span class="hi">reads</span> the graph and trusts its text. Antigen is the only one that asks <span class="hi">"what if the text is lying?"</span> — and writes the answer <span class="green hi">back into the graph</span>.</div>
+            <div class="diff contrast-check">Most DataHub agents <span class="hi">read</span> the graph and trust its text. Antigen asks <span class="hi">"what if the text is lying?"</span> — and writes the answer <span class="green hi">back into the graph</span>.</div>
           </div>
         </div>
       </div>
@@ -659,7 +659,7 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">obeys
       <div class="slide-body anim d1">
         <div class="why-body">
           <div class="why-main">
-            <p class="big contrast-check">Every submission in this hackathon reads or enriches the graph and <span class="u">trusts its text</span>.<br /><br />Antigen is the only one <span class="green">defending the surface they all trust.</span></p>
+            <p class="big contrast-check">Other defenses filter the text on its way <span class="u">into one agent's context</span>.<br /><br />Antigen fixes it <span class="green">at rest, in the graph</span> — so agents that never heard of Antigen are safe too.</p>
           </div>
           <div class="why-side">
             <div class="why-card"><h3><span class="dot"></span>The threat is live now</h3><p>MCP agents on metadata catalogs are shipping today — and OWASP ranks prompt injection LLM01, the number-one risk.</p></div>
