@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.0.7 (2026-08-08)
+
+### Bug Fixes
+
+- **cure**: Remediate on real catalogs; key ad-hoc incidents by digest
+  ([`092b0a1`](https://github.com/edycutjong/antigen/commit/092b0a1cd3574f21e47a8e657590b5a33bc4df7a))
+
+### Documentation
+
+- **pitch**: Drop unverifiable 'only submission' claims
+  ([`98c5b2f`](https://github.com/edycutjong/antigen/commit/98c5b2f76e7e2d9588857338b007688bbfea0faa))
+
+
 ## v1.0.6 (2026-08-08)
 
 ### Bug Fixes
