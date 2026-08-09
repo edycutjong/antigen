@@ -1,0 +1,49 @@
+{
+  "artifact": "antigen-incident-ledger-idempotency",
+  "captured_at_utc": "2026-08-09T15:08:16Z",
+  "environment": {
+    "gms_url": "http://localhost:8080",
+    "gms_version": "v1.7.0",
+    "acryl_datahub": "1.6.0.6",
+    "datahub_agent_context": "1.6.0.17"
+  },
+  "why_this_exists": "docs/live-tool-transcript.json records `existing_incident_urns` running twice live and returning {} both times, because every cycle in that capture began from a full reset. So the URN-addressed `save_document` overwrite in cure.py -- the fix for the duplicate-incident bug -- had never actually executed against a real GMS. Of the 34 live `save_document` calls in that transcript, the only 4 carrying a `urn` are KB-document cures, not incident records. This cycle closes that gap.",
+  "method": "Starting from the cured graph left by the hijack A/B run, delete the datasets and the two poisoned KB documents -- so the corpus can be re-planted on entities that no longer carry `injection-quarantined` and the sweep will look at them again -- but KEEP the 12 `antigen-incident-*` records. Re-seed, then cure again. The second cure's `existing_incident_urns` therefore resolves a non-empty ledger and every incident save is addressed by the existing record's URN.",
+  "result": {
+    "incident_records_before_second_cure": 12,
+    "incident_records_after_second_cure": 12,
+    "urns_unchanged": 12,
+    "newly_minted_records": {},
+    "records_that_moved_urn": {},
+    "verdict": "PASS -- 12 records in, 12 records out, all 12 URNs unchanged. The overwrite branch executed. Before the fix this cycle would have minted a second record per cured locus."
+  },
+  "honest_caveat": "The second cure defused 11 loci, not 12: one of the two KB-document payloads had not re-indexed in OpenSearch when the sweep ran (the same asynchronous-index behaviour DEMO.md already documents, and the sweep reported `1 documents` rather than 2). So 11 of the 12 records were rewritten in place this cycle and the 12th was simply not touched. The claim the count supports is exactly this: no duplicate record was minted for any locus that WAS re-cured. It does not claim all 12 were rewritten.",
+  "ledger_before_second_cure": {
+    "antigen-incident-P08": "urn:li:document:shared-04062ad4-159a-470e-b68f-c47c12e7d8d7",
+    "antigen-incident-P12": "urn:li:document:shared-18d65011-d96b-4af7-8e1a-4df93fef357a",
+    "antigen-incident-P02": "urn:li:document:shared-2db69562-8f1d-4ec3-b79f-2cf0ef567a00",
+    "antigen-incident-P04": "urn:li:document:shared-4fbd18b7-5963-41cd-bb70-9a6ad942f8aa",
+    "antigen-incident-P05": "urn:li:document:shared-66c4099f-17b3-435a-8df1-0c5fa70f2c5c",
+    "antigen-incident-P10": "urn:li:document:shared-81408752-f02e-4d58-91de-25d9942409a5",
+    "antigen-incident-P06": "urn:li:document:shared-83772984-9dd9-4e1e-90e9-06bcef28987b",
+    "antigen-incident-P11": "urn:li:document:shared-a9250665-67b4-4561-bb15-87f56045bf75",
+    "antigen-incident-P01": "urn:li:document:shared-b51dfc36-22c8-45fd-b133-26038c549b0b",
+    "antigen-incident-P09": "urn:li:document:shared-c8ad9886-5cf0-4ff3-8902-6dc9eba07d6a",
+    "antigen-incident-P03": "urn:li:document:shared-db409dac-07c3-46d4-8de9-01fd618daec9",
+    "antigen-incident-P07": "urn:li:document:shared-ef872772-73b2-4be9-a845-fb06565902ed"
+  },
+  "ledger_after_second_cure": {
+    "antigen-incident-P08": "urn:li:document:shared-04062ad4-159a-470e-b68f-c47c12e7d8d7",
+    "antigen-incident-P12": "urn:li:document:shared-18d65011-d96b-4af7-8e1a-4df93fef357a",
+    "antigen-incident-P02": "urn:li:document:shared-2db69562-8f1d-4ec3-b79f-2cf0ef567a00",
+    "antigen-incident-P04": "urn:li:document:shared-4fbd18b7-5963-41cd-bb70-9a6ad942f8aa",
+    "antigen-incident-P05": "urn:li:document:shared-66c4099f-17b3-435a-8df1-0c5fa70f2c5c",
+    "antigen-incident-P10": "urn:li:document:shared-81408752-f02e-4d58-91de-25d9942409a5",
+    "antigen-incident-P06": "urn:li:document:shared-83772984-9dd9-4e1e-90e9-06bcef28987b",
+    "antigen-incident-P11": "urn:li:document:shared-a9250665-67b4-4561-bb15-87f56045bf75",
+    "antigen-incident-P01": "urn:li:document:shared-b51dfc36-22c8-45fd-b133-26038c549b0b",
+    "antigen-incident-P09": "urn:li:document:shared-c8ad9886-5cf0-4ff3-8902-6dc9eba07d6a",
+    "antigen-incident-P03": "urn:li:document:shared-db409dac-07c3-46d4-8de9-01fd618daec9",
+    "antigen-incident-P07": "urn:li:document:shared-ef872772-73b2-4be9-a845-fb06565902ed"
+  }
+}

@@ -577,7 +577,7 @@ behavior breaks — this is the engine, not decoration.
 | 5 | `update_description` | **MUTATION** | **the defuse** — reconstructs a clean description with the injected span **deleted** + an inert banner |
 | 6 | `add_tags` | **MUTATION** | `injection-quarantined` on poisoned entities; `agent-safe-certified` on the clean remainder; `injection-blast-radius:<urn>` on downstream consumers |
 | 7 | `add_structured_properties` | **MUTATION** | typed `antigen.contentSha256` (tamper-evidence) + `antigen.payloadSha256` (irreversible forensic hash) + `antigen.lastScanned` |
-| 8 | `save_document` | **MUTATION** | files a forensic incident (hashes + repo pointer, **no payload**) into `Antigen/Incidents`; overwrites the 2 poisoned KB docs **in place** with their defused form (addressed by **URN** — the only identity the live tool honours; omit it and DataHub mints a *new* document, leaving the poisoned original readable) |
+| 8 | `save_document` | **MUTATION** | files a forensic incident (hashes + repo pointer, **no payload**) into `Antigen/Incidents`; overwrites the 2 poisoned KB docs **in place** with their defused form (addressed by **URN** — the only identity the live tool honours; omit it and DataHub mints a *new* document, leaving the poisoned original readable). The incident ledger uses the same URN addressing, and that branch is **now proven live** — see below |
 | 9 | `search_documents` | READ | enumerates KB document URNs — the live `grep_documents` requires an explicit `urns` list, so without this the document sweep has nothing to hunt over (`gateway.py::_document_urns`). Paged at the same 50-row cap; a kit that rejects `offset` falls back to one unpaged call and *says so* on stderr rather than under-sweeping quietly |
 
 The cure lands **in the graph itself** — tags, structured properties, forensic KB docs —
@@ -626,6 +626,20 @@ The 1,297 base `acryl-datahub` `DataHubGraph` calls (seeding, property definitio
 tag-entity creation, the `editableSchemaMetadata` overlay — `emit_mcp` 225, `emit` 216,
 `exists` 311, `get_aspect` 545) are counted **separately** in the same file, so the
 "9 agent tools" claim above stays exactly true.
+
+**The incident ledger's overwrite is proven live too — and it was the last branch that
+wasn't.** Every cycle in `docs/live-tool-transcript.json` starts from a full reset, so
+`existing_incident_urns` ran twice live and returned `{}` both times: the URN-addressed
+incident `save_document` — the fix for the duplicate-record bug — had never actually
+executed against a real GMS. Of that transcript's 34 live `save_document` calls, the only
+4 carrying a `urn` are KB-document cures, not incident records. So we ran the arc a second
+time with the ledger deliberately carried across:
+[`docs/incident-ledger-idempotency.json`](docs/incident-ledger-idempotency.json) records
+**12 incident records in, 12 out, all 12 URNs unchanged, 0 minted.** Before the fix that
+cycle would have left a duplicate for every locus it re-cured. Read the artifact's
+`honest_caveat`: the second cure defused 11 loci, not 12, because one KB payload had not
+re-indexed when the sweep ran — so the claim is *no duplicate for any locus that was
+re-cured*, not *all 12 rewritten*.
 
 **The paging loop is proven live, not just fixed.** The run has three cycles: **A** the
 hero arc (`antigen demo --apply`), **B** the `verify.py --live` gate, and **C** a catalog
