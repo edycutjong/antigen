@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v1.2.1 (2026-08-09)
+
+### Bug Fixes
+
+- **cli**: Fail closed in rescan, cure, certify and blast-radius too
+  ([`95ae0be`](https://github.com/edycutjong/antigen/commit/95ae0be71cf0ad900fe67bef533b7042ac58e889))
+
+- **gateway**: Report a successful-but-empty document enumeration
+  ([`4a3e171`](https://github.com/edycutjong/antigen/commit/4a3e1717571ae6ed60f313a1c05a2215117d0ab7))
+
+- **scan**: Make the doc pre-filter a real superset of the detector
+  ([`f05453a`](https://github.com/edycutjong/antigen/commit/f05453a7585d077f341e95910b0851ea0790bd48))
+
+- **web**: Remove the invented showcase-datapack figure and stale counts
+  ([`aaf2444`](https://github.com/edycutjong/antigen/commit/aaf2444b200769a943afd49384e7d6f3e4cbc544))
+
+### Continuous Integration
+
+- Distinguish a Vercel quota skip from a deploy failure
+  ([`3d99991`](https://github.com/edycutjong/antigen/commit/3d99991a3425368b1592204001cd4bd93104e8eb))
+
+### Documentation
+
+- Correct three claims refuted by the sources they cite
+  ([`6c4e1cc`](https://github.com/edycutjong/antigen/commit/6c4e1cc49bdb97fcf0f038a5cad53e0ba24644a2))
+
+- **transcript**: Rename the stale eight_claimed_agent_tools label
+  ([`1faf051`](https://github.com/edycutjong/antigen/commit/1faf0517384539b3d0f3c61ca0e7eaad6fe8d20f))
+
+
 ## v1.2.0 (2026-08-09)
 
 ### Bug Fixes
