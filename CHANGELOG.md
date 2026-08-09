@@ -2,6 +2,27 @@
 
 <!-- version list -->
 
+## v1.3.0 (2026-08-09)
+
+### Bug Fixes
+
+- **docs**: Withdraw the `total: 30 while returning 26` claim — a truncation misread
+  ([`112ffaf`](https://github.com/edycutjong/antigen/commit/112ffafaeeccb1e09dce40d705719c3891e8efff))
+
+### Documentation
+
+- Reconcile the Metadata Tests survey with the new Actions concession
+  ([`a4bdc9e`](https://github.com/edycutjong/antigen/commit/a4bdc9e9c040b7e7b3377c33bed27834933c925a))
+
+- **evidence**: Re-capture the live transcript against the code that ships
+  ([`cc085de`](https://github.com/edycutjong/antigen/commit/cc085de257b3dafcbe19ff6c12e9f6591dac852b))
+
+### Features
+
+- **seed**: Add --scale N to seed a catalog past the GMS's 50-row search page
+  ([`dab5818`](https://github.com/edycutjong/antigen/commit/dab5818ec1f8efdc6938d761a59f21b0e5a0553c))
+
+
 ## v1.2.1 (2026-08-09)
 
 ### Bug Fixes
