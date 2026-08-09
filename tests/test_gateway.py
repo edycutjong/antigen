@@ -184,6 +184,34 @@ def test_search_all_tolerates_an_envelope_without_a_total():
     assert g.search_all() == ["urn:a"]
 
 
+def test_a_successful_but_empty_document_enumeration_is_reported_not_assumed_clean(capsys):
+    """The document-scope blackout: `search_documents` SUCCEEDS and returns nothing.
+
+    Entity scope already refuses to read an empty enumeration as an all-clear
+    (`scan.EMPTY_CATALOG_REASON`); document scope returned `[]` in silence, so
+    `grep_documents` short-circuited and the sweep printed "0 documents scanned"
+    beside a clean verdict. A documents tool that is disabled, unauthorized, or
+    pointed at the wrong GMS is byte-identical here to a KB with no documents.
+    """
+    g = _sdk_with_tools([FakeTool("search_documents", lambda kw: {"searchResults": []})])
+    assert g._document_urns() == []
+    assert "enumerated 0 KB documents" in capsys.readouterr().err
+    assert any("NOT a document all-clear" in d for d in g.degradations())
+
+
+def test_an_empty_unpaged_document_fallback_is_also_reported(capsys):
+    """Same blackout on the older-kit path: paging rejected AND zero rows back."""
+    def unpaged_but_empty(kw):
+        if "offset" in kw:
+            raise TypeError("search_documents() got an unexpected keyword 'offset'")
+        return {"searchResults": []}
+
+    g = _sdk_with_tools([FakeTool("search_documents", unpaged_but_empty)])
+    assert g._document_urns() == []
+    assert "unpaged fallback" in capsys.readouterr().err
+    assert any("NOT a document all-clear" in d for d in g.degradations())
+
+
 def test_document_urns_fall_back_to_an_unpaged_call_and_say_so(capsys):
     """An older kit whose `search_documents` rejects `offset` must not lose the
     document sweep entirely — but it must not under-sweep in silence either."""

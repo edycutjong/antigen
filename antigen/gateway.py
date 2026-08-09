@@ -3,7 +3,7 @@
 Antigen's engine (scan / cure / blast_radius / rescan / certify) talks to DataHub
 *only* through the small :class:`Gateway` interface below. That gives two things:
 
-1. Production path — :class:`SdkGateway` binds the 8 real DataHub tools via the
+1. Production path — :class:`SdkGateway` binds the 9 real DataHub tools via the
    Agent Context Kit (`build_langchain_tools(client, include_mutations=True)`),
    exactly as a judge runs it against a live `datahub docker quickstart` GMS.
 
@@ -82,7 +82,9 @@ class Document:
 
 @runtime_checkable
 class Gateway(Protocol):
-    # -- READ (4 tools) --------------------------------------------------- #
+    # -- READ (5 tools: 4 below + `search_documents`, driven from grep_documents
+    #    via SdkGateway._document_urns because the live grep takes an explicit
+    #    `urns` list and has no "grep the whole KB" mode) -------------------- #
     def search_all(self) -> list[str]:
         """`search` — paginated enumeration of every entity URN in the catalog."""
 
@@ -309,11 +311,29 @@ class SdkGateway:
         Paged for the same reason `search_all` is: unpaged, a knowledge base larger
         than one server page was hunted over only as far as that page and everything
         past it was reported clean.
+
+        A *successful* call that returns zero rows is degraded too, and that was the
+        remaining asymmetry: entity scope already refuses to call an empty enumeration
+        an all-clear (`scan.EMPTY_CATALOG_REASON`), while document scope returned `[]`
+        in silence, `grep_documents` short-circuited, and the sweep printed
+        "0 documents scanned" next to a clean verdict. A KB whose documents tool is
+        disabled, unauthorized, or pointed at the wrong GMS is indistinguishable on the
+        wire from a KB with no documents — so it is reported, not assumed benign. A
+        catalog that genuinely has no KB documents will say so on stderr each run; that
+        is the intended cost of not silently under-sweeping the other case.
         """
         try:
-            return self._paged_urns("search_documents")
+            urns = self._paged_urns("search_documents")
         except Exception as exc:   # noqa: BLE001 - the kit raises SDK/pydantic types
-            pass_through = exc
+            pass_through: Exception | None = exc
+        else:
+            if not urns:
+                self._warn("search_documents enumerated 0 KB documents — this is NOT a "
+                           "document all-clear. An empty knowledge base and a documents "
+                           "tool that is disabled, unauthorized or pointed at the wrong "
+                           "GMS look identical here; nothing was handed to grep_documents "
+                           "and 0 documents were scanned")
+            return urns
         # An older kit whose `search_documents` does not accept `offset` must not lose
         # the document sweep outright: fall back to the single unpaged call, and SAY
         # that pagination is unavailable instead of under-sweeping in silence.
@@ -326,7 +346,11 @@ class SdkGateway:
         self._warn(f"search_documents rejected paging ({pass_through!r}) — fell back to "
                    f"one unpaged call; a knowledge base with more than {_SEARCH_PAGE} "
                    "documents is only partially swept")
-        return _extract_urns(raw)
+        fallback = _extract_urns(raw)
+        if not fallback:
+            self._warn("search_documents enumerated 0 KB documents on the unpaged "
+                       "fallback — this is NOT a document all-clear")
+        return fallback
 
     def grep_documents(self, pattern: str) -> list[Document]:
         # Real signature requires `urns`; there is no "grep the whole KB" mode, so
