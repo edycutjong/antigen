@@ -257,3 +257,32 @@ def test_dunder_main_entrypoint(monkeypatch):
     except SystemExit as e:
         assert e.code == 0
     assert "total_payloads" in out.getvalue()
+
+
+# --------------------------------------------------------------------------- #
+# --max-mutations: the circuit breaker for unattended --apply runs
+# --------------------------------------------------------------------------- #
+
+def test_max_mutations_aborts_with_exit_3():
+    rc, out = run(["cure", "--offline", "--max-mutations", "5"])
+    assert rc == 3, "the breaker must be distinguishable from findings (1)/refused (2)"
+    assert "ABORTED" in out and "--max-mutations 5" in out
+    assert "NOT rolled back" in out, "the message must admit the partial write"
+
+
+def test_max_mutations_is_not_enforced_when_absent():
+    assert run(["cure", "--offline"])[0] == 0
+
+
+def test_max_mutations_caps_certify_and_demo():
+    rc, out = run(["certify", "--offline", "--max-mutations", "4"])
+    assert rc == 3 and "add_" in out
+    rc, out = run(["demo", "--offline", "--max-mutations", "2"])
+    assert rc == 3 and "ABORTED" in out
+
+
+def test_max_mutations_does_not_bind_a_dry_run():
+    # A dry run writes nothing, so a cap on it would cap nothing — it must still
+    # produce the full plan rather than aborting partway.
+    rc, out = run(["cure", "--offline", "--dry-run", "--max-mutations", "1"])
+    assert rc == 0 and "DRY RUN" in out

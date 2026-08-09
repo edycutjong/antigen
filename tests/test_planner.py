@@ -16,6 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from antigen._testkit import InMemoryGateway  # noqa: E402
 from antigen.gateway import Column, Document, Entity  # noqa: E402
 from antigen.planner import (  # noqa: E402
+    BudgetedGateway,
+    MutationBudgetExceeded,
     PlannedMutation,
     PlanningGateway,
     _diff_pair,
@@ -174,3 +176,70 @@ def test_cure_through_the_planner_writes_nothing_to_the_graph():
     assert after == poisoned, "a dry run must leave the catalog exactly as it found it"
     # And a live re-scan still finds every locus, because nothing was cured.
     assert len(scan(inner).hits) == len(report.hits)
+
+
+# --------------------------------------------------------------------------- #
+# BudgetedGateway — the `--max-mutations` circuit breaker
+# --------------------------------------------------------------------------- #
+
+def test_budget_passes_reads_through_untouched():
+    inner = _graph()
+    b = BudgetedGateway(inner, 100)
+    assert b.search_all() == inner.search_all()
+    assert [e.urn for e in b.get_entities(["urn:e1"])] == ["urn:e1"]
+    assert b.get_entity("urn:e1").description == "Customer table."
+    assert [d.title for d in b.grep_documents("body")] == ["guide"]
+    assert b.get_lineage("urn:e1") == ["urn:down"]
+    assert b.get_document("Shared", "guide").content == "body"
+    assert b.degradations() == []
+    assert b.written == 0, "a read must never spend budget"
+
+
+def test_budget_allows_exactly_n_writes_then_refuses_the_next():
+    b = BudgetedGateway(_graph(), 3)
+    b.update_description("urn:e1", "clean")
+    b.add_tags("urn:e1", ["injection-quarantined"])
+    b.add_structured_properties("urn:e1", {"antigen.contentSha256": "abc"})
+    assert b.written == 3
+
+    try:
+        b.save_document("incident", "hashes", parent="Antigen/Incidents")
+    except MutationBudgetExceeded as exc:
+        assert exc.limit == 3 and exc.written == 3
+        assert exc.tool == "save_document"
+        assert "NOT rolled back" in str(exc)
+    else:  # pragma: no cover - the breaker must trip
+        raise AssertionError("write 4 must be refused, not executed")
+
+    # The refused write really did not land, and the first three did.
+    assert b._inner.get_document("Antigen/Incidents", "incident") is None
+    assert b._inner.get_entity("urn:e1").description == "clean"
+
+
+def test_budget_names_the_document_urn_it_refused():
+    b = BudgetedGateway(_graph(), 0)
+    try:
+        b.save_document("doc", "clean", parent="Shared", urn="urn:d1")
+    except MutationBudgetExceeded as exc:
+        assert exc.urn == "urn:d1" and exc.written == 0
+    else:  # pragma: no cover
+        raise AssertionError("a zero budget must refuse the first write")
+
+
+def test_budget_stops_a_real_cure_partway_and_leaves_the_rest_poisoned():
+    from antigen.cure import cure
+    from antigen.scan import scan
+    from antigen.seed import build_corpus_gateway, corpus_fixtures
+
+    inner = build_corpus_gateway()
+    fixtures = corpus_fixtures()
+    report = scan(inner)
+    b = BudgetedGateway(inner, 5)
+    try:
+        cure(b, [h for h in report.hits if h.key in fixtures], fixtures=fixtures)
+    except MutationBudgetExceeded as exc:
+        assert exc.written == 5
+    else:  # pragma: no cover
+        raise AssertionError("a 5-mutation budget cannot cover a 12-locus cure")
+    # Honest about the cost: the sweep still finds the loci the run never reached.
+    assert len(scan(inner).hits) > 0

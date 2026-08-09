@@ -26,9 +26,11 @@ catalog). So:
     catalog to damage and that is the reproducible-demo path `./run.sh` runs.
   * `--dry-run` forces a preview in either mode. It is mutually exclusive with
     `--apply`.
+  * `--max-mutations N` is the circuit breaker for an unattended `--apply` run: the
+    (N+1)th write is refused instead of executed.
 
 Exit codes: 0 success · 1 findings under `--fail-on-hit` · 2 refused, or a DEGRADED
-sweep (see `scan`).
+sweep (see `scan`) · 3 `--max-mutations` tripped (partial writes landed).
 """
 
 from __future__ import annotations
@@ -67,10 +69,23 @@ def _is_dry_run(args) -> bool:
     return not getattr(args, "offline", False)
 
 
+def _budgeted(args, gw):
+    """Wrap a WRITING gateway in the `--max-mutations` circuit breaker, if asked.
+
+    Only the writing path is wrapped: a dry run writes nothing, so a cap on it would
+    cap nothing.
+    """
+    limit = getattr(args, "max_mutations", None)
+    if limit is None:
+        return gw
+    from .planner import BudgetedGateway
+    return BudgetedGateway(gw, limit)
+
+
 def _writer(args, gw):
     """Return (gateway-to-use, plan-or-None). Reads are identical either way."""
     if not _is_dry_run(args):
-        return gw, None
+        return _budgeted(args, gw), None
     from .planner import PlanningGateway
     plan = PlanningGateway(gw)
     return plan, plan
@@ -187,7 +202,7 @@ def cmd_certify(args) -> int:
     gw, _ = _gateway(args)
     target, plan = _writer(args, gw)
     report = scan(target)
-    result = certify(target, report.clean_entity_urns)
+    result = certify(target, report.clean_entity_urns, clock=_clock())
     if plan is not None:
         return _print_plan(plan, "certify")
     print(result.summary())
@@ -230,6 +245,7 @@ def cmd_demo(args) -> int:
         return 2
 
     gw, fixtures = _gateway(args)
+    gw = _budgeted(args, gw)
     if not fixtures:
         fixtures = corpus_fixtures()
 
@@ -250,7 +266,7 @@ def cmd_demo(args) -> int:
 
     print("\n── 4. CERTIFY the clean remainder (standing control) ─────")
     from .certify import certify
-    cert = certify(gw, report.clean_entity_urns)
+    cert = certify(gw, report.clean_entity_urns, clock=_clock())
     print(cert.summary())
 
     print("\n── 5. PROVE STANDING (re-scan clean; drift-protected) ────")
@@ -279,6 +295,12 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--offline", action="store_true",
                         help="run against the in-memory corpus double (no Docker)")
 
+    def add_budget(sp):
+        sp.add_argument("--max-mutations", type=int, default=None, metavar="N",
+                        help="circuit breaker for unattended runs: abort with exit 3 "
+                             "BEFORE writing mutation N+1. Writes already made are not "
+                             "rolled back — the abort message says exactly what landed.")
+
     def add_write_gate(sp):
         """--dry-run / --apply. Live runs preview by default; offline runs apply."""
         g = sp.add_mutually_exclusive_group()
@@ -287,6 +309,7 @@ def build_parser() -> argparse.ArgumentParser:
                             "and write NOTHING. Default against a live catalog.")
         g.add_argument("--apply", "--yes", dest="apply", action="store_true",
                        help="actually write. REQUIRED for any live mutating run.")
+        add_budget(sp)
 
     sp = sub.add_parser("scan", help="sweep the catalog for injections")
     add_offline(sp)
@@ -325,6 +348,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_offline(sp)
     sp.add_argument("--apply", "--yes", dest="apply", action="store_true",
                     help="required to run the arc against a LIVE catalog (it mutates)")
+    add_budget(sp)
     sp.set_defaults(func=cmd_demo)
 
     sp = sub.add_parser("detect", help="score a single string")
@@ -337,8 +361,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv=None) -> int:
+    from .planner import MutationBudgetExceeded
     args = build_parser().parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except MutationBudgetExceeded as exc:
+        # Exit 3 is deliberately distinct from 1 (findings) and 2 (refused/degraded):
+        # a CI job must be able to tell "the catalog is dirty" from "the breaker
+        # tripped and the catalog is now half-remediated".
+        print(f"ABORTED: {exc}", file=sys.stderr)
+        return 3
 
 
 if __name__ == "__main__":  # pragma: no cover

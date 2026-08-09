@@ -155,6 +155,94 @@ class PlanningGateway:
             content))
 
 
+class MutationBudgetExceeded(RuntimeError):
+    """Raised by :class:`BudgetedGateway` instead of performing write ``limit + 1``."""
+
+    def __init__(self, limit: int, written: int, tool: str, urn: str) -> None:
+        self.limit = limit
+        self.written = written
+        self.tool = tool
+        self.urn = urn
+        super().__init__(
+            f"--max-mutations {limit} reached: refused `{tool}` on {urn}. "
+            f"{written} mutations were already written and are NOT rolled back — "
+            "Antigen has no transaction across DataHub aspects. The remaining loci are "
+            "untouched and still poisoned. Re-run to continue (cure skips entities it "
+            "already quarantined and stamped) or raise the cap after reviewing what "
+            "landed."
+        )
+
+
+class BudgetedGateway:
+    """Gateway decorator that caps how many mutations one run may perform.
+
+    READs pass through; the Nth+1 mutation raises :exc:`MutationBudgetExceeded` INSTEAD
+    of being executed, so the cap is a hard bound on writes, not a post-hoc count.
+
+    What this is: a circuit breaker for an unattended `--apply` run. `cure` writes 4
+    mutations per hit and `certify` 2 per clean entity, so a misconfigured
+    `DATAHUB_GMS_URL` pointed at the wrong catalog, or one badly-tuned detector change,
+    is otherwise unbounded. What this is NOT: incremental scanning, or any claim about
+    operating at catalog scale. It makes an unattended run survivable — it does not
+    make it cheap, and a run that trips the cap has already written up to `limit`
+    aspect versions that a human now has to look at.
+    """
+
+    def __init__(self, inner: Gateway, limit: int) -> None:
+        self._inner = inner
+        self._limit = limit
+        self.written = 0
+
+    def _spend(self, tool: str, urn: str) -> None:
+        if self.written >= self._limit:
+            raise MutationBudgetExceeded(self._limit, self.written, tool, urn)
+        self.written += 1
+
+    # -- READ: straight through ------------------------------------------- #
+    def search_all(self) -> list[str]:
+        return self._inner.search_all()
+
+    def get_entities(self, urns: list[str]) -> list[Entity]:
+        return self._inner.get_entities(urns)
+
+    def get_entity(self, urn: str) -> Entity | None:
+        return self._inner.get_entity(urn)
+
+    def grep_documents(self, pattern: str) -> list[Document]:
+        return self._inner.grep_documents(pattern)
+
+    def get_lineage(self, urn: str, direction: str = "downstream",
+                    hops: int = 2) -> list[str]:
+        return self._inner.get_lineage(urn, direction=direction, hops=hops)
+
+    def get_document(self, parent: str, title: str) -> Document | None:
+        return self._inner.get_document(parent, title)
+
+    def degradations(self) -> list[str]:
+        return list(getattr(self._inner, "degradations", list)())
+
+    # -- MUTATION: counted, then forwarded -------------------------------- #
+    def update_description(self, urn: str, description: str,
+                           field_path: str | None = None) -> None:
+        self._spend("update_description", urn)
+        self._inner.update_description(urn, description, field_path=field_path)
+
+    def add_tags(self, urn: str, tags: list[str],
+                 field_path: str | None = None) -> None:
+        self._spend("add_tags", urn)
+        self._inner.add_tags(urn, tags, field_path=field_path)
+
+    def add_structured_properties(self, urn: str, properties: dict[str, str]) -> None:
+        self._spend("add_structured_properties", urn)
+        self._inner.add_structured_properties(urn, properties)
+
+    def save_document(self, title: str, content: str,
+                      parent: str = "Antigen/Incidents",
+                      urn: str | None = None) -> None:
+        self._spend("save_document", urn or f"(new document `{title}`)")
+        self._inner.save_document(title, content, parent=parent, urn=urn)
+
+
 def format_plan(planned: list[PlannedMutation], *, command: str) -> str:
     """Render the mutation plan an operator has to approve."""
     if not planned:
