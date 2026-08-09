@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-08-09)
+
+### Bug Fixes
+
+- **cure**: Converge the KB-document cure, stamp a real lastScanned, skip re-certify
+  ([`a7e82be`](https://github.com/edycutjong/antigen/commit/a7e82bea5e9532416fadf783abd8e2fdf52b22b5))
+
+### Documentation
+
+- Least-privilege operator guidance + an example CI workflow for adopters
+  ([`51e126b`](https://github.com/edycutjong/antigen/commit/51e126ba9fffacb0f9c2324fdae98a4188565893))
+
+- True up the test count to 130 and name the new suites
+  ([`b37a3d8`](https://github.com/edycutjong/antigen/commit/b37a3d894478d8373dc07ca32c28156c30324f29))
+
+- **examples**: Regenerate the defused diffs from the real banner composer
+  ([`22669f4`](https://github.com/edycutjong/antigen/commit/22669f48941b8b0cc84fec9b5dd37b0f9305222d))
+
+- **rfc**: Retract Finding 2's claim against mcp-server-datahub main
+  ([`0ede86b`](https://github.com/edycutjong/antigen/commit/0ede86b7cc77ff064e1594f81822c93b488a8891))
+
+- **skill**: Rebuild antigen-scan to the datahub-skills house layout
+  ([`51650ae`](https://github.com/edycutjong/antigen/commit/51650ae30b9f2930774aec03b51cb0c9bcd232f1))
+
+### Features
+
+- **cli**: --max-mutations circuit breaker for unattended --apply runs
+  ([`6e08d9b`](https://github.com/edycutjong/antigen/commit/6e08d9b2ad47c8200cbc2f9053adb4e8c589170e))
+
+
 ## v1.1.1 (2026-08-09)
 
 ### Bug Fixes
