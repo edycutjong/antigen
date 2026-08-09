@@ -164,6 +164,7 @@ class SdkGateway:
         self._tags_seen: set[str] = set()
         self._graph_cache = None
         self._degradations: list[str] = []
+        self._degraded_kinds: set[str] = set()
         tools = build_langchain_tools(self._client, include_mutations=True)
         self._tools = {t.name: t for t in tools}
         missing = self._required_tools() - set(self._tools)
@@ -186,14 +187,22 @@ class SdkGateway:
         tool = self._tools[name]
         return tool.invoke(kwargs)
 
-    def _warn(self, message: str) -> None:
-        """Record AND print a degraded read.
+    def _warn(self, message: str, *, key: str | None = None) -> None:
+        """Record AND print a degraded read — once per failure kind.
 
         Every catch on the live read path used to `return []` in silence, so a failed
         document enumeration or aspect read left the summary printing a confident
         number over a sweep that had quietly stopped looking. A security control that
         fails quietly is worse than one that fails loudly.
+
+        `key` collapses a per-entity failure (an aspect read that is broken for the
+        whole catalog would otherwise emit one line per entity) to a single report
+        naming the first entity it hit.
         """
+        tag = key or message
+        if tag in self._degraded_kinds:
+            return
+        self._degraded_kinds.add(tag)
         self._degradations.append(message)
         print(f"WARNING: {message}", file=sys.stderr)
 
@@ -266,9 +275,21 @@ class SdkGateway:
             from datahub.metadata.schema_classes import (  # type: ignore
                 EditableSchemaMetadataClass,
             )
+        except ImportError:
+            # The base SDK is an optional live-only dependency; its absence is the
+            # documented tool-only mode, not a degraded catalog read. Stay quiet.
+            return
+        try:
             aspect = graph.get_aspect(entity_urn=ent.urn,
                                       aspect_type=EditableSchemaMetadataClass)
-        except Exception:
+        except Exception as exc:   # noqa: BLE001 - the SDK raises many transport types
+            # Previously a bare `return`. A failed overlay read means every
+            # COLUMN-level cure reads back as un-defused, so verification quietly
+            # loses a whole locus class while the summary still prints a number.
+            self._warn(f"editableSchemaMetadata read failed ({exc!r}; first seen on "
+                       f"{ent.urn}) — column-level cures are INVISIBLE to the read "
+                       "path that verifies them",
+                       key="editableSchemaMetadata")
             return
         if aspect is None:
             return

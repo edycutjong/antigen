@@ -103,6 +103,7 @@ def _sdk_with_tools(tools):
     g._tags_seen = set()
     g._graph_cache = None
     g._degradations = []
+    g._degraded_kinds = set()
     return g
 
 
@@ -545,9 +546,11 @@ def test_save_document_overwrites_by_urn_when_given():
     assert call["topics"] == ["Antigen/Incidents"]
 
 
-def test_merge_editable_columns_degrades_on_aspect_errors(monkeypatch):
+def test_merge_editable_columns_degrades_on_aspect_errors(monkeypatch, capsys):
     """The overlay is best-effort: a failing or absent aspect must leave the
-    ingested schema intact rather than abort the whole sweep."""
+    ingested schema intact rather than abort the whole sweep — but a FAILING one
+    must also be reported. It used to be a bare `return`, so a broken overlay read
+    made every column-level cure read back as un-defused, silently."""
     schema_mod = _ensure_pkg(monkeypatch, "datahub.metadata.schema_classes")
     schema_mod.EditableSchemaMetadataClass = type("EditableSchemaMetadataClass", (), {})
     ingested = {"urn": "urn:1", "schemaMetadata": {"fields": [
@@ -559,10 +562,40 @@ def test_merge_editable_columns_degrades_on_aspect_errors(monkeypatch):
     g = _sdk_with_tools([FakeTool("get_entities", lambda kw: [ingested])])
     g._graph_cache = types.SimpleNamespace(get_aspect=boom)
     assert g.get_entities(["urn:1"])[0].columns["c1"].description == "original"
+    assert "column-level cures are INVISIBLE" in capsys.readouterr().err
+    assert len(g.degradations()) == 1
 
+    # A catalog-wide failure must be reported ONCE, not once per entity.
+    g.get_entities(["urn:1"])
+    g.get_entities(["urn:1"])
+    assert len(g.degradations()) == 1
+    assert capsys.readouterr().err == ""
+
+    # An ABSENT aspect is the normal case for an entity nobody has edited — no noise.
     g2 = _sdk_with_tools([FakeTool("get_entities", lambda kw: [ingested])])
     g2._graph_cache = types.SimpleNamespace(get_aspect=lambda **kw: None)
     assert g2.get_entities(["urn:1"])[0].columns["c1"].description == "original"
+    assert g2.degradations() == []
+
+
+def test_merge_editable_columns_is_quiet_when_the_aspect_classes_are_absent(monkeypatch):
+    """A missing optional dependency is the documented tool-only mode, not a degraded
+    catalog read — it must not be reported as one."""
+    import builtins
+    real_import = builtins.__import__
+
+    def blocked(name, *a, **k):
+        if name == "datahub.metadata.schema_classes":
+            raise ImportError("base acryl-datahub not installed")
+        return real_import(name, *a, **k)
+
+    g = _sdk_with_tools([FakeTool("get_entities", lambda kw: [
+        {"urn": "urn:1", "schemaMetadata": {"fields": [
+            {"fieldPath": "c1", "description": "original"}]}}])])
+    g._graph_cache = types.SimpleNamespace(get_aspect=lambda **kw: None)
+    monkeypatch.setattr(builtins, "__import__", blocked)
+    assert g.get_entities(["urn:1"])[0].columns["c1"].description == "original"
+    assert g.degradations() == []
 
 
 def test_merge_editable_columns_ignores_entries_without_description(monkeypatch):
