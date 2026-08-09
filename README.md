@@ -308,6 +308,20 @@ buildable today. Three things it provably cannot do:
   span, cannot hash the field, cannot walk lineage for blast radius. The four mutations in
   the table below are the part with no native equivalent.
 
+Two adjacent tools complete the survey, because a DataHub PM would raise both.
+[`datahub-classify`](https://github.com/acryldata/datahub-classify/blob/main/datahub-classify/README.md)
+is the closest OSS ancestor — its `Description` prediction factor is a *"regex list
+which is to be matched against column description"* — but it exists to type PII,
+proposing glossary terms for what it matches rather than rewriting anything, and its
+built-in `DataHubClassifier` has been
+[removed from OSS](https://docs.datahub.com/docs/metadata-ingestion/docs/dev_guides/classification)
+(it sat on the unmaintained `acryl-datahub-classify` stack, pinned to `numpy<2` and an
+outdated spaCy). The [Actions framework](https://docs.datahub.com/docs/actions) is
+arguably the right *packaging* for Antigen — an event-driven listener that scans on
+every metadata change instead of on a schedule; it is named as roadmap below — but it
+ships transport, not judgment: the bundled actions are Hello World, Executor and Slack,
+and none contains detection logic.
+
 ---
 
 ## 🏗️ Architecture & Tech Stack
@@ -697,6 +711,7 @@ docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 - [x] `antigen-scan` DataHub Skill written (`antigen-scan/SKILL.md`)
 - [x] RFC filed upstream to `mcp-server-datahub` ([acryldata/mcp-server-datahub#201](https://github.com/acryldata/mcp-server-datahub/issues/201))
 - [x] Docs PR opened upstream — corrects `update_description`'s supported-type list, which misstated DataHub's resolver in both directions ([acryldata/mcp-server-datahub#202](https://github.com/acryldata/mcp-server-datahub/pull/202))
+- [ ] Repackage as a DataHub Actions listener — scan on every metadata change event, not on a schedule
 - [ ] Full TR39 homoglyph / confusables coverage
 - [ ] Optional LLM second-layer classifier (behind the deterministic rule; never gating)
 - [ ] Non-English injection coverage
