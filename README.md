@@ -178,6 +178,29 @@ the honest framing — the new part is the surface it is applied to, not the tec
 - **Attacker-authored text inside a tool surface is an execution path** was settled by
   Invariant Labs' [MCP tool-poisoning disclosure](https://invariantlabs.ai/blog/mcp-security-notification-tool-poisoning-attacks)
   (2025-04-01) and quantified by [MCPTox](https://arxiv.org/abs/2508.14925).
+- **Even the immune-system metaphor is taken.**
+  [AgentAntibody](https://arxiv.org/abs/2608.04053) (arXiv 2608.04053, published
+  2026-08-04 — five days before this hackathon's deadline) is literally *"An Adaptive
+  Immune System for Defending LLM Agents against Prompt Injection."* The mechanism is
+  the opposite pole of ours: it builds adaptive immunity *inside the agent at runtime* —
+  a persistent antibody library that strengthens with each encounter — where Antigen
+  sterilizes the environment, so agents that have never heard of it are safe too.
+- **Pin-and-diff is prior art at the MCP layer.** Trail of Bits'
+  [`mcp-context-protector`](https://blog.trailofbits.com/2025/07/28/we-built-the-security-layer-mcp-always-needed/)
+  (2025-07-28) trust-on-first-use-pins a server's tool definitions and blocks on drift;
+  [ETDI](https://arxiv.org/abs/2506.01333) (arXiv 2506.01333) signs and versions them.
+  Both are direct antecedents of `antigen.contentSha256` + `rescan`. The difference is
+  what gets pinned and where: they pin *tool definitions* in a proxy in front of one
+  host; Antigen pins *catalog content* in the store of record, so drift is detectable
+  by every consumer, not one proxy.
+- **In-place redaction write-back is a decade-old DLP pattern.**
+  [Nightfall](https://help.nightfall.ai/sensitive-data-protection/slack/slack-remediation-guide/redact)
+  edits a flagged Slack message in place with its redacted form;
+  [Google Cloud Sensitive Data Protection](https://docs.cloud.google.com/sensitive-data-protection/docs/concepts-actions)
+  runs scan → de-identify → write the de-identified copy back. Content Disarm &
+  Reconstruction is the same idea for files: strip the payload, rebuild the clean,
+  usable artifact. The novelty in Antigen is the payload class (instructions aimed at
+  an LLM, not PII) and the surface (a metadata graph), not the pattern.
 
 **The reframe: OWASP wrote the control; nobody built it for a data catalog.** MCP *tool
 descriptions* got a scanner in about ten days — Invariant's post is dated 2025-04-01 and
