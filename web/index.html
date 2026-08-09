@@ -491,6 +491,8 @@ strong { color: var(--text-hi); font-weight: 600; }
 .control-card h3 .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
 .control-card p { font-size: 0.89rem; margin: 0; }
 .control-card code { color: var(--text-hi); font-size: 0.8rem; }
+.control-card.green:hover { border-color: rgba(46, 229, 157, 0.35); }
+.control-card.green h3 .dot { background: var(--primary); }
 
 /* --- FAQ ------------------------------------------------------------------------ */
 .faq-list { max-width: 800px; }
@@ -693,7 +695,7 @@ strong { color: var(--text-hi); font-weight: 600; }
 <span class="dim">── SWEEP ───</span> 41 entities + 2 docs scanned  <span class="dim">(offline run)</span>
   <span class="bad">15 loci flagged</span> · <span class="warn">2 in zero-width Unicode</span>
   <span class="dim">13 get_entities · 2 grep_documents</span>
-<span class="dim">── DEFUSE ──</span> <span class="ok">12 loci cured</span> · span excised
+<span class="dim">── DEFUSE ──</span> <span class="ok">12 loci cured</span> · fixture-backed excision
 <span class="dim">── RADIUS ──</span> <span class="warn">3 downstream assets tagged</span>
 <span class="dim">── CERTIFY ─</span> <span class="ok">28 clean entities certified</span> + hash
 <span class="dim">── PROVE ───</span> re-scan: <span class="ok">0 loci</span> · <span class="ok">0 drifted</span> <span class="cursor"></span></pre>
@@ -703,7 +705,7 @@ strong { color: var(--text-hi); font-weight: 600; }
     <div class="wrap media-band reveal">
       <div class="frame">
         <img src="public/readme-hero-animated.svg" width="1280" height="320"
-             alt="Antigen hero panel: the four-step arc — Hijack (a stock LangChain agent obeys a payload planted in a table description), Sweep (12 hits, 2 zero-width, via search, get_entities and grep_documents), Defuse (4 write-backs per hit: update_description, add_tags, add_structured_properties, save_document), Prove (0/12 hijacks after, 12/12 defused, under 30 seconds)." />
+             alt="Antigen hero panel: the four-step arc — Hijack (a stock LangChain agent reads a payload planted in a table description, and the buried instruction reaches its context intact), Sweep (12 hits, 2 zero-width, via search, get_entities and grep_documents), Defuse (4 write-backs per hit: update_description, add_tags, add_structured_properties, save_document), Prove (0/12 hijacks after, 12/12 defused, under 30 seconds)." />
       </div>
     </div>
   </section>
@@ -730,16 +732,25 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="reveal">
           <p class="owasp-badge">⚠ OWASP LLM01 — Prompt Injection</p>
           <p>
-            Anyone with catalog-edit access can plant a payload in any free-text
-            field: an intern pasting a note, a compromised CI job, a malicious
-            insider, an automated ingestion source. Nobody code-reviews a table
-            description. Three weeks later, the company's new "Ask the Catalog"
-            assistant reads that description while answering a routine question —
-            and obeys the buried command.
+            The catalog's real authorship boundary isn't the DataHub UI — it's
+            the warehouse. <strong>Ingestion consults no DataHub policy at
+            all.</strong> A contractor runs <code>COMMENT ON COLUMN</code> in
+            Snowflake; the connector ships descriptions
+            <em>"Enabled by default"</em> and copies that text straight into the
+            catalog. Then <strong>Documentation Propagation</strong> —
+            <em>"enabled by default in Open Source DataHub"</em> — fans the
+            identical string out to downstream and sibling columns. One write in
+            the warehouse becomes N agent-readable surfaces, and the platform's
+            own automation did the spreading.
           </p>
           <p>
-            This isn't hypothetical. DataHub's own Agent Context Kit ships the
-            exact vulnerable pattern as its <strong>reference integration</strong>:
+            Ordinary catalog-edit access is the second path — an intern pasting
+            a note, a compromised CI job, a malicious insider. Either way nobody
+            code-reviews a table description. Three weeks later, the company's
+            new "Ask the Catalog" assistant reads it while answering a routine
+            question — and obeys the buried command. DataHub's own Agent Context
+            Kit ships the exact vulnerable pattern as its
+            <strong>reference integration</strong>:
           </p>
           <div class="code-callout">
             <code>tools = build_langchain_tools(client)  <span style="color:var(--text-mid)"># the reference pattern</span></code>
@@ -792,7 +803,10 @@ strong { color: var(--text-hi); font-weight: 600; }
           <p>
             A <strong>stock</strong> LangChain agent — zero Antigen code,
             unmodified <code>build_langchain_tools</code> — reads a poisoned
-            description and obeys the buried instruction.
+            description, and the buried instruction lands in its context
+            verbatim. Compliance signature <strong>2/12</strong> pre-cure; in
+            the recorded run both flags are the model quoting the payload while
+            refusing it. The quote is the tell.
           </p>
           <code class="snip">python victim_agent.py</code>
         </li>
@@ -811,9 +825,13 @@ strong { color: var(--text-hi); font-weight: 600; }
           <span class="step-num">03 · THE CURE</span>
           <h3>Defuse</h3>
           <p>
-            <strong>Removes</strong> the injected span in the graph and chains
-            4 DataHub write-backs — clean description, quarantine tag, tamper
-            hash, forensic incident. Only irreversible hashes remain.
+            <strong>Removes</strong> the payload from the graph — the span
+            excised where it can be (fixture-backed, or opt-in
+            <code>--excise-span</code> on your own catalog), the whole field
+            quarantined behind an inert banner otherwise — and chains 4
+            DataHub write-backs:
+            clean description, quarantine tag, tamper hash, forensic incident.
+            Only irreversible hashes remain.
           </p>
           <code class="snip">antigen cure</code>
         </li>
@@ -821,7 +839,7 @@ strong { color: var(--text-hi); font-weight: 600; }
           <span class="step-num">04 · THE PROOF</span>
           <h3>Prove</h3>
           <p>
-            The same stock agent, same questions, cold: obeys
+            The same stock agent, same questions, cold: compliance signature
             <strong>0/12</strong> — structurally, because no live instruction
             remains on any readable surface. <code>verify.py</code> hard-gates
             on the LLM-independent graph state.
@@ -1071,11 +1089,87 @@ strong { color: var(--text-hi); font-weight: 600; }
           <h3><span class="dot"></span>Fail-safe cure</h3>
           <p>
             No entity is ever deleted; pre-cure text is retained in DataHub's
-            native aspect version history. A false positive is a one-action
-            revert — never data loss, never an agent outage.
+            native aspect version history. By default an out-of-corpus hit
+            replaces the whole field (<code>--excise-span</code> cuts just the
+            span instead), so a false positive can cost a description until a
+            one-action revert — fail-safe, not guaranteed lossless.
           </p>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ============================== PRIOR ART ============================== -->
+  <section class="section" id="prior-art" aria-labelledby="prior-art-title">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <p class="eyebrow">Prior art &amp; upstream</p>
+        <h2 id="prior-art-title">Nothing shipped reads catalog text for intent.</h2>
+        <p class="lede">
+          The honest version of the novelty claim, with the objections named
+          first. DataHub ships plenty that touches descriptions — none of it
+          asks whether the description is an instruction.
+        </p>
+      </div>
+
+      <div class="control-grid reveal-stagger">
+        <div class="control-card green">
+          <h3><span class="dot"></span>Metadata Tests can match. They can't act.</h3>
+          <p>
+            A Cloud-only <code>Matches Regex</code> condition <em>can</em>
+            pattern-match description text — so we don't claim otherwise. But
+            its actions are label-only (tags, terms, owners, domain): it can
+            mark a poisoned asset, never excise a span or hash a field. It
+            excludes Document entities, so the two KB payloads are invisible to
+            it, and scheduled evaluation runs "typically every 24 hours."
+            <code>datahub-classify</code> regexes descriptions to type PII, not
+            to find instructions — and was removed from OSS core.
+          </p>
+        </div>
+        <div class="control-card green">
+          <h3><span class="dot"></span>Propagation moves metadata without reading it.</h3>
+          <p>
+            Tag Propagation and Documentation Propagation both ship, both are
+            lineage-driven, and docs propagation is enabled by default in Open
+            Source DataHub. They copy text downstream without ever inspecting
+            it — which is precisely what turns one poisoned column into N.
+            Antigen's blast radius is <strong>not an invention</strong>: it is
+            DataHub's own propagation semantics pointed at a security label.
+          </p>
+        </div>
+        <div class="control-card green">
+          <h3><span class="dot"></span>The literature cleans the copy. We repair the source.</h3>
+          <p>
+            Injection removal is well studied —
+            <a href="https://arxiv.org/abs/2502.16580" rel="noopener">arXiv&nbsp;2502.16580</a>
+            benchmarks removal,
+            <a href="https://arxiv.org/abs/2510.08829" rel="noopener">CommandSans</a>
+            sanitizes tool output token-by-token. Both clean the
+            <em>in-flight copy</em> on its way to one model. Antigen writes the
+            repair back into the <strong>store of record</strong>, so the next
+            agent — and every agent after it — reads clean text.
+          </p>
+        </div>
+      </div>
+
+      <p class="method-note reveal">
+        <strong>Filed upstream</strong> — all four are open and unmerged, none
+        has been reviewed by a human, and nothing here is claimed as accepted:
+        <a href="https://github.com/datahub-project/datahub/pull/19034" rel="noopener">datahub#19034</a>,
+        a docs PR against the core repo correcting three agent tool-contract
+        docstrings — <code>update_description</code> advertised four entity
+        types the server rejects and omitted seven it accepts;
+        <code>add_tags</code> and <code>add_structured_properties</code> never
+        stated their pre-existence prerequisites (+23/−3, 3 files);
+        <a href="https://github.com/acryldata/mcp-server-datahub/issues/201" rel="noopener">mcp-server-datahub#201</a>,
+        an RFC for an opt-in output-sanitization hint;
+        <a href="https://github.com/acryldata/mcp-server-datahub/pull/202" rel="noopener">#202</a>,
+        the same corrections against the MCP server's tool docs
+        (+24/−6, 4 files); and
+        <a href="https://github.com/datahub-project/datahub-skills/pull/124" rel="noopener">datahub-skills#124</a>,
+        the <code>antigen-scan</code> skill for the official registry
+        (+765/−0, 13 files).
+      </p>
     </div>
   </section>
 
@@ -1133,10 +1227,32 @@ strong { color: var(--text-hi); font-weight: 600; }
           <summary>What happens on a false positive?</summary>
           <div class="answer">
             <p>
-              The cure is fail-safe by design: the injected span is excised, but
-              no entity is ever deleted, and the pre-cure text lives in
-              DataHub's native aspect version history. Reverting a false
-              positive is one action — never data loss, never an agent outage.
+              Depends on the mode, and the difference matters. On the seeded
+              demo corpus every hit is fixture-backed, so the cure
+              <strong>excises just the injected span</strong> and leaves the
+              rest of the description intact. On your catalog there are no
+              fixtures, so the default is the lossy one: the flagged field is
+              replaced <strong>wholesale</strong> with
+              <code>[field quarantined by Antigen pending human review]</code>
+              plus an inert banner pointing at the forensic incident. Opt into
+              <code>--excise-span</code> and the cure cuts the flagged span out
+              of the live field instead and keeps the surrounding
+              documentation — but it falls back to whole-field quarantine
+              whenever the survivor still trips the detector, because Antigen
+              must never write text its own detector would flag. Either way:
+              <strong>fail-safe, not guaranteed lossless</strong> — a false
+              positive can cost you a hand-written description until someone
+              reverts it.
+            </p>
+            <p>
+              Nothing is deleted and no entity is removed — the pre-cure text
+              stays in DataHub's native aspect version history, so the revert is
+              one action per affected field. It is also exactly why
+              <code>cure</code> is <strong>dry-run by default</strong> on any
+              live target, why <code>--apply</code> is a separate decision, why
+              <code>--max-mutations N</code> refuses the N+1st write instead of
+              executing it, and why you are meant to read the plan — produced by
+              the real engine, not a mock — before you approve it.
             </p>
           </div>
         </details>
@@ -1259,6 +1375,7 @@ strong { color: var(--text-hi); font-weight: 600; }
             <li><a href="#numbers">The killer numbers</a></li>
             <li><a href="#tools">9 DataHub tools</a></li>
             <li><a href="#detector">The detector</a></li>
+            <li><a href="#prior-art">Prior art &amp; upstream</a></li>
           </ul>
         </nav>
       </div>
