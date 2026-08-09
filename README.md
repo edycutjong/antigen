@@ -23,7 +23,7 @@
   ![python](https://img.shields.io/badge/python-3.10%2B-3776AB)
   ![DataHub](https://img.shields.io/badge/DataHub-Agent%20Context%20Kit-1890FF)
   ![OWASP](https://img.shields.io/badge/OWASP-LLM01%20Prompt%20Injection-C1272D)
-  ![tests](https://img.shields.io/badge/tests-114%20passing-2EA043)
+  ![tests](https://img.shields.io/badge/tests-130%20passing-2EA043)
   ![coverage](https://img.shields.io/badge/coverage-100%25-2EA043)
   ![verify](https://img.shields.io/badge/verify.py-graph--state%20PASS-2EA043)
   [![License](https://img.shields.io/badge/license-Apache--2.0-green)](https://github.com/edycutjong/antigen/blob/main/LICENSE)
@@ -607,21 +607,26 @@ fail the run. This is the command a judge runs to reproduce the headline number.
 ### Tests & benchmarks
 
 ```
-114 tests, all passing — 100% line coverage of the antigen package (CI gate: --cov-fail-under=100):
+130 tests, all passing — 100% line coverage of the antigen package (CI gate: --cov-fail-under=100):
   · detector       12/12 payloads · 3/3 held-out · 0 FP near-miss + clean · NFKC-miss proof ·
                    every Unicode Cf branch (zero-width / BiDi / allowlisted marks)
   · engine         surface-completeness (payload+base64+hex absent) · tags+hashes ·
                    idempotent no-op · multi-locus entity · quarantined + CERTIFIED drift ·
                    blast-radius · out-of-corpus field-quarantine · version-history isolation ·
-                   incident records never cite a payload file that was not checked in
+                   incident records never cite a payload file that was not checked in ·
+                   MULTI-CYCLE convergence on a KB document (cure→scan→cure→scan) · the
+                   banner is inert for every detector signal combination · certify skips
+                   entities already certified at the same content hash and stamps ISO-8601
   · gateway        response parsers + the live SdkGateway argument-marshalling (SDK faked) +
                    register_properties (structured-property definitions) · pagination against
                    a double that CLAMPS its page size the way the live GMS does · degraded
                    reads are reported, not swallowed
   · planner        every mutation recorded and NONE executed; a dry run leaves the graph
-                   byte-for-byte as it found it (the real cure engine, driven end-to-end)
+                   byte-for-byte as it found it (the real cure engine, driven end-to-end) ·
+                   --max-mutations refuses write N+1 rather than executing it
   · cli            every subcommand, offline and against the (faked) live gateway · the
-                   --dry-run/--apply write gate · exit 2 on a degraded sweep
+                   --dry-run/--apply write gate · exit 2 on a degraded sweep · exit 3
+                   when the --max-mutations breaker trips
   · robustness     15 novel benign prose clean + 7 novel attack paraphrases flagged
   · verify         Part A graph-state gate as an integration test
 benchmark: scan+cure p50 ≈ 2 ms offline (network-free); live numbers via `bench.py --live`
@@ -1041,7 +1046,7 @@ because that repo's CONTRIBUTING says Release Please owns them.
 
 - [x] Deterministic stdlib detector (scored rule + Unicode `Cf`-strip pre-pass)
 - [x] 4-mutation cure that writes the security state back into the graph
-- [x] `verify.py` LLM-independent graph-state gate · 114 tests · 100% coverage
+- [x] `verify.py` LLM-independent graph-state gate · 130 tests · 100% coverage
 - [x] `--dry-run` by default on live mutating runs; `--apply` required to write
 - [x] Responsible-disclosure RFC drafted, incl. 3 reproducible Agent-Context-Kit findings — none of which is carried upstream as a defect claim about `mcp-server-datahub` `main`, after a 2026-08-09 re-verification retracted the one that was (`docs/RFC-output-sanitization.md`)
 - [x] `antigen-scan` DataHub Skill authored to the `datahub-project/datahub-skills` house layout — `SKILL.md` + `references/` + `templates/` + `evaluations/` ([above](#-antigen-scan--the-datahub-skill))
