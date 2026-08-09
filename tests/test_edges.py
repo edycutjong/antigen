@@ -137,6 +137,60 @@ def test_widening_the_pre_filter_did_not_cost_a_single_false_positive():
     assert not [n for n in pulled if detect(n.text).flagged]
 
 
+def test_pre_filter_superset_invariant_over_the_ENTIRE_shipped_corpus():
+    """The superset claim, enforced against every attack string the project ships.
+
+    The earlier version of this invariant checked three hand-picked persona strings
+    and passed while four corpus payloads were still unreachable at document scope —
+    a test that proved the example it was written from, not the property. This one
+    enumerates the whole corpus (every payload as the bare injected span AND as the
+    poisoned field an attacker actually leaves behind, plus the held-out public
+    strings), and fails on any text `detect` flags that `grep_documents` would never
+    have fetched.
+
+    Exactly one exemption is allowed, and it is asserted to be exactly one: DataHub
+    greps the RAW body while `detect` scores AFTER the Cf-strip pre-pass, so a payload
+    whose trigger words only exist once zero-width characters are removed is
+    unreachable by ANY server-side plain-text pattern. That case must still match once
+    the text is de-obfuscated — otherwise it is a genuine filter gap wearing a Unicode
+    costume, and this test says which.
+    """
+    import re
+
+    from antigen.corpus import HELD_OUT, PAYLOADS
+    from antigen.detect import unicode_prepass
+    from antigen.scan import DOC_GREP_PATTERN
+
+    rx = re.compile(DOC_GREP_PATTERN, re.IGNORECASE | re.DOTALL)
+
+    cases: list[tuple[str, str]] = []
+    for p in PAYLOADS:
+        cases.append((p.id, p.injection))
+        cases.append((p.id, p.poisoned_text))
+    for h in HELD_OUT:
+        cases.append((h.id, h.injection))
+        cases.append((h.id, f"{h.original_text} {h.injection}"))
+    cases += [(f"persona{i}", t) for i, t in enumerate(PERSONA_JAILBREAKS)]
+
+    unreachable: set[str] = set()
+    for name, text in cases:
+        if not detect(text).flagged or rx.search(text):
+            continue
+        assert rx.search(unicode_prepass(text).cleaned), (
+            f"{name}: the detector flags this and the pre-filter misses it even after "
+            f"the Cf-strip — a real filter gap, not the Unicode gap: {text!r}"
+        )
+        unreachable.add(name)
+
+    assert unreachable == {"P05"}, (
+        "The ONLY payload the document pre-filter cannot reach must be P05, whose "
+        "trigger words are split by zero-width characters in the bytes DataHub greps. "
+        f"Got: {sorted(unreachable)}. A new name here is a regression in "
+        "DOC_GREP_PATTERN; a missing P05 means the README's honest-limitation entry "
+        "is now stale and should be removed."
+    )
+
+
 # --------------------------------------------------------------------------- #
 # cure() — prior-run skip branch + out-of-corpus quarantine-field branch
 # --------------------------------------------------------------------------- #
