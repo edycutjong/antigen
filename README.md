@@ -1227,7 +1227,11 @@ because that repo's CONTRIBUTING says Release Please owns them.
 
 - **Live (landing + pitch deck):** https://antigen.edycu.dev · deck at
   [`/pitch.html`](https://antigen.edycu.dev/pitch.html)
-- **Demo video:** https://youtu.be/rQas3GDPpfA (real DataHub UI: poisoned entity → sweep → defuse → blast radius → `verify.py --live`)
+- **Demo video:** https://youtu.be/rQas3GDPpfA (real DataHub UI: poisoned entity → sweep →
+  defuse → blast radius → `verify.py --live`). Recorded from the **2026-08-08** run, so the
+  terminal shows the pre-write-gate `python -m antigen demo` and that run's `17 entities`.
+  Copy commands from [DEMO.md](DEMO.md), not from the video — against a live catalog the arc
+  now requires `--apply`.
 
 ---
 

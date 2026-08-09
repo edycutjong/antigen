@@ -138,7 +138,9 @@ cure writing back through the 9 tools, the blast-radius tag on a downstream asse
 `verify.py --live` reaching the graph-state PASS.
 
 Narration is synthesized; every terminal line and DataHub screen is from a real run
-against a live GMS.
+against a live GMS — the **2026-08-08** one, so the terminal shows the pre-write-gate
+`python -m antigen demo` and `17 entities`. Type the commands from this file, not from
+the video: against a live catalog the arc now requires `--apply`.
 
 ## Measured hijack A/B
 
