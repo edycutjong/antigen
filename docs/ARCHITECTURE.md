@@ -7,12 +7,12 @@ the `antigen.gateway.Gateway` interface. Everything else depends only on that in
 flowchart TD
     GMS[("DataHub GMS<br/>(datahub docker quickstart)")]
 
-    GMS -->|"READ · search, get_entities,<br/>grep_documents, get_lineage"| SDK
+    GMS -->|"READ · search, get_entities, search_documents,<br/>grep_documents, get_lineage"| SDK
     SDK -->|"MUTATION · update_description, add_tags,<br/>add_structured_properties, save_document"| GMS
 
     subgraph seam["The one seam — antigen.gateway"]
         direction TB
-        SDK["SdkGateway<br/>build_langchain_tools(include_mutations=True)<br/><i>binds the 8 Agent Context Kit tools</i>"]
+        SDK["SdkGateway<br/>build_langchain_tools(include_mutations=True)<br/><i>binds 9 Agent Context Kit tools · 8 are fatal if absent</i>"]
         IFACE["Gateway (interface)<br/><i>everything below depends only on this</i>"]
         SDK --> IFACE
     end
@@ -45,7 +45,7 @@ flowchart TD
 | Module | SDK surface used | Role |
 |--------|------------------|------|
 | `gateway.py` | `DataHubClient.from_env()` + `build_langchain_tools(client, include_mutations=True)` | the only seam to DataHub; indexes the 9 tools by name |
-| `scan.py` | `search`, `get_entities`, `grep_documents` | READ-only sweep; skips already-quarantined entities (idempotency) |
+| `scan.py` | `search`, `get_entities`, `search_documents`, `grep_documents` | READ-only sweep; `search_documents` enumerates KB-document URNs because the live `grep_documents` requires an explicit `urns` list. Skips already-quarantined entities (idempotency) |
 | `detect.py` | pure Python (stdlib) | `Cf`-strip Unicode pre-pass → NFKC → scored rule; returns the matched span |
 | `cure.py` | `update_description`, `add_tags`, `add_structured_properties`, `save_document` | defuse **by removal**; graph keeps only irreversible hashes |
 | `blast_radius.py` | `get_lineage` + `add_tags` | tags downstream consumers `injection-blast-radius:<urn>` (informational) |
@@ -77,12 +77,21 @@ false-positive revert), but it is not reachable through any stock READ tool.
 ## Timing (why the <30s claim is scoped honestly)
 
 - **Timed deterministic path (the hard gate):** `search` + batched `get_entities` +
-  `grep_documents`, then ~4 mutations × 12 loci, then a re-hash of only the ~10 stamped
+  `grep_documents`, then the cure's write-backs, then a re-hash of only the stamped
   entities. No LLM in the path.
-- **NOT in the timed path:** `agent-safe-certified` tagging of the ~1,036 clean entities
-  (a separate `antigen certify` pass — ~1,000 round-trips) and the two victim-agent LLM
-  runs (key/latency-dependent, reported not gated). Conflating these into one number would
-  be dishonest; `verify.py` keeps them separate.
+- **Count the writes in tool calls, because that is the unit `--max-mutations` charges.**
+  `cure` spends **4 calls** on an entity or column locus (`update_description`, `add_tags`,
+  `add_structured_properties`, `save_document`) and **2** on a KB-document locus — so the
+  12-payload corpus (10 entity/column + 2 document) costs **44 calls**, i.e. 3.67 per hit,
+  not 4 × 12. The dry-run plan prints **rows** rather than calls, because one
+  `add_structured_properties` call carries three values: the same corpus renders **64
+  rows**, and the plan's own last line states the conversion (`64 rows = 44 tool calls`).
+  Both numbers are pinned by tests in `tests/test_planner.py`.
+- **NOT in the timed path:** `agent-safe-certified` tagging of the clean remainder — a
+  separate `antigen certify` pass costing **2 calls per clean entity** (one `add_tags`, one
+  `add_structured_properties` carrying two values), i.e. ~2,000 calls on a 1,000-entity
+  catalog — and the two victim-agent LLM runs (key/latency-dependent, reported not gated).
+  Conflating these into one number would be dishonest; `verify.py` keeps them separate.
 
 ## The offline transport double (`antigen/_testkit/`)
 

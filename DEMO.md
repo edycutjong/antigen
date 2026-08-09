@@ -46,11 +46,15 @@ export DATAHUB_GMS_URL=http://localhost:8080 DATAHUB_GMS_TOKEN=
 #   export DATAHUB_GMS_TOKEN=eyJhbGciOi...
 # Antigen passes it through to every one of the 9 tools and to the base-SDK
 # aspect reads; nothing else changes.
-export TOOLS_IS_MUTATION_ENABLED=true SAVE_DOCUMENT_TOOL_ENABLED=true \
-       SAVE_DOCUMENT_RESTRICT_UPDATES=false
-# NOTE: SAVE_DOCUMENT_RESTRICT_UPDATES is SERVER-GLOBAL — it lifts the update
-# restriction for every client of that mcp-server-datahub, not just Antigen. Set it
-# on a dedicated instance, never the one analysts share. (README -> Least privilege.)
+export SAVE_DOCUMENT_RESTRICT_UPDATES=false
+# NOTE: this is read IN-PROCESS by datahub_agent_context.mcp_tools.save_document
+# (os.environ.get, save_document.py), so it scopes to THIS shell. Do NOT export it into
+# a shared mcp-server-datahub: that server runs the same code, where the variable would
+# lift the update restriction for every client of it. (See docs/DEPLOYMENT.md.)
+# TOOLS_IS_MUTATION_ENABLED / SAVE_DOCUMENT_TOOL_ENABLED are deliberately NOT set: the
+# pinned datahub-agent-context 1.6.0.17 never reads them (they appear only in a
+# docstring). Mutation tools come from build_langchain_tools(..., include_mutations=True)
+# in antigen/gateway.py.
 
 # 2. build the clean ecommerce catalog the corpus targets, and wait for the
 #    search index to catch up (DataHub indexes asynchronously)
@@ -137,10 +141,12 @@ cleaned span + quarantine tag + sha256 stamps), the live sweep finding 15/15 loc
 cure writing back through the 9 tools, the blast-radius tag on a downstream asset, and
 `verify.py --live` reaching the graph-state PASS.
 
-Narration is synthesized; every terminal line and DataHub screen is from a real run
-against a live GMS — the **2026-08-08** one, so the terminal shows the pre-write-gate
-`python -m antigen demo` and `17 entities`. Type the commands from this file, not from
-the video: against a live catalog the arc now requires `--apply`.
+Narration is synthesized (ElevenLabs); every terminal line and DataHub screen is from a
+real run against a live GMS — the **2026-08-08** one, so the terminal shows the
+pre-write-gate `python -m antigen demo` and `17 entities`. **The DataHub screens are
+screen captures; the terminal panes re-present verbatim captured output** — the text is
+what the run printed, re-typed for legibility rather than recorded live. Type the commands
+from this file, not from the video: against a live catalog the arc now requires `--apply`.
 
 ## Measured hijack A/B
 

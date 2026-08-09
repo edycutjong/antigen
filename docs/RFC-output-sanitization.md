@@ -251,11 +251,29 @@ on a spoofable string.
 
 ## Smaller notes
 
-- **Tag URNs must exist before they can be applied.** `add_tags` fails with
-  `Failed to validate label with urn urn:li:tag:X. Urn does not exist.` The kit has no
-  create-tag tool, so an agent that wants to tag anything needs a base-SDK emit. Same for
-  structured properties, which need a definition emitted before
-  `add_structured_properties` will accept a value.
+- **Tag URNs must exist before they can be applied, and so must structured-property
+  definitions.** The kit **pre-checks** and refuses before it ever reaches the mutation:
+  `mcp_tools/tags.py` resolves every `tag_urns` entry through a `getTags` query and raises
+  `The following tag URNs do not exist in DataHub: … Please use the search tool with
+  entity_type filter to find existing tags, or create the tags first before assigning
+  them.` `mcp_tools/structured_properties.py` does the same per property URN
+  (`Structured property URN does not exist in DataHub: …`) and additionally type-checks
+  each value against the definition's `valueType`. The kit exposes **no** create-tag and
+  **no** create-definition tool, so an agent that wants to tag anything or stamp any
+  property needs a base-SDK emit out of band — which is exactly why `_ensure_tag` and
+  `antigen/register_properties.py` exist in this repository. This is the prerequisite
+  documented upstream in
+  [`#202`](https://github.com/acryldata/mcp-server-datahub/pull/202) and
+  [`#19034`](https://github.com/datahub-project/datahub/pull/19034).
+
+  **Calibration.** An earlier draft of this note quoted the error as `Failed to validate
+  label with urn urn:li:tag:X. Urn does not exist.` That string is a DataHub GraphQL-layer
+  message, not what this tool returns: on the pinned `datahub-agent-context 1.6.0.17` the
+  kit's own pre-check fires first with the wording above, so the GraphQL message is never
+  reached on this path. The correction is recorded rather than dropped. Note also that
+  Antigen's checked-in transcripts contain **no** failed calls at all (`failed_calls: 0`,
+  by construction — `_ensure_tag` and `register_properties` run first), so neither error is
+  evidenced there; the wording above is read from the pinned package source.
 - **Tag names cannot carry a URN intact.** Re-verified 2026-08-08 against the pinned SDK:
   the characters are not *rejected* — `TagUrn` percent-encodes the reserved set
   (`TagUrn("a,b")` → `urn:li:tag:a%2Cb`, `"a(b"` → `a%28b`) while `:` passes through
@@ -263,14 +281,41 @@ on a spoofable string.
   cannot embed a URN and read back as written — but it is silent mangling, not an error.
   (An earlier draft of this note reported a `reserved characters` rejection; that does not
   reproduce, and the correction is recorded here rather than quietly dropped.)
-- **`update_description` supports only some entity types.** `dataFlow` and `corpuser`
-  URNs are rejected with `Failed to update description. Unsupported resource type`,
-  though `search` returns them alongside datasets — so a sweep over "everything `search`
-  returns" needs its own type filter. (`mlFeature` and `corpGroup` were accepted in the
-  same run, so the supported set is not obvious from the tool signature.)
+- **`update_description` supports only some entity types, and the docstring misstates
+  which.** Argued from source, not from a run — see the calibration note below.
+  `datahub-graphql-core/src/main/java/com/linkedin/datahub/graphql/resolvers/mutate/UpdateDescriptionResolver.java`
+  has exactly **17 `case` arms** and throws
+  `"Failed to update description. Unsupported resource type %s provided."` for everything
+  else. The accepted set is dataset (including its schema fields via `column_path`),
+  container, domain, glossaryTerm, glossaryNode, tag, corpGroup, notebook, mlModel,
+  mlModelGroup, mlFeatureTable, mlFeature, mlPrimaryKey, dataProduct, businessAttribute,
+  application, document. The kit's own docstring advertised **chart, dashboard, dataFlow
+  and dataJob** — none of which appear in that switch — and omitted seven types that do.
+  Because `search` returns unsupported types alongside supported ones, a sweep over
+  "everything `search` returns" needs its own type filter. This is the correction filed as
+  [`acryldata/mcp-server-datahub#202`](https://github.com/acryldata/mcp-server-datahub/pull/202)
+  and, against the copy that ships inside the core repo, as
+  [`datahub-project/datahub#19034`](https://github.com/datahub-project/datahub/pull/19034).
 
-All three findings and the notes above are reproducible from the Antigen repository against
-the Agent Context Kit versions pinned at the top of this appendix (see the scope note there
-for which ones also apply to `mcp-server-datahub` `main`); the
+  **Calibration — what this note does *not* claim.** An earlier draft asserted as observed
+  that `dataFlow` and `corpuser` were rejected while `mlFeature` and `corpGroup` were
+  accepted "in the same run". Antigen's checked-in evidence does not support that:
+  [`docs/live-tool-transcript.json`](./live-tool-transcript.json) contains **zero**
+  occurrences of `Unsupported resource type` or `Failed to update description`, because the
+  seeded catalog is datasets and documents only and no rejected type was ever exercised.
+  The claim is therefore made from the resolver source — which is checkable in one file, in
+  DataHub's own repository — and from nothing else. Both filed PRs make the same
+  source-derived argument and no empirical one. The correction is recorded here rather than
+  quietly dropped, the same way the `reserved characters` note above was.
+
+**How to read the evidence for each item.** The three numbered findings are *reproducible
+from this repository* against the Agent Context Kit versions pinned at the top of this
+appendix (see the scope note there for which ones also apply to `mcp-server-datahub`
+`main`). The smaller notes are not all of that kind, and the difference is stated per note
+rather than blurred: the tag/property prerequisites and the `update_description` type list
+are read from **package and resolver source**, because Antigen's own runs never trigger
+those errors — every recorded call in both transcripts succeeded. Where an earlier draft
+asserted observed behaviour the transcripts cannot show, the claim has been narrowed to
+what the source supports and the retraction left in place. The
 contract they describe is pinned in `tests/test_gateway.py` against response shapes captured
 from a live GMS (fixture values are synthetic; the nesting they assert is not).
