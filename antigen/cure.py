@@ -10,19 +10,23 @@ For every scan hit, in order:
                               tamper-evidence) + `antigen.lastScanned` +
                               `antigen.payloadSha256` (an IRREVERSIBLE hash of the
                               removed payload, forensic correlation only).
-  4. save_document             forensic incident report (hashes + repo pointer, never
-                              the recoverable payload) into `Antigen/Incidents`; for
-                              document loci, also overwrite the poisoned KB doc.
+  4. save_document             forensic incident report (hashes only — plus a repo
+                              pointer for the 12 checked-in corpus payloads) into
+                              `Antigen/Incidents`; for document loci, also overwrite
+                              the poisoned KB doc.
 
-No recoverable payload — plaintext or encoded — is ever written to the graph. The raw
-payloads live only in the repo `examples/` folder.
+No recoverable payload — plaintext or encoded — is ever written to the graph. The 12
+corpus payloads exist as files in the repo `examples/` folder; an out-of-corpus payload
+is retained NOWHERE, by design.
 
 Cleaning strategy:
   * fixture-backed (corpus/demo): the fixture records the field's original legitimate
-    text, so removal is exact.
-  * out-of-corpus (CI/live): no fixture exists, so the whole field is quarantined —
-    replaced by the banner, its content moved to defanged evidence — rather than
-    claiming guaranteed clean auto-excision on arbitrary text.
+    text, so removal is exact and the legitimate documentation survives.
+  * out-of-corpus (CI/live): no fixture exists, so the WHOLE field is replaced by the
+    banner — rather than claiming guaranteed clean auto-excision on arbitrary text.
+    Be plain about the cost: Antigen does not preserve the removed text anywhere. The
+    field's prior content is recoverable from DataHub's native aspect version history
+    (one action per field), and from nothing Antigen writes.
 """
 
 from __future__ import annotations
@@ -50,9 +54,12 @@ BANNER = (BANNER_MARKER + " a prompt-injection payload was removed from this fie
 
 EVIDENCE_POINTER = "repo examples/payloads/{pid}.txt (out-of-band; not on the graph)"
 
-# Out-of-corpus hits have no checked-in payload file; the incident document holds
-# the evidence and the digest is the stable handle.
-ADHOC_EVIDENCE_POINTER = "the linked Antigen incident document (payload sha256 {sha}…)"
+# Out-of-corpus hits have no checked-in payload file, and the incident record holds
+# hashes ONLY — so this pointer must not imply the removed text can be retrieved from
+# it. Name the digest as the handle and DataHub's aspect history as the recovery path.
+ADHOC_EVIDENCE_POINTER = ("Antigen incident record for payload sha256 {sha}… (hashes "
+                          "only; restore the field's prior text from DataHub aspect "
+                          "version history)")
 
 
 def _sha256(text: str) -> str:
@@ -156,7 +163,8 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
             removed_payload = fx.payload_text
             mode = "excise"
         else:
-            # Out-of-corpus: quarantine the whole field, move content to evidence.
+            # Out-of-corpus: no fixture, so the WHOLE field is replaced. The removed
+            # text is not preserved by Antigen — recovery is DataHub aspect history.
             removed_payload = hit.detection.matched_text or hit.text
             cleaned = "[field quarantined by Antigen pending human review]"
             mode = "quarantine-field"
@@ -208,7 +216,7 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
         gateway.save_document(
             title=incident_title,
             content=_forensic_report(hit, payload_id, content_sha, payload_sha,
-                                     timestamp, mode),
+                                     timestamp, mode, has_payload_file=fx is not None),
             parent=INCIDENTS_FOLDER,
         )
 
@@ -223,7 +231,21 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
 
 
 def _forensic_report(hit: ScanHit, payload_id: str, content_sha: str,
-                     payload_sha: str, timestamp: str, mode: str) -> str:
+                     payload_sha: str, timestamp: str, mode: str, *,
+                     has_payload_file: bool) -> str:
+    # Only the 12 checked-in corpus payloads have a raw file. Emitting this pointer
+    # unconditionally made EVERY real-catalog incident record cite
+    # `examples/payloads/adhoc-<sha12>.txt` — a file that is never written. The banner
+    # already guards its own pointer this way; this second site was simply missed.
+    evidence = (
+        f"- raw payload location: repo `examples/payloads/{payload_id}.txt` "
+        "(NEVER stored on the graph)\n"
+        if has_payload_file else
+        "- raw payload location: none. Out-of-corpus hit — there is no checked-in "
+        "payload file, and Antigen does not retain the removed text anywhere. The "
+        "payload-sha256 above is the only handle; the field's prior content is "
+        "recoverable from DataHub aspect version history, not from this record.\n"
+    )
     return (
         f"# Antigen incident — {payload_id}\n\n"
         f"- entity: `{hit.urn}`\n"
@@ -237,8 +259,7 @@ def _forensic_report(hit: ScanHit, payload_id: str, content_sha: str,
         f"- remediation mode: {mode}\n"
         f"- content-sha256 (cleaned field): `{content_sha}`\n"
         f"- payload-sha256 (removed payload, irreversible): `{payload_sha}`\n"
-        f"- raw payload location: repo `examples/payloads/{payload_id}.txt` "
-        f"(NEVER stored on the graph)\n\n"
+        f"{evidence}\n"
         f"The injected span was **removed** from every agent-readable surface. This "
         f"record holds only irreversible hashes; it cannot be obeyed or decoded back "
         f"into the payload.\n"

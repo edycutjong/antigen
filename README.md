@@ -628,8 +628,11 @@ Production-grade for a hackathon, adapted to a Python CLI/library (no web fronte
   also reach agent context and are **not** swept today.
 - **Surgical span excision is fixture-backed** (the demo corpus records each field's
   original text). For arbitrary out-of-corpus / CI content there is no fixture, so that
-  mode **quarantines the whole field** (banner + move to evidence for human review) — it
-  does not claim guaranteed clean auto-excision.
+  mode **replaces the whole field** with an inert banner — it does not claim guaranteed
+  clean auto-excision. Antigen does **not** preserve the removed text: the incident
+  record holds hashes only, and the field's prior content is recoverable from DataHub's
+  aspect version history and from nothing Antigen writes. `--only-mode excise` restricts
+  a run to the surgical half.
 - **The cure is forward-only**; rollback uses DataHub's native aspect version history
   (one action), not an automated undo.
 - **The in-memory graph in `antigen/_testkit/` is a transport double for offline tests

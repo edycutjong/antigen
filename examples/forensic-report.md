@@ -1,6 +1,8 @@
 # Antigen incident — P01 (example forensic report)
 
-This is what Antigen files into the `Antigen/Incidents` KB folder via `save_document` for every hit. It holds only irreversible hashes + a repo pointer — never the recoverable payload.
+This is what Antigen files into the `Antigen/Incidents` KB folder via `save_document` for every hit. It holds only irreversible hashes — never the recoverable payload.
+
+The `raw payload location` line below points at a checked-in file because P01 is one of the 12 corpus payloads. For an out-of-corpus hit on a real catalog there is no such file, and that line instead says so and points recovery at DataHub aspect version history — Antigen does not retain the removed text anywhere.
 
 - entity: `urn:li:dataset:(urn:li:dataPlatform:snowflake,ecommerce.public.customers,PROD)`
 - locus: entity-description

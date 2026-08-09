@@ -128,6 +128,34 @@ def test_cure_out_of_corpus_quarantines_whole_field():
     assert "quarantined by Antigen" in ent.description
     assert CONTENT_SHA_PROP in ent.structured_properties
 
+    # The incident record must not cite a file that will never exist. Out-of-corpus
+    # payload ids are `adhoc-<sha12>` and nothing writes examples/payloads/adhoc-*.txt,
+    # so the unconditional pointer made EVERY real-catalog record dangle.
+    incident = gw.get_document("Antigen/Incidents",
+                               f"antigen-incident-{action.payload_id}")
+    assert "examples/payloads/" not in incident.content
+    assert "raw payload location: none" in incident.content
+    assert "DataHub aspect version history" in incident.content
+    # ...and the banner left in the field must say the same thing, not imply the text
+    # is retrievable from the incident record (which holds hashes only).
+    assert "examples/payloads/" not in ent.description
+    assert "aspect version history" in ent.description
+
+
+def test_corpus_incident_still_points_at_its_checked_in_payload_file():
+    """The guard must not strip the pointer where the file genuinely exists."""
+    gw = build_corpus_gateway()
+    hits, fixtures = _corpus_hit(gw)
+    res = cure(gw, hits, fixtures=fixtures)
+    action = next(a for a in res.actions if a.mode == "excise")
+    incident = gw.get_document("Antigen/Incidents",
+                               f"antigen-incident-{action.payload_id}")
+    assert f"examples/payloads/{action.payload_id}.txt" in incident.content
+    assert os.path.exists(os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "examples", "payloads", f"{action.payload_id}.txt")), \
+        "an incident record may only cite a payload file that is actually checked in"
+
 
 def test_cure_out_of_corpus_ids_do_not_collide():
     """Two distinct out-of-corpus payloads must not share an incident document."""
