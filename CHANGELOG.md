@@ -2,6 +2,42 @@
 
 <!-- version list -->
 
+## v1.3.1 (2026-08-09)
+
+### Bug Fixes
+
+- **safety**: Infra failures exit 2, close the entity-scope fail-open, add span excision
+  ([`6f9dbd4`](https://github.com/edycutjong/antigen/commit/6f9dbd4c5309c212d379414d4580576d31dccb2a))
+
+- **web**: Remove a fabricated exploit from the public deck and landing page
+  ([`95539d6`](https://github.com/edycutjong/antigen/commit/95539d6ae9c3c00fc096d9be374cbbee01daf08e))
+
+### Documentation
+
+- Report the hijack number the transcript actually supports, and fix four checkable contradictions
+  ([`1ef1ac4`](https://github.com/edycutjong/antigen/commit/1ef1ac41528e52bff42ecbedc97d76e9c3fd62e0))
+
+- Retract four unevidenced claims, correct the SDK advice, cut the README to 1,370 lines
+  ([`e42741d`](https://github.com/edycutjong/antigen/commit/e42741df4de958c69408c6d8da60101a348d9126))
+
+- Scope the demo video to the run it was recorded from
+  ([`a2934d7`](https://github.com/edycutjong/antigen/commit/a2934d78da29fcf32c8b8e08bcedf2653ece4c87))
+
+- **evidence**: Measure the false-positive rate on 38,031 descriptions we did not write
+  ([`377ba92`](https://github.com/edycutjong/antigen/commit/377ba92c727ce545670f9030c65381d5c4d86558))
+
+- **evidence**: Prove the incident-ledger overwrite against a real GMS
+  ([`b4daa52`](https://github.com/edycutjong/antigen/commit/b4daa5235ec5562330e0bc2041b2a81bfe1be764))
+
+- **evidence**: The hijack A/B, actually run and actually recorded
+  ([`34c0d71`](https://github.com/edycutjong/antigen/commit/34c0d71b67ed30a33b4a23000e58c9fde3e20ce9))
+
+### Testing
+
+- **hijack**: Capture the A/B as an auditable transcript, not a summary line
+  ([`971cea3`](https://github.com/edycutjong/antigen/commit/971cea3c31aa9b88b877081c7cd656a6dab4275f))
+
+
 ## v1.3.0 (2026-08-09)
 
 ### Bug Fixes
