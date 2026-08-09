@@ -546,7 +546,7 @@ demo, and the benchmark — all against an in-memory DataHub double so it works 
 laptop. Expected tail:
 
 ```
-graph-state PASS (5 ms) | held-out 3/3 | hijack demo skipped
+graph-state PASS (~5 ms) | held-out 3/3 | hijack demo skipped
 ...
 ── 1. SWEEP ──  scanned 41 entities + 2 documents | 15 injection loci flagged | 2 hidden in zero-width Unicode | 13 via get_entities | 2 via grep_documents
 ── 2. DEFUSE ── cured 12 loci (12 excised, 0 field-quarantined)
@@ -554,6 +554,10 @@ graph-state PASS (5 ms) | held-out 3/3 | hijack demo skipped
 ── 4. CERTIFY ── certified 28 clean entities agent-safe-certified (+ content hash)
 ── 5. PROVE STANDING ── re-scan flags 0 authored-corpus loci | 38 stamped entities, 0 drifted
 ```
+
+(These are the **offline in-memory double's** numbers — its corpus is deliberately larger:
+41 entities and a 3-asset blast radius here, versus 17 entities and a 10-asset blast radius
+on the live GMS run shown in the SWEEP figure and DEMO.md.)
 
 Individual pieces:
 
@@ -581,7 +585,7 @@ export DATAHUB_GMS_TOKEN=            # quickstart ships with auth DISABLED — n
 
 # 3. install the live extras and run the whole thing
 pip install -r requirements.txt
-python antigen/register_properties.py  # one-time structured-property defs
+python -m antigen.register_properties  # one-time structured-property defs
 ./run.sh live                          # seed corpus -> verify --live
 ```
 

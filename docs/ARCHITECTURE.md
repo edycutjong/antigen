@@ -44,7 +44,7 @@ flowchart TD
 
 | Module | SDK surface used | Role |
 |--------|------------------|------|
-| `gateway.py` | `DataHubClient.from_env()` + `build_langchain_tools(client, include_mutations=True)` | the only seam to DataHub; indexes the 8 tools by name |
+| `gateway.py` | `DataHubClient.from_env()` + `build_langchain_tools(client, include_mutations=True)` | the only seam to DataHub; indexes the 9 tools by name |
 | `scan.py` | `search`, `get_entities`, `grep_documents` | READ-only sweep; skips already-quarantined entities (idempotency) |
 | `detect.py` | pure Python (stdlib) | `Cf`-strip Unicode pre-pass → NFKC → scored rule; returns the matched span |
 | `cure.py` | `update_description`, `add_tags`, `add_structured_properties`, `save_document` | defuse **by removal**; graph keeps only irreversible hashes |

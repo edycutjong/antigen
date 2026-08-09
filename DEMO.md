@@ -5,7 +5,7 @@ and the benchmark on any laptop with Python 3.10+ (no Docker, no keys). The **li
 reproduces the full hijack → cure → 0/12 arc against a real DataHub GMS.
 Every number below was observed on a real run; none is aspirational.
 
-## Offline (≈ 10 seconds, zero dependencies)
+## Offline (seconds — well under 30 — zero dependencies)
 
 ```bash
 ./run.sh
@@ -43,7 +43,7 @@ export DATAHUB_GMS_URL=http://localhost:8080 DATAHUB_GMS_TOKEN=
 # Verified BOTH ways. If your GMS has METADATA_SERVICE_AUTH_ENABLED=true, mint a
 # Personal Access Token (UI -> Settings -> Access Tokens) and export it instead:
 #   export DATAHUB_GMS_TOKEN=eyJhbGciOi...
-# Antigen passes it through to every one of the 8 tools and to the base-SDK
+# Antigen passes it through to every one of the 9 tools and to the base-SDK
 # aspect reads; nothing else changes.
 export TOOLS_IS_MUTATION_ENABLED=true SAVE_DOCUMENT_TOOL_ENABLED=true \
        SAVE_DOCUMENT_RESTRICT_UPDATES=false
@@ -91,7 +91,7 @@ Observed on a clean run:
 
 **https://youtu.be/rQas3GDPpfA** — 2:25. Shows the real DataHub UI before and after (poisoned description →
 cleaned span + quarantine tag + sha256 stamps), the live sweep finding 15/15 loci, the
-cure writing back through the 8 tools, the blast-radius tag on a downstream asset, and
+cure writing back through the 9 tools, the blast-radius tag on a downstream asset, and
 `verify.py --live` reaching the graph-state PASS.
 
 Narration is synthesized; every terminal line and DataHub screen is from a real run
