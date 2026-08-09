@@ -195,19 +195,48 @@ jobs:
       - name: Deploy prebuilt to production
         id: deploy
         run: |
-          # `vercel deploy` prints the production URL within seconds, then keeps
-          # polling until the deployment is READY — which can stall the runner for
-          # many minutes. The prebuilt output is already uploaded once the URL is
-          # printed, so we cap the wait and treat a captured URL as success.
+          # `vercel deploy` prints the production URL within seconds, then keeps polling
+          # until the deployment is READY — which can stall the runner for many minutes.
+          # The prebuilt output is already uploaded once the URL is printed, so cap the
+          # wait and treat a captured URL as success.
+          #
+          # Two distinct non-success outcomes are separated here, because collapsing them
+          # is what put a red X on a green main. The step used to `exit 1` on any missing
+          # URL under the message "No Vercel deployment URL captured", which is a
+          # diagnosis, not an observation — the actual log said:
+          #
+          #   Error: Resource is limited - try again in 24 hours
+          #   (more than 100, code: "api-deployments-free-per-day")
+          #
+          # That is the Vercel Hobby plan's 100-deploys-per-day account quota, hit after a
+          # heavy push day. It is not a defect in this repo, nothing was broken, and the
+          # previously deployed site stays live and serving — so it is reported as a
+          # WARNING and the job continues. Every other failure still fails the job, and
+          # the stage is never skipped.
           set +e
-          out=$(timeout 150 vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" 2>&1)
-          printf '%s\n' "$out"
-          url=$(printf '%s\n' "$out" | grep -Eo 'https://[a-z0-9._-]+\.vercel\.app' | tail -n1)
-          if [ -z "$url" ]; then echo "::error::No Vercel deployment URL captured"; exit 1; fi
+          timeout 240 vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN" > deploy.log 2>&1
+          rc=$?
+          cat deploy.log
+          # Widened: match any host under vercel.app (scoped/preview hosts included), and
+          # read it from a file so a `timeout` kill still leaves the partial output behind.
+          url=$(grep -Eoi 'https://[A-Za-z0-9._-]+\.vercel\.app' deploy.log | tail -n1)
+          if [ -z "$url" ] && grep -qi 'api-deployments-free-per-day\|Resource is limited' deploy.log; then
+            echo "::warning::Vercel free-tier deploy quota reached (100/day) — deployment SKIPPED by the provider, not failed. The previously deployed site remains live at https://antigen.edycu.dev. Re-run this job after the quota window resets."
+            echo "quota_exceeded=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "$url" ]; then
+            echo "::error::Vercel deploy produced no deployment URL (exit ${rc}). See the log above."
+            exit 1
+          fi
           echo "url=$url" >> "$GITHUB_OUTPUT"
           echo "🚀 Deployed web/ to production: $url"
       - name: Pipeline summary
         run: |
           echo "## 🚀 Shipped" >> "$GITHUB_STEP_SUMMARY"
           echo "- Release cut: \`${{ needs.release.outputs.released }}\` (version \`${{ needs.release.outputs.version }}\`)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Production URL: ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.deploy.outputs.quota_exceeded }}" = "true" ]; then
+            echo "- Production URL: **deploy skipped — Vercel free-tier quota (100/day) reached**; https://antigen.edycu.dev still serves the previous deployment" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Production URL: ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          fi
