@@ -478,7 +478,7 @@
         </div>
       </div>
       <aside class="speaker-notes"><b>Solution</b>
-        Antigen turns the write-back into the product. It doesn't just detect — it rewrites the poisoned description in place, quarantine-tags the entity, and stamps a tamper-evident hash. Be precise on the rewrite: on the seeded corpus it excises just the injected span. On a catalog it did not seed there is no fixture, so the default is to replace the whole field with an inert quarantine banner — or you opt into --excise-span and it cuts just the span out of the live field, falling back to quarantine whenever the survivor still trips the detector. Fail-safe, not guaranteed lossless — which is why cure is dry-run by default. The cure lives in the same catalog every agent already reads.
+        Antigen turns the write-back into the product. It doesn't just detect — it rewrites the poisoned description in place, quarantine-tags the entity, and stamps a tamper-evident hash. Be precise on the rewrite: on the seeded corpus it excises just the injected span. On a catalog it did not seed there is no fixture, so the default is to replace the whole field with an inert quarantine banner — or you opt into --excise-span, which cuts the enclosing sentence — it over-removes on purpose, because detect returns the earliest rule match rather than the payload, so a literal span cut would leave the second clause of a two-clause payload behind. It still falls back to quarantine whenever the survivor trips the detector. Fail-safe, not guaranteed lossless — which is why cure is dry-run by default. The cure lives in the same catalog every agent already reads.
       </aside>
     </section>
 
@@ -629,7 +629,7 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">0/12<
             <div class="ic">DETECTOR</div>
             <div>
               <h3>A scored rule, not an ML model, not a keyword grep.</h3>
-              <p>Flags a field only on the co-occurrence of a reader-directed imperative AND an agent-action object. Legit prose trips at most one — "ignore null values", "drop_flag column" — so it stays clean. 0 false positives on a 15-item near-miss gauntlet.</p>
+              <p>Flags a field only on the co-occurrence of a reader-directed imperative AND an agent-action object. Legit prose trips at most one — "ignore null values", "drop_flag column" — so it stays clean. Measured on <span class="hi">38,031 public catalog descriptions we didn't write</span>: 24 flags, <span class="hi">0.063%</span>, all 24 false positives.</p>
             </div>
           </div>
           <div class="feat amber">
@@ -650,12 +650,12 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">0/12<
           <div class="feat amber">
             <div class="ic">FAIL-SAFE</div>
             <h3>One-action revert</h3>
-            <p>Nothing deleted — pre-cure text lives in DataHub's aspect history.</p>
+            <p>Nothing deleted — pre-cure text lives in DataHub's aspect history. Fail-safe, not lossless.</p>
           </div>
         </div>
       </div>
       <aside class="speaker-notes"><b>Key capabilities</b>
-        The detector is auditable in five minutes and runs in CI with zero dependencies. The subtle win is the zero-width pre-pass — most people assume NFKC removes those characters; it doesn't. And the cure is fail-safe: a false positive is a one-action revert, never data loss.
+        The detector is auditable in five minutes and runs in CI with zero dependencies. The subtle win is the zero-width pre-pass — most people assume NFKC removes those characters; it doesn't. On false positives, take the measured number, not our gauntlet: 24 flags in 38,031 public catalog descriptions we did not write, all 24 adjudicated false positives, detector unmodified. The number that should change your behaviour is conditional — 0.003% under 200 characters, 4.663% over 2,000 — so it is the long curated descriptions at risk, and the honest caveat is that public-portal text is a proxy: a real enterprise catalog is plausibly worse, not better. That is the case for the cure being dry-run by default, and for the revert being one action.
       </aside>
     </section>
 
@@ -687,7 +687,7 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">0/12<
           <div class="stat-row">
             <div class="bigstat"><div class="n">0/12</div><div class="l">hijacks after the cure — same stock agent, cold</div></div>
             <div class="bigstat"><div class="n">12/12</div><div class="l">payloads defused, + 3/3 held-out public injections</div></div>
-            <div class="bigstat amber"><div class="n">0</div><div class="l">false positives on a 15-item near-miss gauntlet</div></div>
+            <div class="bigstat amber"><div class="n">0.063%</div><div class="l">flag rate on 38,031 real catalog descriptions — 24 flags, all false positives</div></div>
             <div class="bigstat"><div class="n">&lt;30s</div><div class="l">deterministic verify.py graph-state gate (~5ms offline)</div></div>
           </div>
           <div>

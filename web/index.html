@@ -15,7 +15,7 @@
 <!-- Open Graph / Twitter -->
 <meta property="og:type" content="website" />
 <meta property="og:title" content="Antigen — a prompt-injection immune system for DataHub" />
-<meta property="og:description" content="Hijack → Sweep → Defuse → Prove. 12/12 defused, 0/12 hijacks after the cure, 0 false positives. See the 30-second proof." />
+<meta property="og:description" content="Hijack → Sweep → Defuse → Prove. 12/12 defused, 0/12 hijacks after the cure, 0.063% flag rate measured on 38,031 real catalog descriptions. See the 30-second proof." />
 <meta property="og:url" content="https://antigen.edycu.dev/" />
 <meta property="og:site_name" content="Antigen" />
 <meta property="og:image" content="https://antigen.edycu.dev/public/og-image.png?v=2" />
@@ -26,7 +26,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:image:alt" content="Antigen — Hijack, Sweep, Defuse, Prove. 0/12 hijacks after the cure; 12/12 payloads defused." />
 <meta name="twitter:title" content="Antigen — a prompt-injection immune system for DataHub" />
-<meta name="twitter:description" content="Hijack → Sweep → Defuse → Prove. 12/12 defused, 0/12 hijacks after the cure, 0 false positives. See the 30-second proof." />
+<meta name="twitter:description" content="Hijack → Sweep → Defuse → Prove. 12/12 defused, 0/12 hijacks after the cure, 0.063% flag rate measured on 38,031 real catalog descriptions. See the 30-second proof." />
 <meta name="twitter:image" content="https://antigen.edycu.dev/public/og-image.png?v=2" />
 
 <style>
@@ -680,7 +680,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <p class="hero-proof" aria-label="Proof summary">
           <span><strong>12/12</strong> payloads defused</span>
           <span><strong>3/3</strong> held-out public injections</span>
-          <span><strong>0</strong> false positives</span>
+          <span><strong>0.063%</strong> flag rate on 38k real descriptions</span>
           <span><strong>&lt;30s</strong> deterministic proof</span>
         </p>
       </div>
@@ -825,9 +825,10 @@ strong { color: var(--text-hi); font-weight: 600; }
           <span class="step-num">03 · THE CURE</span>
           <h3>Defuse</h3>
           <p>
-            <strong>Removes</strong> the payload from the graph — the span
-            excised where it can be (fixture-backed, or opt-in
-            <code>--excise-span</code> on your own catalog), the whole field
+            <strong>Removes</strong> the payload from the graph — the exact span
+            on the fixture-backed demo corpus; opt-in
+            <code>--excise-span</code> cuts the <em>enclosing sentence</em> on
+            your own catalog, deliberately over-removing; the whole field
             quarantined behind an inert banner otherwise — and chains 4
             DataHub write-backs:
             clean description, quarantine tag, tamper hash, forensic incident.
@@ -861,6 +862,10 @@ strong { color: var(--text-hi); font-weight: 600; }
         <p class="lede">
           No screenshots-as-proof. <code>./run.sh</code> re-derives every claim
           below on any laptop — Python standard library only, no Docker, no keys.
+          The one exception is the false-positive study, which harvests from the
+          public internet: detection over the corpus is stdlib and offline, but
+          the harvest needs network and a GitHub token, so that corpus is pinned
+          by digest and per-item hashes instead.
         </p>
       </div>
 
@@ -876,9 +881,9 @@ strong { color: var(--text-hi); font-weight: 600; }
           <p>All 12 authored payloads plus 3 held-out <strong>public</strong> injections — never tuned on — removed from every readable surface.</p>
         </div>
         <div class="stat">
-          <span class="num">0</span>
-          <span class="label">false positives</span>
-          <p>A 15-item adversarial-adjacent near-miss gauntlet — "ignore null values", "drop_flag column" — flags nothing.</p>
+          <span class="num">0.063%</span>
+          <span class="label">flag rate on 38,031 real descriptions</span>
+          <p>Measured on public catalog text Antigen did not write — 8,640 descriptions from 148 public dbt repos at pinned SHAs, 29,391 from 6,000 Socrata datasets across 198 government portals. <strong>24 flags, all 24 false positives</strong>, zero true positives, zero detector bugs, detector unmodified.</p>
         </div>
         <div class="stat amber">
           <span class="num">2·2·2</span>
@@ -891,11 +896,31 @@ strong { color: var(--text-hi); font-weight: 600; }
           <p><code>verify.py</code>'s graph-state gate has no LLM in the path: reset → scan → cure → assert. About 5&nbsp;ms offline.</p>
         </div>
         <div class="stat">
-          <span class="num">136</span>
+          <span class="num">178</span>
           <span class="label">tests passing</span>
           <p>Including <code>test_nfkc_alone_would_miss_zero_width</code> — the test that proves the Unicode pre-pass does the work.</p>
         </div>
       </div>
+
+      <p class="method-note reveal">
+        <strong>False-positive study</strong>
+        (<a href="https://github.com/edycutjong/antigen/blob/main/docs/false-positive-study.md" rel="noopener">docs/false-positive-study.md</a>):
+        the flag rate is a function of length, and that is the number to budget
+        against — <strong>0.003%</strong> on descriptions under 200 characters,
+        <strong>4.663%</strong> on descriptions over 2,000, and <strong>0 flags
+        in all 30,556 column descriptions</strong>. 88% of the flags (21 of 24)
+        are contact-and-link boilerplate: a description that closes with "for
+        questions, email x@y.gov" while using ordinary data-engineering
+        vocabulary earlier in the same field. Caveats, stated against our own
+        interest: public-portal and open-source text is a <em>proxy</em> for an
+        enterprise catalog, whose vendor docs and runbooks sit closer to the
+        detector's signature bank — the true enterprise rate is plausibly
+        <em>higher</em>, not lower. A third of the corpus is not English
+        (English-only rate: 0.094%). It measures precision, not recall. Socrata
+        truncates descriptions at 4,000 characters, which can only have lowered
+        the measured rate. All 24 flagged strings are published verbatim with
+        verdicts; reproduce with <code>python scripts/fp_corpus.py all</code>.
+      </p>
 
       <p class="method-note reveal">
         Methodology note: the pre-cure hijack rate is <em>measured from the
@@ -1000,7 +1025,9 @@ strong { color: var(--text-hi); font-weight: 600; }
         <p class="lede">
           The detector is a small, standard-library scored rule. It flags a field
           only on the <strong>co-occurrence</strong> of two independent signals —
-          which is why real data-engineering prose never trips it.
+          which is why ordinary data-engineering prose almost never trips it:
+          <strong>24 flags in 38,031</strong> real public catalog descriptions
+          it did not write, every one of them adjudicated a false positive.
         </p>
       </div>
 
@@ -1026,6 +1053,14 @@ strong { color: var(--text-hi); font-weight: 600; }
             <li><code>"execute the nightly job"</code> — ordinary ops prose</li>
             <li><code>"you must not expose API keys"</code> — negation guard</li>
           </ul>
+          <p style="font-size:.84rem;color:var(--text-mid);margin:14px 0 0;">
+            The honest limit, measured: the two signals only have to co-occur
+            <em>somewhere in the same field</em>, with no proximity requirement,
+            so every extra paragraph is another chance to supply the missing
+            half. Flag rate runs <strong>0.003%</strong> under 200 characters
+            and <strong>4.663%</strong> over 2,000 — the long, hand-curated
+            descriptions are the ones at risk, and they are the expensive ones.
+          </p>
         </div>
 
         <div class="rule-card reveal">
@@ -1090,9 +1125,10 @@ strong { color: var(--text-hi); font-weight: 600; }
           <p>
             No entity is ever deleted; pre-cure text is retained in DataHub's
             native aspect version history. By default an out-of-corpus hit
-            replaces the whole field (<code>--excise-span</code> cuts just the
-            span instead), so a false positive can cost a description until a
-            one-action revert — fail-safe, not guaranteed lossless.
+            replaces the whole field (<code>--excise-span</code> cuts the
+            enclosing sentence instead — over-removing on purpose), so a false
+            positive can cost documentation until a one-action revert —
+            fail-safe, not guaranteed lossless.
           </p>
         </div>
       </div>
@@ -1216,10 +1252,14 @@ strong { color: var(--text-hi); font-weight: 600; }
             <p>
               A classifier can't be audited by a judge in five minutes and
               can't run in CI with zero dependencies. The scored co-occurrence
-              rule is stdlib-only, deterministic, explainable per-hit, and holds
-              <strong>0 false positives</strong> on a 15-item
-              adversarial-adjacent gauntlet — while still generalizing 3/3 to
-              held-out public payloads.
+              rule is stdlib-only, deterministic, explainable per-hit, and
+              measured: a <strong>0.063% flag rate</strong> over 38,031 public
+              catalog descriptions it did not write, all 24 flags adjudicated
+              false positives — while still generalizing 3/3 to held-out public
+              payloads. It also clears a 15-item near-miss gauntlet built from
+              the detector's own vocabulary, but that gauntlet is an adversarial
+              probe we wrote, not a false-positive rate; the 38k corpus is the
+              number an adopter can budget against.
             </p>
           </div>
         </details>
@@ -1227,22 +1267,32 @@ strong { color: var(--text-hi); font-weight: 600; }
           <summary>What happens on a false positive?</summary>
           <div class="answer">
             <p>
-              Depends on the mode, and the difference matters. On the seeded
-              demo corpus every hit is fixture-backed, so the cure
-              <strong>excises just the injected span</strong> and leaves the
-              rest of the description intact. On your catalog there are no
-              fixtures, so the default is the lossy one: the flagged field is
-              replaced <strong>wholesale</strong> with
+              First, how often: <strong>24 flags in 38,031</strong> public
+              catalog descriptions we did not write — a 0.063% rate, and all 24
+              were false positives. But the rate tracks length —
+              <strong>0.003%</strong> under 200 characters,
+              <strong>4.663%</strong> over 2,000 — so the descriptions most
+              likely to trip it are the long hand-curated ones you'd least like
+              to lose. That is the case for the gates, not against them.
+            </p>
+            <p>
+              Then, what it costs. On the seeded demo corpus every hit is
+              fixture-backed, so the cure <strong>excises exactly the injected
+              span</strong> and leaves the rest intact. On your catalog there
+              are no fixtures, so the default is the lossy one: the flagged
+              field is replaced <strong>wholesale</strong> with
               <code>[field quarantined by Antigen pending human review]</code>
               plus an inert banner pointing at the forensic incident. Opt into
-              <code>--excise-span</code> and the cure cuts the flagged span out
-              of the live field instead and keeps the surrounding
-              documentation — but it falls back to whole-field quarantine
-              whenever the survivor still trips the detector, because Antigen
-              must never write text its own detector would flag. Either way:
-              <strong>fail-safe, not guaranteed lossless</strong> — a false
-              positive can cost you a hand-written description until someone
-              reverts it.
+              <code>--excise-span</code> and the cure cuts the
+              <strong>enclosing sentence</strong> instead of the raw match —
+              it <strong>over-removes on purpose</strong>, because
+              <code>detect</code> returns the earliest rule match rather than
+              the payload, so a literal span cut would leave the second clause
+              of a two-clause payload sitting in the field. It still falls back
+              to whole-field quarantine whenever the survivor trips the
+              detector, because Antigen must never write text its own detector
+              would flag. Either way: <strong>fail-safe, not guaranteed
+              lossless</strong>.
             </p>
             <p>
               Nothing is deleted and no entity is removed — the pre-cure text
