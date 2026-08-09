@@ -48,6 +48,9 @@ export DATAHUB_GMS_URL=http://localhost:8080 DATAHUB_GMS_TOKEN=
 # aspect reads; nothing else changes.
 export TOOLS_IS_MUTATION_ENABLED=true SAVE_DOCUMENT_TOOL_ENABLED=true \
        SAVE_DOCUMENT_RESTRICT_UPDATES=false
+# NOTE: SAVE_DOCUMENT_RESTRICT_UPDATES is SERVER-GLOBAL — it lifts the update
+# restriction for every client of that mcp-server-datahub, not just Antigen. Set it
+# on a dedicated instance, never the one analysts share. (README -> Least privilege.)
 
 # 2. build the clean ecommerce catalog the corpus targets, and wait for the
 #    search index to catch up (DataHub indexes asynchronously)

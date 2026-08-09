@@ -199,6 +199,24 @@ sides would print two identical lines and hide the only span an approver needs t
 whole-field `quarantine-field` remediations — which destroy the legitimate text in the
 field — queued for a human.
 
+**`--max-mutations N` is the circuit breaker for the unattended case.** The gate above
+stops a live run that nobody approved; it does nothing about an approved run that turns
+out to be pointed at the wrong catalog. `--max-mutations` refuses write **N+1** instead of
+executing it and aborts with **exit 3**:
+
+```console
+$ python -m antigen cure --offline --max-mutations 5
+ABORTED: --max-mutations 5 reached: refused `add_tags` on urn:li:dataset:(…,orders,PROD).
+5 mutations were already written and are NOT rolled back — Antigen has no transaction
+across DataHub aspects. The remaining loci are untouched and still poisoned. Re-run to
+continue (cure skips entities it already quarantined and stamped) or raise the cap after
+reviewing what landed.
+```
+
+Exit **3** is deliberately distinct from **1** (findings) and **2** (refused / degraded
+sweep) so a CI job can tell a dirty catalog from a half-remediated one. This is a breaker,
+not incremental scanning — see *Honest limitations*.
+
 ### Prior art, and the gap it leaves
 
 **Antigen implements a published control; it does not invent one.** Saying so up front is
@@ -480,7 +498,12 @@ side database, no second system of record. That is the *"contribute back to the 
 behavior the rubric rewards, applied to a security problem **no shipped DataHub feature
 addresses.** (One non-agent-tool call is honest to name: the one-time structured-property
 *definition* setup in `register_properties.py`, a base `acryl-datahub` emit — it is setup,
-not one of the 9 agent tools.)
+not one of the 9 agent tools. Those definitions are scoped to **Dataset, Dashboard, Chart,
+Data Flow, Data Job and Container** — deliberately the full set that carries descriptions,
+because `search` enumerates the catalog with a bare `query="*"` and no entity-type filter,
+so the sweep reaches every one of them. Scoped to `dataset` alone, as they were until
+v1.2, the first poisoned **dashboard** would have sent `add_structured_properties` at an
+entity type the definition did not cover.)
 
 **Don't take the table's word for it — grep the transcript.**
 [`docs/live-tool-transcript.json`](docs/live-tool-transcript.json) records **every** SDK
@@ -663,6 +686,31 @@ Production-grade for a hackathon, adapted to a Python CLI/library (no web fronte
   a run to the surgical half.
 - **The cure is forward-only**; rollback uses DataHub's native aspect version history
   (one action), not an automated undo.
+- **Antigen must never write text its own detector flags — and for one release, it did.**
+  The remediation banner used to interpolate the detection category labels verbatim
+  (*"Detection signals: instruction-override, reveal-secret"*), and those labels are
+  phrases the detector's own rules score on. Entity loci were shielded by accident (`scan`
+  skips `injection-quarantined`, and the cure's idempotency guard skips an already-stamped
+  entity); **KB documents had neither shield**, so cure → scan → cure → scan never
+  converged: a scheduled `scan --fail-on-hit` never went green again and the incident
+  ledger grew one record per cycle. It was payload-dependent — the two authored corpus doc
+  payloads happen not to re-trigger, which is exactly why 114 tests and a live run missed
+  it. The labels now live only in the forensic incident record (which the sweep already
+  exempts by title), and `inert_banner` scores the exact text that would be written with
+  the real detector before writing it, so the invariant is structural rather than a
+  property of one carefully-worded string. A multi-cycle regression test pins it.
+  **What we deliberately did *not* do:** give `scan` a banner-marker exemption. Any
+  marker an attacker can type into a KB document becomes an evasion — everything after
+  `> ⚠ Antigen:` would go unscanned. Keeping Antigen's own output inert is the fix that
+  adds no new evasion surface; the detector still reads 100% of every document.
+- **`antigen.lastScanned` is the timestamp of the last sweep that observed a *change*, not
+  a heartbeat.** `certify` skips entities already certified at the same content hash (so a
+  nightly re-run over an unchanged catalog writes zero mutations instead of two per
+  entity), which means the field does not advance on a run that found nothing to do.
+  Freshness of the *sweep* is the cron's own exit status; freshness of the *stamp* is what
+  this field says. Until v1.2 it was worse than ambiguous: `certify` wrote the literal
+  string `"certify"` into it, so the property was mixed-type across the whole clean
+  remainder.
 - **The in-memory graph in `antigen/_testkit/` is a transport double for offline tests
   only** — it doubles the network layer so the suite runs without Docker. The detector it
   exercises is the real one and the surface-completeness assertions are the real ones; it
@@ -704,9 +752,85 @@ and being straight about that matters more than a clean demo:
    endpoint (reverse-ETL, vendor syncs). Review the scan report before curing.
 4. **Rollback is DataHub's aspect version history**, one action per field. There is no
    automated undo.
-5. **Scale is untested past ~1k entities.** Reads batch at 100; `certify` writes one tag and
-   one property per clean entity. A 100k-entity catalog means ~200k serial mutations with no
-   concurrency, resume, or incremental mode.
+5. **Cap every unattended `--apply` run with `--max-mutations N`.** `cure` writes 4
+   mutations per hit and `certify` 2 per clean entity, so a misconfigured
+   `DATAHUB_GMS_URL` or one badly-tuned detector change is otherwise unbounded against a
+   production catalog. The (N+1)th write is refused rather than executed, and the run
+   aborts with **exit 3** — distinct from 1 (findings) and 2 (refused/degraded), so a CI
+   job can tell *"the catalog is dirty"* from *"the breaker tripped and the catalog is now
+   half-remediated"*. Be clear about what it does **not** do: writes already made are not
+   rolled back (Antigen has no transaction across DataHub aspects), and this is a
+   circuit breaker, not incremental scanning. It makes an unattended run survivable.
+6. **Scale is untested past ~1k entities.** Reads batch at 100; `certify` writes one tag
+   and one property per clean entity. A 100k-entity catalog means ~200k serial mutations
+   with no concurrency, resume, or incremental mode — `--max-mutations` bounds the damage,
+   it does not remove the ceiling. `certify` *is* incremental in one respect: an entity
+   already certified whose `antigen.contentSha256` still matches is skipped, so a nightly
+   re-run over an unchanged catalog writes **zero** mutations instead of two per entity.
+
+#### Least privilege — the DataHub Policy for a dedicated `antigen-svc` account
+
+Antigen's threat model names the privileges an **attacker** needs (*Who can actually write
+catalog free text*). The same privilege list, inverted, is what an operator should grant
+Antigen — and no more. Do not run it as a superuser or as a human's PAT.
+
+Create **two** service accounts, because the read path and the write path have genuinely
+different blast radii, and only one of them ever needs to be automated:
+
+| Account | Used by | Metadata Policy privileges | Resources |
+|---|---|---|---|
+| `antigen-scanner` | `scan`, `rescan`, the scheduled CI job | **`VIEW_ENTITY_PAGE`** only (read is otherwise ungated on OSS DataHub) | all, or the domains you sweep |
+| `antigen-remediator` | `cure`, `certify`, `blast-radius` — human-triggered | **`EDIT_ENTITY_DOCS`** (entity descriptions) · **`EDIT_DATASET_COL_DESCRIPTION`** (column descriptions) · **`EDIT_ENTITY_TAGS`** (`injection-quarantined`, `agent-safe-certified`) · **`EDIT_ENTITY_PROPERTIES`** (the three `antigen.*` structured properties) | scope to the domains you actually remediate |
+
+Notes that matter more than the table:
+
+- **The scanner account is the one you automate**, and it should hold **no `EDIT_*`
+  privilege at all**. `scan` writes nothing by construction; a read-only credential makes
+  that a property of the deployment rather than a property of our code.
+- **Do not use the default "Asset Owners - Metadata Policy" path.** That policy grants
+  `EDIT_ENTITY_DOCS` and `EDIT_DATASET_COL_DESCRIPTION` to `resourceOwners` — it is
+  exactly the grant the attack in *Who can actually write catalog free text* rides on.
+  Give `antigen-remediator` an explicit, scoped policy instead of making it an owner.
+- **The structured-property *definitions* are a separate, one-time step.**
+  `python -m antigen.register_properties` creates them and needs
+  `MANAGE_STRUCTURED_PROPERTIES`. Run it once, by a human, then take that privilege away —
+  `add_structured_properties` only sets values.
+- **Calibration:** these are the privileges the four mutations map to in DataHub's
+  privilege list. We have run Antigen against a quickstart GMS with metadata-service auth
+  disabled; we have **not** re-run the full arc under each scoped policy, so treat the
+  table as the intended grant to verify in your own environment, not as a tested matrix.
+
+#### ⚠ `SAVE_DOCUMENT_RESTRICT_UPDATES=false` is **server-global**
+
+The KB-document cure overwrites a poisoned document in place, which needs
+`SAVE_DOCUMENT_RESTRICT_UPDATES=false` on `mcp-server-datahub`. That flag is **not
+per-caller and not per-document**: it lifts the update restriction for *every* client of
+that MCP server. Setting it on the instance your analysts and agents share hands all of
+them the ability to overwrite arbitrary KB documents, which is a strictly larger hole than
+the one Antigen is closing.
+
+**Run a dedicated `mcp-server-datahub` instance for Antigen** — the flags below on that
+instance only, reachable from the remediation job, and not from the shared analyst
+endpoint:
+
+```bash
+# on the ANTIGEN-ONLY mcp-server-datahub instance
+export TOOLS_IS_MUTATION_ENABLED=true
+export SAVE_DOCUMENT_TOOL_ENABLED=true
+export SAVE_DOCUMENT_RESTRICT_UPDATES=false   # server-global — dedicated instance only
+```
+
+The scheduled read-only sweep needs none of these; leave all three off wherever the
+scanner account points.
+
+#### A ready-made scheduled scan for your own repo
+
+[`examples/ci/metadata-injection-scan.yml`](examples/ci/metadata-injection-scan.yml) is a
+copy-paste GitHub Actions workflow for adopters — nightly cron, read-only credentials,
+`scan --fail-on-hit --json`, the JSON report uploaded as an artifact, and **exit 2
+(degraded sweep) handled distinctly from exit 1 (findings)**, so a broken sweep can never
+be mistaken for either a clean catalog or a dirty one. It deliberately does *not* run
+`cure`. (Antigen's own `.github/workflows/ci.yml` tests Antigen; it is not a template.)
 
 ### Try it in 30 seconds (zero dependencies, no Docker, no keys)
 
@@ -759,7 +883,10 @@ python seed_catalog.py                    # the clean 13-dataset ecommerce catal
 # 2. mutation + document tools ON (self-hosted mcp-server-datahub env)
 export TOOLS_IS_MUTATION_ENABLED=true
 export SAVE_DOCUMENT_TOOL_ENABLED=true
-export SAVE_DOCUMENT_RESTRICT_UPDATES=false  # lets the 2 doc-locus cures overwrite
+export SAVE_DOCUMENT_RESTRICT_UPDATES=false  # lets the 2 doc-locus cures overwrite.
+                                     # SERVER-GLOBAL: set it on a dedicated
+                                     # mcp-server-datahub instance, never the one your
+                                     # analysts share. See "Least privilege" above.
 export DATAHUB_GMS_URL=http://localhost:8080
 export DATAHUB_GMS_TOKEN=            # quickstart ships with auth DISABLED — no PAT needed.
                                      # Set one only if you enabled metadata-service auth.
@@ -784,6 +911,12 @@ verify.py`. The 6-stage GitHub Actions pipeline (Quality → Security → Verify
 → Deploy gate) runs the same across Python 3.10 / 3.11 / 3.12. See
 [`.github/CONTRIBUTING.md`](.github/CONTRIBUTING.md) to develop offline in one command.
 
+**CI for *your* catalog** is a different file:
+[`examples/ci/metadata-injection-scan.yml`](examples/ci/metadata-injection-scan.yml) —
+nightly cron, read-only credentials, `scan --fail-on-hit --json`, the report uploaded as
+an artifact, exit 2 (degraded) handled distinctly from exit 1 (findings). Copy it into
+your metadata repo's `.github/workflows/`.
+
 ---
 
 ## 📁 Project Structure
@@ -793,6 +926,7 @@ antigen/            detect.py · scan.py · cure.py · blast_radius.py · rescan
                     corpus.py · nearmiss.py · gateway.py · seed.py · cli.py · _testkit/
 verify.py  bench.py  victim_agent.py  seed_corpus.py  seed_near_miss.py
 tests/     examples/ (12 raw payloads + defused diffs + a forensic report)
+           examples/ci/metadata-injection-scan.yml — copy-paste scheduled scan for ADOPTERS
 docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
 antigen-scan/  SKILL.md · README.md · references/ · templates/ · evaluations/
 ```

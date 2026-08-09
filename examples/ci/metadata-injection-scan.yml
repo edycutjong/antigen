@@ -1,0 +1,107 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Antigen — scheduled metadata prompt-injection scan.  COPY THIS INTO YOUR REPO.
+#
+# This is a TEMPLATE FOR ADOPTERS, not Antigen's own pipeline (that is
+# .github/workflows/ci.yml, which tests Antigen itself). Drop this file into
+# .github/workflows/ of the repo that owns your DataHub metadata, set the two
+# secrets below, and you have a nightly read-only sweep that fails loudly when
+# someone plants an injection in a description an agent will read.
+#
+# READ-ONLY BY CONSTRUCTION. `scan` never mutates — but do not rely on that
+# alone. Mint the PAT this job uses on a DataHub account with NO `EDIT_*`
+# privilege (see "Least privilege" in Antigen's README), and leave the
+# mutation tool flags OFF here:
+#
+#     TOOLS_IS_MUTATION_ENABLED   unset / false
+#     SAVE_DOCUMENT_TOOL_ENABLED  unset / false
+#
+# Remediation (`antigen cure`) is deliberately NOT in this workflow. It rewrites
+# catalog text and belongs behind a human, with `--dry-run` first and
+# `--max-mutations` set. See "Running Antigen on your own catalog" in the README.
+# ─────────────────────────────────────────────────────────────────────────────
+name: Metadata injection scan
+
+on:
+  schedule:
+    # 07:00 UTC daily. Pick a time your GMS is reachable and its search index is
+    # warm; DataHub indexes asynchronously and a cold index under-enumerates.
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}
+
+# No write access to the repo is needed either.
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Sweep the catalog for prompt injections
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      DATAHUB_GMS_URL: ${{ secrets.DATAHUB_GMS_URL }}
+      # A PAT for a READ-ONLY service account. See the README's least-privilege
+      # section for the exact DataHub Policy to create.
+      DATAHUB_GMS_TOKEN: ${{ secrets.DATAHUB_GMS_READONLY_TOKEN }}
+
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Antigen (live extras)
+        run: pip install "antigen-datahub[live] @ git+https://github.com/edycutjong/antigen@main"
+
+      - name: Scan
+        id: scan
+        # `set +e` so the step can inspect the exit code instead of dying on it.
+        # stdout is the JSON report; stderr carries the DEGRADED warnings.
+        run: |
+          set +e
+          python -m antigen scan --fail-on-hit --json > antigen-report.json
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      # Uploaded BEFORE the gate below, and with if: always(), so the report
+      # survives the failing run that produced it — that is the whole point of
+      # keeping it as an artifact.
+      - name: Upload the JSON report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: antigen-report
+          path: antigen-report.json
+          retention-days: 30
+
+      - name: Interpret the exit code
+        run: |
+          case "${{ steps.scan.outputs.exit_code }}" in
+            0)
+              echo "::notice::Antigen swept the catalog and found no injections."
+              ;;
+            1)
+              # A WORKING sweep that found something. The catalog is dirty: an
+              # agent reading these descriptions is reading attacker text today.
+              echo "::error::Antigen found prompt injections in catalog metadata."
+              echo "Triage: download the antigen-report artifact, then preview the"
+              echo "remediation with 'python -m antigen cure --dry-run'."
+              exit 1
+              ;;
+            2)
+              # NOT an all-clear, and NOT the same alarm as exit 1. A dead or
+              # misconfigured GMS returns an empty catalog that is
+              # indistinguishable on the wire from a clean one, so Antigen fails
+              # closed. Folding 2 into a generic non-zero handler would report
+              # "injections found" for what is actually a broken sweep — and,
+              # worse, a green-looking pipeline would otherwise mean nothing.
+              echo "::error::DEGRADED SWEEP — Antigen could not establish anything."
+              echo "This is an infrastructure failure, not a finding. Check"
+              echo "DATAHUB_GMS_URL / DATAHUB_GMS_TOKEN reachability and the tool"
+              echo "env flags, then re-run. Do NOT treat this run as a pass."
+              exit 1
+              ;;
+            *)
+              echo "::error::Unexpected antigen exit code ${{ steps.scan.outputs.exit_code }}."
+              exit 1
+              ;;
+          esac
