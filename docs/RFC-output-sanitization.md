@@ -81,8 +81,28 @@ additive. Clients that ignore it see no change.
 The Antigen submission ships a working detector and an end-to-end remediation loop
 (scan → defuse-by-removal → tamper-evident hashes → downstream lineage → cold re-run) plus
 a deterministic `verify.py` graph-state proof. It is offered as the reference for the
-detection half of this RFC. Happy to open a PR wiring `_injection_hint` behind the flag if
-maintainers are interested in the direction.
+detection half of this RFC.
+
+**The open design question, stated precisely, because it decides the patch.** There are two
+viable seams in `mcp-server-datahub` and they are not equivalent:
+
+1. **A `Middleware` with `on_call_tool`**, alongside `TelemetryMiddleware`
+   (`_telemetry.py:50-87`, today the only such hook). Covers every registered tool
+   uniformly — including `grep_documents` and `get_me`, which bypass `clean_gql_response` —
+   but operates on `ToolResult`, so the hint lands as a sibling content block rather than
+   inline beside the flagged field.
+2. **Inside `clean_gql_response` / the per-tool response builders**
+   (`graphql_helpers.py:568`). The hint sits inline next to the text it describes, which is
+   what makes it actionable for a client — but it misses `grep_documents`, `get_me` and the
+   mutation tools, and it cannot carry a top-level key for `get_entities` at all, which
+   returns a bare `list` for multi-URN calls (`tools/entities.py:21,136`).
+
+The flag itself would follow the existing convention — a module-level constant plus an
+`_is_x_enabled()` helper, as in `mcp_server.py:198-208` and
+`document_tools_middleware.py:47-55` — and the registration-time wiring would mirror the
+`readOnlyHint` work already merged in `#105` (`version_requirements.py:125-144`,
+`mcp_server.py:169-179`). Told which seam is acceptable, the PR follows against it, with
+tests, flag defaulting to off.
 
 ---
 
@@ -102,8 +122,26 @@ through the agent tool surface alone.
 > requests `editableSchemaMetadata` and `graphql_helpers.py` merges it into schema fields as
 > `editedDescription`. **Finding 3** does not apply either: `save_document` returns an
 > `author` field and `SAVE_DOCUMENT_RESTRICT_UPDATES` defaults to restricting updates to
-> agent-created documents. **Finding 2 does still apply to `mcp-server-datahub` `main`**, and
-> is the one carried into the upstream discussion.
+> agent-created documents.
+>
+> **Correction, 2026-08-09 — Finding 2 does NOT apply to `mcp-server-datahub` `main`
+> either.** An earlier version of this scope note said it did, and the version of this RFC
+> filed upstream as
+> [acryldata/mcp-server-datahub#201](https://github.com/acryldata/mcp-server-datahub/issues/201)
+> repeats that error. Re-verified against `main` (`9a6946d`): `get_entities` requests
+> document body text (`gql/entity_details.gql:1347-1357` —
+> `... on Document { info { contents { text } } }`) and returns it, truncated at 8,000
+> characters with `_truncated` / `_originalLengthChars` / `_truncatedAtChar` markers
+> (`graphql_helpers.py:46,939-955`), covered by a dedicated test file
+> (`tests/test_mcp/test_get_entities_documents.py`); and `grep_documents`'s own docstring
+> documents `pattern=".*"` with `start_offset` as the intended way to read raw content past
+> that point (`tools/documents.py:518-548`). The narrow mechanical observation in Finding 2
+> still holds — `grep_documents` builds its response by hand and drops the body string it
+> fetched — but the conclusion drawn from it, that a scanner cannot obtain document text
+> without guessing a pattern first, does not. The correction is recorded here rather than
+> quietly dropped, and is being posted to the upstream issue. **No finding here is carried
+> upstream as a defect claim about `mcp-server-datahub`; the RFC's proposal stands on its
+> own.**
 
 ## Finding 1 — a column description can be written but not read back
 
@@ -155,26 +193,42 @@ with a base-SDK aspect read (`antigen/gateway.py::_merge_editable_columns`).
 
 ## Finding 2 — `grep_documents` returns no document body
 
+> **Read the correction in the scope note above first.** The claim "no tool returns a full
+> KB-document body" is **retracted** for `mcp-server-datahub` `main`, where `get_entities`
+> does return document text. What is stated below is scoped to `grep_documents` itself, on
+> the Agent Context Kit versions pinned at the top of this appendix — the only document
+> tool Antigen actually calls.
+
 `grep_documents` returns only the spans that matched, as
-`matches: [{excerpt, position}]`. There is no `content` / `body` / `text` field, and no
-tool in the kit returns a full KB-document body.
+`matches: [{excerpt, position}]`. Its response object carries no `content` / `body` /
+`text` field: the implementation fetches the document text, slices excerpts out of it, and
+drops the string before returning.
 
 ```jsonc
 { "urn": "urn:li:document:shared-…", "title": "onboarding-guide",
   "matches": [ {"excerpt": "…", "position": 0} ], "total_matches": 2 }
 ```
 
-**Why it matters.** A scanner must supply the pattern it is looking for *before* it can
-see any text, so detection collapses to whatever regex the caller guessed. A scored
-detector cannot run over the document as a whole, and any payload phrased outside the
-pre-filter is invisible. It also makes the pre-filter security-relevant rather than a
-performance optimisation: Antigen has to pass a deliberately broad trigger alternation to
-`grep_documents` and only then apply its real scored rule to the reassembled excerpts.
+**Why it matters — for Antigen specifically.** Because Antigen scans documents through
+`grep_documents` alone, it must supply the pattern it is looking for *before* it can see
+any text, so its document-scope detection is bounded by the pre-filter it guessed. That
+makes the pre-filter security-relevant rather than a performance optimisation: Antigen
+passes a deliberately broad trigger alternation to `grep_documents` and only then applies
+its real scored rule to the reassembled excerpts (`gateway.py::_parse_document`).
 Sentence-level context is lost, which is precisely what distinguishes an imperative aimed
-at the reader from legitimate prose that merely contains "ignore".
+at the reader from legitimate prose that merely contains "ignore". This is a **known
+limitation of Antigen's document path**, not a defect in the server: on
+`mcp-server-datahub` `main` the documented read path is `search_documents` →
+`get_entities` (body, 8k-truncated) → `grep_documents(pattern=".*", start_offset=…)` for
+the remainder, and adopting it would remove the pre-filter's security relevance entirely.
+It is listed in *What's next* rather than claimed as shipped.
 
-**Suggested resolution.** Either return the full body when the caller has read access, or
-add an explicit `get_document(urn)`.
+**What remains a fair ask upstream** is narrower and is an ergonomics request, not a bug:
+whole-document reads take two tools plus an excerpt loop bounded by `max_matches_per_doc`,
+and `content_length` is only reported when `start_offset > 0`, so a caller cannot size the
+loop from the first response. An `include_content` option or an explicit `get_document(urn)`
+would make whole-document analysis — summarization, classification, security scanning —
+a single call.
 
 ## Finding 3 — documents carry no provenance, so an agent's own records are unforgeable-in-reverse
 
