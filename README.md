@@ -143,8 +143,11 @@ are on the entity, and a graph-safe forensic banner records *what* was removed a
   is **fail-safe**: no entity is ever deleted,
   and the pre-cure text is retained in DataHub's native aspect version history, so a false
   positive is a one-action revert — never data loss, never an agent outage.
-- `get_lineage` blast-radius answers the platform team's actual question: *"this poison
-  had already reached N downstream dashboards — did an agent act on it there?"*
+- `get_lineage` blast-radius retraces the exact edges DataHub's own default-on
+  [Documentation Propagation](https://docs.datahub.com/docs/automations/docs-propagation)
+  automation copies column docs along (see *DataHub's own automation is the amplifier*
+  below) — answering the platform team's actual questions: *"where did the platform
+  itself copy this poison, and did an agent act on it there?"*
 
 The judge panel lives this threat class professionally; any org wiring an LLM agent to a
 metadata catalog inherits this exact exposure **today**.
@@ -218,6 +221,27 @@ free text any asset owner or ingestion connector can rewrite. It got nothing.
   catalog metadata. The ASRs above are lab measurements against real products and the CVEs
   are adjacent surfaces. The claim is a demonstrated, standards-recognised exposure — not
   an active campaign.
+
+### DataHub's own automation is the amplifier
+
+Blast radius is usually told as impact analysis, and impact analysis earns nothing here —
+lineage walks are table stakes in DataHub, Unity Catalog, Atlan and OpenMetadata alike.
+The sharper fact is about DataHub's product itself:
+[Documentation Propagation](https://docs.datahub.com/docs/automations/docs-propagation) —
+*"This feature is enabled by default in Open Source DataHub"* — automatically propagates
+column documentation *"to downstream columns and sibling columns that are derived or
+dependent on the source column"*, over the same column-level lineage.
+
+Chain that with ingestion path 2 below and the attack costs exactly one write: a
+contractor runs `COMMENT ON COLUMN`, the Snowflake connector copies it into the catalog
+(descriptions *"Enabled by default"*), and Documentation Propagation fans the identical
+text downstream and to siblings — zero attacker effort, zero configuration, and nothing
+on the copies ties them back to the origin. One poisoned column becomes N agent-readable
+surfaces because the platform's own default-on automation did the spreading. That is what
+Antigen's `get_lineage` blast radius is for: retracing the platform's own propagation
+vector to find the copies, not generic *"what's downstream?"* analysis. (Calibration:
+this chain is assembled from DataHub's own documented defaults; we have not measured
+end-to-end propagation on a live deployment.)
 
 ### Who can actually write catalog free text
 
@@ -359,7 +383,7 @@ behavior breaks — this is the engine, not decoration.
 | 1 | `search` | READ | paginated enumeration of the whole catalog — the entry point of every sweep |
 | 2 | `get_entities` | READ | batch description **+ column/schema** pull — the text the detector inspects (10 of 12 payloads live here) |
 | 3 | `grep_documents` | READ | regex hunt over KB document bodies — surfaces the 2 doc-planted payloads nothing else would find |
-| 4 | `get_lineage` | READ | downstream blast-radius (2 hops) — answers *"did an agent already act on this poison downstream?"* |
+| 4 | `get_lineage` | READ | downstream blast-radius (2 hops) — retraces the edges Documentation Propagation copies docs along: *"where did the platform spread this poison, and did an agent act on it there?"* |
 | 5 | `update_description` | **MUTATION** | **the defuse** — reconstructs a clean description with the injected span **deleted** + an inert banner |
 | 6 | `add_tags` | **MUTATION** | `injection-quarantined` on poisoned entities; `agent-safe-certified` on the clean remainder; `injection-blast-radius:<urn>` on downstream consumers |
 | 7 | `add_structured_properties` | **MUTATION** | typed `antigen.contentSha256` (tamper-evidence) + `antigen.payloadSha256` (irreversible forensic hash) + `antigen.lastScanned` |
