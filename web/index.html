@@ -642,7 +642,7 @@ strong { color: var(--text-hi); font-weight: 600; }
       <a href="#ci">In CI</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <a class="ver-tag" href="https://github.com/edycutjong/antigen/releases/latest" rel="noopener" aria-label="Latest release on GitHub">v1.0.1 ↗</a>
+    <a class="ver-tag" href="https://github.com/edycutjong/antigen/releases/latest" rel="noopener" aria-label="Latest release on GitHub">v1.2.0 ↗</a>
     <a class="btn btn-ghost btn-sm header-cta" href="https://github.com/edycutjong/antigen" rel="noopener">GitHub ↗</a>
   </div>
 </header>
@@ -688,7 +688,7 @@ strong { color: var(--text-hi); font-weight: 600; }
           <i></i><i></i><i></i><span class="title">antigen — ./run.sh</span>
         </div>
         <pre aria-hidden="true"><span class="cmd">./run.sh</span>
-<span class="dim">tests 24/24 · near-miss 15/15 clean</span>
+<span class="dim">tests 31/31 (run.sh subset) · near-miss 15/15 clean</span>
 <span class="ok">graph-state PASS (~5 ms) · held-out 3/3</span>
 <span class="dim">── SWEEP ───</span> 41 entities + 2 docs scanned  <span class="dim">(offline run)</span>
   <span class="bad">15 loci flagged</span> · <span class="warn">2 in zero-width Unicode</span>
@@ -873,7 +873,7 @@ strong { color: var(--text-hi); font-weight: 600; }
           <p><code>verify.py</code>'s graph-state gate has no LLM in the path: reset → scan → cure → assert. About 5&nbsp;ms offline.</p>
         </div>
         <div class="stat">
-          <span class="num">80</span>
+          <span class="num">136</span>
           <span class="label">tests passing</span>
           <p>Including <code>test_nfkc_alone_would_miss_zero_width</code> — the test that proves the Unicode pre-pass does the work.</p>
         </div>
@@ -1139,12 +1139,17 @@ strong { color: var(--text-hi); font-weight: 600; }
           <div class="answer">
             <p>
               Yes — the live path runs against a real DataHub instance
-              (<code>datahub docker quickstart</code> plus the public
-              1,049-entity showcase datapack), with mutation and document tools
-              enabled. Offline, the same engine runs against an in-memory
-              transport double — the detector and the surface-completeness
-              assertions are the real ones, so every number reproduces on any
-              laptop in seconds.
+              (<code>datahub docker quickstart</code>, GMS v1.7.0) with mutation
+              and document tools enabled. <code>seed_catalog.py</code> builds a
+              13-dataset <code>ecommerce</code> catalog with real lineage,
+              <code>seed_corpus.py</code> poisons it, and the sweep reads
+              17&nbsp;entities&nbsp;+&nbsp;2&nbsp;KB documents. Every SDK call of
+              that run — 1,049 records, 229 of them Agent Context Kit tool calls,
+              0 failed — is checked in at
+              <code>docs/live-tool-transcript.json</code>. Offline, the same
+              engine runs against an in-memory transport double: the detector and
+              the surface-completeness assertions are the real ones, so every
+              number reproduces on any laptop in seconds.
             </p>
           </div>
         </details>
