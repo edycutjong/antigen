@@ -21,12 +21,20 @@ sample entities happen to exist also lands them on `dataFlow`/`corpuser` URNs, w
 DataHub's `update_description` rejects outright ("Unsupported resource type").
 
 Uses base `acryl-datahub` emits — the same category as the structured-property
-definitions, and deliberately NOT part of the 8-agent-tool surface Antigen is
+definitions, and deliberately NOT part of the 9-agent-tool surface Antigen is
 grounded on.
+
+`--scale N` appends N extra CLEAN padding datasets on top of the 13 above. It exists
+for one reason: the live GMS clamps `search` to 50 rows per page, so a 13-dataset
+catalog never leaves page one and the paging loop in `SdkGateway._paged_urns` is
+never exercised against a real server. `python seed_catalog.py --scale 60` pushes the
+catalog past that cap so the loop has to page. The padding carries no payloads and no
+Antigen tags; it changes nothing about detection, only the size of the enumeration.
 """
 
 from __future__ import annotations
 
+import argparse
 import os
 
 PLATFORM_DATASETS: list[tuple[str, str, str, list[tuple[str, str, str]]]] = [
@@ -120,13 +128,36 @@ LINEAGE: list[tuple[tuple[str, str], tuple[str, str]]] = [
 ]
 
 
+#: Description carried by every `--scale` padding dataset. Deliberately self-describing:
+#: anyone reading the catalog (or the transcript) can see these are enumeration padding,
+#: not part of the demonstrated corpus.
+PADDING_DESCRIPTION = (
+    "Synthetic padding dataset. Clean — carries no payload and no Antigen tag. Exists "
+    "only to push the catalog past the live GMS's 50-row `search` page so the paging "
+    "loop in SdkGateway._paged_urns runs against a real server."
+)
+
+
+def padding_datasets(count: int) -> list[tuple[str, str, str, list[tuple[str, str, str]]]]:
+    """N clean filler datasets, shaped exactly like the real ones."""
+    return [
+        ("snowflake", f"ecommerce.scale.padding_{i:03d}", PADDING_DESCRIPTION,
+         [("row_id", "NUMBER", "Synthetic surrogate key."),
+          ("value", "VARCHAR", "Synthetic value column.")])
+        for i in range(1, count + 1)
+    ]
+
+
 def _urn(platform: str, name: str) -> str:
     from datahub.emitter.mce_builder import make_dataset_urn
     return make_dataset_urn(platform=platform, name=name, env="PROD")
 
 
-def seed(verbose: bool = True) -> list[str]:
-    """Emit the clean catalog. Idempotent — re-running overwrites in place."""
+def seed(verbose: bool = True, scale: int = 0) -> list[str]:
+    """Emit the clean catalog. Idempotent — re-running overwrites in place.
+
+    `scale` appends that many clean padding datasets (see `padding_datasets`).
+    """
     from datahub.emitter.mcp import MetadataChangeProposalWrapper
     from datahub.ingestion.graph.client import DatahubClientConfig, DataHubGraph
     from datahub.metadata.schema_classes import (
@@ -150,7 +181,10 @@ def seed(verbose: bool = True) -> list[str]:
     stamp = AuditStampClass(time=0, actor="urn:li:corpuser:datahub")
     created: list[str] = []
 
-    for platform, name, description, fields in PLATFORM_DATASETS:
+    padding = padding_datasets(scale)
+    padding_names = {name for _, name, _, _ in padding}
+
+    for platform, name, description, fields in PLATFORM_DATASETS + padding:
         urn = _urn(platform, name)
         graph.emit(MetadataChangeProposalWrapper(
             entityUrn=urn,
@@ -177,8 +211,11 @@ def seed(verbose: bool = True) -> list[str]:
             ),
         ))
         created.append(urn)
-        if verbose:
+        if verbose and name not in padding_names:
             print(f"  + {name}  ({len(fields)} columns)")
+    if verbose and padding:
+        print(f"  + {len(padding)} clean padding datasets "
+              f"(ecommerce.scale.padding_001 … _{len(padding):03d})")
 
     downstreams: dict[str, list[str]] = {}
     for up, down in LINEAGE:
@@ -224,11 +261,18 @@ def await_indexed(expected: int, timeout_s: int = 120, verbose: bool = True) -> 
     return seen
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--scale", type=int, default=0, metavar="N",
+                    help="append N extra CLEAN padding datasets, to push the catalog "
+                         "past the GMS's 50-row search page and exercise paging live")
+    args = ap.parse_args(argv)
     print(f"Seeding clean ecommerce catalog into "
           f"{os.environ.get('DATAHUB_GMS_URL', 'http://localhost:8080')}")
-    urns = seed()
-    await_indexed(len(urns))
+    urns = seed(scale=args.scale)
+    # Indexing is asynchronous and roughly linear in catalog size; 13 datasets settle
+    # well inside 120 s, a --scale run needs longer.
+    await_indexed(len(urns), timeout_s=max(120, 5 * len(urns)))
     print(f"\n{len(urns)} datasets created. Catalog is CLEAN "
           f"(no payloads — run seed_corpus.py next).")
     return 0
