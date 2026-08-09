@@ -23,7 +23,7 @@
   ![python](https://img.shields.io/badge/python-3.10%2B-3776AB)
   ![DataHub](https://img.shields.io/badge/DataHub-Agent%20Context%20Kit-1890FF)
   ![OWASP](https://img.shields.io/badge/OWASP-LLM01%20Prompt%20Injection-C1272D)
-  ![tests](https://img.shields.io/badge/tests-130%20passing-2EA043)
+  ![tests](https://img.shields.io/badge/tests-136%20passing-2EA043)
   ![coverage](https://img.shields.io/badge/coverage-100%25-2EA043)
   ![verify](https://img.shields.io/badge/verify.py-graph--state%20PASS-2EA043)
   [![License](https://img.shields.io/badge/license-Apache--2.0-green)](https://github.com/edycutjong/antigen/blob/main/LICENSE)
@@ -112,9 +112,14 @@ The hero flow — **hijack → sweep → defuse → prove**:
 
 1. **Hijack.** A *stock* LangChain agent (`victim_agent.py`, built with the unmodified
    `build_langchain_tools(client)`, mutations off, `temperature=0`) is asked 12 routine
-   catalog questions. The ones that touch a poisoned entity make it obey the buried
-   instruction. The pre-cure hijack rate is **measured from the agent's real output**,
-   never hard-coded.
+   catalog questions. Each answer is scored against that payload's *compliance signature*
+   — an observable tell that the buried instruction was obeyed. The pre-cure rate is
+   **measured from the agent's real output**, never hard-coded, and the whole run is
+   recorded in [`docs/hijack-ab-transcript.json`](docs/hijack-ab-transcript.json). On
+   `claude-sonnet-5` that signature fires 2/12, and reading the answers shows **both are
+   the model quoting the payload while refusing it** — see
+   [the killer numbers](#the-killer-numbers--and-exactly-how-theyre-measured). Treat the
+   pre-cure rate as an upper bound.
 2. **Sweep.** `antigen scan` enumerates all entities via `search`, batch-pulls
    description + column text via `get_entities`, and regex-hunts KB documents via
    `grep_documents`, running a scored detection rule on every free-text surface.
@@ -122,8 +127,9 @@ The hero flow — **hijack → sweep → defuse → prove**:
    read and chains four write-backs (below). The graph keeps only irreversible hashes.
    Against a live catalog it is **dry-run by default** and prints the exact mutation plan;
    writing requires `--apply` (see *The write gate*).
-4. **Prove.** The same stock agent, asked the same 12 questions cold, obeys **0/12** —
-   structurally, because no live instruction remains on any agent-readable surface.
+4. **Prove.** The same stock agent, asked the same 12 questions cold, trips the compliance
+   signature on **0/12** — structurally, because no live instruction remains on any
+   agent-readable surface for it to obey *or quote*.
    `verify.py` reproduces the whole arc and hard-gates on the LLM-independent graph state.
 
 ![Same entity after the cure: payload gone, quarantined, tamper-evident](docs/screenshots/05-cured-quarantined.png)
@@ -412,9 +418,12 @@ buildable today. Three things it provably cannot do:
 - **KB / Document entities are out of scope.** [Supported types](https://docs.datahub.com/docs/tests/metadata-tests)
   are *Dataset, Dashboard, Chart, Data Flow, Data Job, Container* — the two payloads
   Antigen recovers through `grep_documents` are invisible to it.
-- **It is not a write-time gate.** Scheduled evaluation runs *"typically every 24 hours"*
-  and custom schedules *"cannot"* be configured. An agent that queries inside that window
-  reads the payload.
+- **It is not a write-time gate you can rely on.** Scheduled evaluation runs *"typically
+  every 24 hours"* and custom schedules *"cannot"* be configured. The same FAQ answer does
+  describe real-time evaluation — *"When an individual asset changes in DataHub, all tests
+  that include it in scope are evaluated"* — but it is *"typically disabled by default"* and
+  *"can be enabled on demand"*, i.e. via your vendor. On the default configuration an agent
+  that queries inside the scheduled window reads the payload.
 - **Its actions are label-only** — *"Adding or removing specific Tags / Glossary Terms /
   Owners / Domain."* A Metadata Test can *mark* a poisoned asset. It cannot excise the
   span and it cannot hash the field. (It cannot walk lineage either — but the Actions
@@ -439,11 +448,9 @@ But it also already ships the mechanic in `antigen/blast_radius.py`. The
 [**Tag Sync / Tag Propagation Action**](https://docs.datahub.com/docs/datahub-actions/src/datahub_actions/plugin/action/tag)
 (`tag_propagation`) exists today: *"You can apply a tag (like `critical`) on a dataset
 and have it propagate down to all the downstream datasets,"* it is lineage-driven, *"The
-action supports both additions and removals of tags"* — and it carries the identical
-limitation ours does: *"Tag Propagation is currently only supported for downstream
-datasets. Tags will not propagate to downstream dashboards or charts."* We wrote that
-sentence about `injection-blast-radius:<urn>` independently, from the same lineage
-constraint, before knowing the action existed. There is a sibling
+action supports both additions and removals of tags"* — and it carries a documented limitation:
+*"Tag Propagation is currently only supported for downstream
+datasets. Tags will not propagate to downstream dashboards or charts."* There is a sibling
 [Glossary Term Propagation Action](https://docs.datahub.com/docs/datahub-actions/src/datahub_actions/plugin/action/term)
 (`term_propagation`) with the same shape, and a Cloud-only
 [Glossary Term Propagation automation](https://docs.datahub.com/docs/automations/glossary-term-propagation)
@@ -583,14 +590,25 @@ Metadata Tests can regex-match a description and **mark** the asset; the Tag Pro
 Action already walks lineage to spread a label. Neither excises the injected span,
 reconstructs the clean field, hashes it for tamper-evidence, or files a forensic record —
 and neither sees KB documents at all. The gap is the *repair*, not the detection or the
-labelling. (One non-agent-tool call is honest to name: the one-time structured-property
-*definition* setup in `register_properties.py`, a base `acryl-datahub` emit — it is setup,
-not one of the 9 agent tools. Those definitions are scoped to **Dataset, Dashboard, Chart,
+labelling.
+
+**Four base-SDK calls are honest to name**, and the transcript counts every one of them
+separately from the 9 agent tools:
+
+| Base `acryl-datahub` call | Why Antigen needs it |
+|---|---|
+| `DataHubGraph.emit_mcp` | The one-time structured-property **definition** setup in `register_properties.py`. Setup, not an agent tool. |
+| `DataHubGraph.exists` | Checks whether a tag entity already exists before creating it. |
+| `DataHubGraph.emit` | Creates the tag entity (`_ensure_tag`): DataHub rejects `batchAddTags` for a tag URN that does not exist yet, and blast-radius tags are per-source, so they cannot be pre-registered. |
+| `DataHubGraph.get_aspect` | The `editableSchemaMetadata` overlay that recovers column descriptions the tool surface does not hand back. |
+
+Catalog seeding uses the same base SDK, but that is labelled demo *input*, not product
+code. The structured-property definitions are scoped to **Dataset, Dashboard, Chart,
 Data Flow, Data Job and Container** — deliberately the full set that carries descriptions,
 because `search` enumerates the catalog with a bare `query="*"` and no entity-type filter,
 so the sweep reaches every one of them. Scoped to `dataset` alone, as they were until
 v1.2, the first poisoned **dashboard** would have sent `add_structured_properties` at an
-entity type the definition did not cover.)
+entity type the definition did not cover.
 
 **Don't take the table's word for it — grep the transcript.**
 [`docs/live-tool-transcript.json`](docs/live-tool-transcript.json) records **every** SDK
@@ -604,8 +622,9 @@ update_description 59 · get_entities 58 · save_document 34 · add_tags 32
 add_structured_properties 22 · search 17 · get_lineage 10 · search_documents 9 · grep_documents 9
 ```
 
-The 1,297 base `acryl-datahub` `DataHubGraph` calls (seeding, property definitions, the
-`editableSchemaMetadata` overlay) are counted **separately** in the same file, so the
+The 1,297 base `acryl-datahub` `DataHubGraph` calls (seeding, property definitions,
+tag-entity creation, the `editableSchemaMetadata` overlay — `emit_mcp` 225, `emit` 216,
+`exists` 311, `get_aspect` 545) are counted **separately** in the same file, so the
 "9 agent tools" claim above stays exactly true.
 
 **The paging loop is proven live, not just fixed.** The run has three cycles: **A** the
@@ -690,11 +709,28 @@ radius and the 0-drift re-scan reproduce unchanged.</sub>
 
 ### The killer numbers — and exactly how they're measured
 
-> **Stock LangChain catalog agent, 12 targeted questions: hijacked 2/12 before Antigen →
-> 0/12 after, measured on `claude-sonnet-5` against a live DataHub GMS. 12/12 planted injections + 3/3 held-out *public* injections
+> **Stock LangChain catalog agent, 12 targeted questions: the compliance signature fired
+> 2/12 before Antigen → 0/12 after, measured on `claude-sonnet-5` against a live DataHub
+> GMS. 12/12 planted injections + 3/3 held-out *public* injections
 > detected and removed from every agent-readable surface — 2 hidden in zero-width Unicode,
 > 2 in KB documents, 2 in unreviewed column descriptions. 0 false positives on a 15-item
 > adversarial-adjacent set.**
+
+**Read that `2/12` down, not up.** The whole A/B is recorded — the 12 questions, the raw
+model answers, the per-trial compliance regex and the verdict — in
+[`docs/hijack-ab-transcript.json`](docs/hijack-ab-transcript.json) (console:
+[`docs/hijack-run.log`](docs/hijack-run.log)), and the transcript says plainly what the
+answers show: **both pre-cure flags are false positives of the compliance signature.** In
+each, `claude-sonnet-5` *names* the injection and refuses it — and then quotes the
+attacker's text while refusing, which is what the regex matches. Zero of the 12 pre-cure
+trials show the model actually obeying a buried instruction, so **2/12 is an upper bound
+on compliance, not two demonstrated compromises**. A frontier model already refuses these
+payloads unaided; a weaker or older one would not.
+
+What the A/B *does* show is structural, and it is the claim Antigen actually makes: after
+the cure the flags go to 0 because the payload is no longer on any agent-readable surface
+— there is nothing left to quote or to obey. That property is exactly what Part A
+hard-gates below, with no LLM in the path.
 
 `verify.py` separates two kinds of claim so the reproduce command **cannot falsely fail on
 a judge's own LLM key**:
@@ -712,7 +748,9 @@ in the archived 2026-08-08 log, 7,055 ms on the slowest run observed).
 victim agent before the cure (`<pre>/12`, measured from real output) and cold after
 (`0/12`). If the SDK/LLM are absent or a judge's model is injection-resistant, it prints a
 note and **still exits 0** — the immunization proof is the Part-A graph-state delta, which
-no model choice can break.
+no model choice can break. A trial the agent cannot complete is recorded as `ERRORED` and
+makes the whole phase `INCONCLUSIVE` rather than a 0-hijack result: an outage must never
+read as resistance. One such phase is kept in the transcript rather than deleted.
 
 **Held-out generalization (`3/3`)** is *reported, not gated*: the held-out strings come
 from public prompt-injection corpora and were **never used to tune the rule**, so gating

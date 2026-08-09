@@ -850,7 +850,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="stat">
           <span class="num">0/12</span>
           <span class="label">hijacks after the cure</span>
-          <p>The stock agent was hijacked before Antigen; asked the same 12 questions cold after the cure it obeys none — by construction, not by model luck.</p>
+          <p>The same stock agent, asked the same 12 questions cold after the cure, trips the compliance signature on none — by construction, not by model luck: there is no payload left on any readable surface to obey or even quote.</p>
         </div>
         <div class="stat">
           <span class="num">12/12&thinsp;+&thinsp;3/3</span>
@@ -882,8 +882,14 @@ strong { color: var(--text-hi); font-weight: 600; }
       <p class="method-note reveal">
         Methodology note: the pre-cure hijack rate is <em>measured from the
         agent's real output</em> on each run, never hard-coded — so no specific
-        pre-hijack number is claimed here. The post-cure <strong>0/12</strong> is
-        structural: no live instruction remains on any surface the agent can read.
+        pre-hijack number is claimed here. The one recorded A/B
+        (<code>docs/hijack-ab-transcript.json</code>, <code>claude-sonnet-5</code>,
+        live GMS) has the compliance signature firing 2/12 pre-cure, and reading
+        the raw answers <em>lowers</em> that: both flags are the model naming and
+        refusing the injection, then quoting the attacker's text while refusing —
+        the quote is what the regex matched. Treat any pre-cure number as an upper
+        bound. The post-cure <strong>0/12</strong> is the structural claim: no live
+        instruction remains on any surface the agent can read.
       </p>
     </div>
   </section>

@@ -142,7 +142,7 @@ class SdkGateway:
     This is the path a judge exercises. It imports `datahub-agent-context` lazily so
     that `antigen.detect` and the corpus stay importable without the SDK installed.
 
-    The 8 LangChain BaseTools are indexed by `.name` and invoked with `.invoke({...})`.
+    The 9 LangChain BaseTools are indexed by `.name` and invoked with `.invoke({...})`.
 
     Every argument name and response shape below was captured from a live
     `datahub docker quickstart` GMS running acryl-datahub 1.6.0.6 /
@@ -181,6 +181,16 @@ class SdkGateway:
 
     @staticmethod
     def _required_tools() -> set[str]:
+        """The 8 tools whose absence is fatal — deliberately 8, not the full 9.
+
+        Antigen drives 9 Agent Context Kit tools. Only these 8 are *hard*
+        requirements. `search_documents` is the 9th and the one tool with a
+        documented degraded fallback: the KB-document sweep still runs through
+        `grep_documents`, and a kit whose `search_documents` is missing, unpaged
+        or broken is reported via `_warn()` as a DEGRADED sweep (exit 2) rather
+        than a refusal to start. Listing it here would turn a recoverable, loudly
+        reported degradation into a hard failure. See `list_kb_documents`.
+        """
         return {
             "search", "get_entities", "grep_documents", "get_lineage",
             "update_description", "add_tags", "add_structured_properties",
@@ -218,8 +228,7 @@ class SdkGateway:
     def _paged_urns(self, tool: str) -> list[str]:
         """Enumerate every URN a paging search tool yields.
 
-        Three termination conditions, and all three are load-bearing against the
-        real GMS:
+        Two termination conditions, and both are load-bearing against the real GMS:
 
         * a page that adds nothing new — which covers both an empty page and a
           server that ignored `offset` and is replaying page one forever;
@@ -273,7 +282,7 @@ class SdkGateway:
         invisible to the very read path that has to verify it. This mirrors the
         entity-level rule where `editableProperties.description` wins, and is a base
         `acryl-datahub` aspect read (same category as the structured-property
-        definitions), not a 9th agent tool.
+        definitions), not a 10th agent tool.
         """
         graph = self._graph()
         if graph is None:
@@ -390,7 +399,7 @@ class SdkGateway:
         a base `acryl-datahub` emit, NOT part of the Agent Context Kit tool surface —
         the same category as the structured-property definitions in
         `register_properties.py`. It is listed there, not counted as an agent tool,
-        so the "8 agent tools" grounding claim stays honest. Blast-radius tags are
+        so the "9 agent tools" grounding claim stays honest. Blast-radius tags are
         per-source and cannot be pre-registered, so this runs on the write path.
         """
         if tag_urn in self._tags_seen:

@@ -4,8 +4,10 @@ DataHub requires a structured-property *definition* (URN + value type + cardinal
 to exist before `add_structured_properties` can set a value. Definition creation is a
 base `acryl-datahub` operation — NOT part of the Agent Context Kit tool surface — so
 it is called directly here, not through `build_langchain_tools`. This is called out
-explicitly so the "8 agent tools" grounding claim stays honest: this is the 9th call,
-and it is a setup emit, not an agent tool.
+explicitly so the "9 agent tools" grounding claim stays honest: this is one of the four
+base-SDK calls the README names (`emit_mcp`, alongside `emit`/`exists` for tag-entity
+creation and `get_aspect` for the editableSchemaMetadata overlay), and it is a setup
+emit, not an agent tool.
 
 Three definitions, using valid dotted identifiers (never hyphens):
     antigen.contentSha256   string   — tamper-evidence hash of the cleaned field
