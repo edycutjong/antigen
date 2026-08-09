@@ -55,7 +55,16 @@ jobs:
       - name: TruffleHog Secret Scan
         uses: trufflesecurity/trufflehog@main
         with:
-          extra_args: --only-verified
+          # `--exclude-detectors=lob` — one detector, disabled for cause, not a
+          # blanket loosening. TruffleHog's Lob rule matches `test_[A-Za-z0-9_]{35}`
+          # and its verifier returns Verified=true for ANY string of that shape:
+          # `test_` followed by 35 literal `a` characters is reported as a verified
+          # secret. Python test names land on that pattern by accident (a 35-character
+          # `test_…` function name is unremarkable), so here the rule can only ever
+          # produce false positives — this project has no Lob (direct-mail API)
+          # integration, credential, or dependency of any kind. Every other detector
+          # stays enabled, still gated on --only-verified.
+          extra_args: --only-verified --exclude-detectors=lob
 
   dependency-audit:
     name: "Stage 2 · Dependency Audit"
