@@ -78,6 +78,13 @@ def test_format_plan_empty_and_populated():
 # READ pass-through
 # --------------------------------------------------------------------------- #
 
+def test_planning_gateway_is_a_drop_in_gateway():
+    """The engine is handed this instead of the real gateway, so it must satisfy the
+    same Protocol — a missing method would surface as an AttributeError mid-cure."""
+    from antigen.gateway import Gateway
+    assert isinstance(PlanningGateway(_graph()), Gateway)
+
+
 def test_reads_pass_through_untouched():
     inner = _graph()
     p = PlanningGateway(inner)
