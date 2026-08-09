@@ -9,8 +9,10 @@ Run order for a live demo on a fresh `datahub docker quickstart`:
     python seed_catalog.py      # 1. clean ecommerce catalog (this file)
     python -m antigen.register_properties   # 2. structured-property definitions
     python seed_corpus.py       # 3. plant the attack corpus
-    python -m antigen demo      # 4. sweep -> defuse -> prove
-    python verify.py --live     # 5. the reproducible proof
+    python -m antigen cure --dry-run   # 4. preview every write (live default)
+    python -m antigen demo --apply     # 5. sweep -> defuse -> prove (mutates; --apply
+                                       #    is REQUIRED against a live catalog)
+    python verify.py --live            # 6. the reproducible proof
 
 Why it exists: DataHub's own `ingest-sample-data` ships ~7 unrelated Hive/HDFS
 datasets, none of which carry the columns the corpus targets
