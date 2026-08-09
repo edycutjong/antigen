@@ -2,6 +2,75 @@
 
 <!-- version list -->
 
+## v1.1.0 (2026-08-09)
+
+### Bug Fixes
+
+- **cure**: Stop citing a payload file that is never written, and say what is really kept
+  ([`47fdcb1`](https://github.com/edycutjong/antigen/commit/47fdcb12b2bc724e31e9c7bba4122bb52470ea00))
+
+- **gateway**: Page search at the live GMS cap of 50, and paginate documents
+  ([`5b95b03`](https://github.com/edycutjong/antigen/commit/5b95b03ce9d9e50f8875f7f383980dc98f2320a6))
+
+- **gateway**: Report degraded live reads instead of swallowing them
+  ([`d62da20`](https://github.com/edycutjong/antigen/commit/d62da201dacc060b8694b631e28e7df9c6f47541))
+
+- **scan**: Fail closed on a degraded sweep — exit 2, never a silent all-clear
+  ([`1740615`](https://github.com/edycutjong/antigen/commit/174061546b22d008e21a835bb9916af5bdd6ef55))
+
+- **scan**: Widen the document pre-filter to cover persona jailbreaks
+  ([`a7ec43e`](https://github.com/edycutjong/antigen/commit/a7ec43e756a0e5dc4abd1a062fd847eca3a8c12d))
+
+### Continuous Integration
+
+- **security**: Exclude TruffleHog's Lob detector — it verifies arbitrary strings
+  ([`ca1882c`](https://github.com/edycutjong/antigen/commit/ca1882ce796bcd3d282b594cc681d3c3a896908a))
+
+### Documentation
+
+- **detect**: Retitle module docstring — the detector is deliberately replaceable; the remediation
+  loop is the contribution
+  ([`0f6779f`](https://github.com/edycutjong/antigen/commit/0f6779ff5e792521229547974c1212719535c6f3))
+
+- **readme**: Add a 4-line quickstart and table of contents above the fold
+  ([`4bc4838`](https://github.com/edycutjong/antigen/commit/4bc483812a91b1599480500f6f68b8ba01268e72))
+
+- **readme**: Cite colliding prior art — AgentAntibody, mcp-context-protector, ETDI, DLP write-back,
+  CDR
+  ([`78d4a0f`](https://github.com/edycutjong/antigen/commit/78d4a0f80ed44bfeda69e8c67907b14d6d29e216))
+
+- **readme**: Concede datahub-classify and Actions-framework overlaps; add Actions listener to
+  roadmap
+  ([`edfb02f`](https://github.com/edycutjong/antigen/commit/edfb02f7f5dc69972efd3358dad1b03e126ddaa0))
+
+- **readme**: Label the dry-run transcript as the offline corpus double's numbers
+  ([`5e97021`](https://github.com/edycutjong/antigen/commit/5e970210b1d385f2188fed94bf2f05d0da3b5bb5))
+
+- **readme**: Name three known detector evasions in Honest limitations — base64, char-spacing, doc
+  pre-filter gap
+  ([`76036c5`](https://github.com/edycutjong/antigen/commit/76036c5df19f3e036d138418444b45b424ebfed4))
+
+- **readme**: Reframe blast radius as tracing Documentation Propagation — DataHub's own default-on
+  amplifier
+  ([`a3ec958`](https://github.com/edycutjong/antigen/commit/a3ec958ac259aedf6602dc4295216d38c9943f1b))
+
+- **readme**: True up the test count to 114 and name the new suites
+  ([`06d08a0`](https://github.com/edycutjong/antigen/commit/06d08a01ce88f1d956a817abe6bfc538fdc7958b))
+
+- **seed**: Update the live run order for the --apply write gate
+  ([`bd69bb9`](https://github.com/edycutjong/antigen/commit/bd69bb95d6c8262d729a41930b898736fa33f6c2))
+
+### Features
+
+- **cli**: Dry-run by default on live mutating runs, --apply to write
+  ([`802c7a1`](https://github.com/edycutjong/antigen/commit/802c7a1d47048330448c1ad1adc29703160dae42))
+
+### Testing
+
+- **cli**: Rename a test whose name tripped TruffleHog's Lob detector
+  ([`87005f3`](https://github.com/edycutjong/antigen/commit/87005f30e65a4efdd43eec2768a1bb194ebedf1b))
+
+
 ## v1.0.11 (2026-08-09)
 
 ### Bug Fixes
