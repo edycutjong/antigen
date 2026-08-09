@@ -7,17 +7,31 @@
 # secrets below, and you have a nightly read-only sweep that fails loudly when
 # someone plants an injection in a description an agent will read.
 #
-# READ-ONLY BY CONSTRUCTION. `scan` never mutates — but do not rely on that
-# alone. Mint the PAT this job uses on a DataHub account with NO `EDIT_*`
-# privilege (see "Least privilege" in Antigen's README), and leave the
-# mutation tool flags OFF here:
-#
-#     TOOLS_IS_MUTATION_ENABLED   unset / false
-#     SAVE_DOCUMENT_TOOL_ENABLED  unset / false
+# READ-ONLY BY CONSTRUCTION. `scan` and `rescan` never call a mutation tool —
+# but do not rely on that alone, and do not rely on an env var either. There is
+# no `TOOLS_IS_MUTATION_ENABLED` / `SAVE_DOCUMENT_TOOL_ENABLED` switch that does
+# anything: in datahub-agent-context 1.6.0.17 those names appear only in a module
+# docstring and are never read, and the mutation tools are bound by the
+# `include_mutations=True` kwarg in the library call. The control that actually
+# holds is the CREDENTIAL: mint the PAT this job uses on a DataHub account with
+# NO `EDIT_*` privilege (see "Least privilege" in Antigen's docs/DEPLOYMENT.md), so a write
+# would be refused by the server rather than by a flag.
 #
 # Remediation (`antigen cure`) is deliberately NOT in this workflow. It rewrites
 # catalog text and belongs behind a human, with `--dry-run` first and
 # `--max-mutations` set. See "Running Antigen on your own catalog" in the README.
+#
+# TWO sweeps, not one, and BOTH gate the job. `scan` skips entities already
+# tagged `injection-quarantined` — that skip is what makes `scan && cure` safe to
+# re-run, and it also means a cured entity that an attacker RE-poisons is
+# invisible to `scan` forever. `rescan` is the half that sees it: every cured or
+# certified entity carries an `antigen.contentSha256` stamp, and rescan reports
+# any whose content no longer hashes to it. Run only `scan` and the steady state
+# this product is designed to reach — a catalog where everything is cured or
+# certified — is exactly the state it stops watching.
+#   (`python -m antigen scan --include-quarantined` forces the full re-sweep in
+#   one command instead; it costs a detector pass over every cured field, which
+#   is why the drift check is the scheduled one.)
 # ─────────────────────────────────────────────────────────────────────────────
 name: Metadata injection scan
 
@@ -73,35 +87,61 @@ jobs:
           path: antigen-report.json
           retention-days: 30
 
-      - name: Interpret the exit code
+      # The half `scan` cannot see. A cured entity carries the
+      # `injection-quarantined` tag, so `scan` skips it; if someone rewrites its
+      # description with a fresh payload, only the content-hash drift check
+      # notices. Same exit-code contract as `scan`: 1 = drift found,
+      # 2 = degraded sweep.
+      - name: Rescan for drift on cured and certified entities
+        id: rescan
+        if: always()
         run: |
-          case "${{ steps.scan.outputs.exit_code }}" in
-            0)
-              echo "::notice::Antigen swept the catalog and found no injections."
-              ;;
-            1)
-              # A WORKING sweep that found something. The catalog is dirty: an
-              # agent reading these descriptions is reading attacker text today.
-              echo "::error::Antigen found prompt injections in catalog metadata."
-              echo "Triage: download the antigen-report artifact, then preview the"
-              echo "remediation with 'python -m antigen cure --dry-run'."
-              exit 1
-              ;;
-            2)
-              # NOT an all-clear, and NOT the same alarm as exit 1. A dead or
-              # misconfigured GMS returns an empty catalog that is
-              # indistinguishable on the wire from a clean one, so Antigen fails
-              # closed. Folding 2 into a generic non-zero handler would report
-              # "injections found" for what is actually a broken sweep — and,
-              # worse, a green-looking pipeline would otherwise mean nothing.
-              echo "::error::DEGRADED SWEEP — Antigen could not establish anything."
-              echo "This is an infrastructure failure, not a finding. Check"
-              echo "DATAHUB_GMS_URL / DATAHUB_GMS_TOKEN reachability and the tool"
-              echo "env flags, then re-run. Do NOT treat this run as a pass."
-              exit 1
-              ;;
-            *)
-              echo "::error::Unexpected antigen exit code ${{ steps.scan.outputs.exit_code }}."
-              exit 1
-              ;;
-          esac
+          set +e
+          python -m antigen rescan --fail-on-hit
+          echo "exit_code=$?" >> "$GITHUB_OUTPUT"
+          set -e
+
+      - name: Interpret the exit codes
+        # `always()` so a failing scan step cannot skip the interpretation that
+        # explains it.
+        if: always()
+        run: |
+          fail=0
+          interpret() {
+            what="$1"; code="$2"
+            case "$code" in
+              0)
+                echo "::notice::Antigen ${what}: nothing found."
+                ;;
+              1)
+                # A WORKING sweep that found something. The catalog is dirty: an
+                # agent reading these descriptions is reading attacker text today.
+                echo "::error::Antigen ${what}: FINDINGS in catalog metadata."
+                echo "Triage: download the antigen-report artifact, then preview the"
+                echo "remediation with 'python -m antigen cure --dry-run'."
+                fail=1
+                ;;
+              2)
+                # NOT an all-clear, and NOT the same alarm as exit 1. A dead or
+                # misconfigured GMS returns an empty catalog that is
+                # indistinguishable on the wire from a clean one, so Antigen fails
+                # closed — and every infrastructure failure (unreachable host,
+                # missing extras, an unencodable response) is mapped here too,
+                # never to 1. Folding 2 into a generic non-zero handler would
+                # report "injections found" for what is actually a broken sweep —
+                # and, worse, a green-looking pipeline would otherwise mean nothing.
+                echo "::error::Antigen ${what}: DEGRADED SWEEP — could not establish anything."
+                echo "This is an infrastructure failure, not a finding. Check"
+                echo "DATAHUB_GMS_URL / DATAHUB_GMS_TOKEN reachability and the tool"
+                echo "env flags, then re-run. Do NOT treat this run as a pass."
+                fail=1
+                ;;
+              *)
+                echo "::error::Antigen ${what}: unexpected exit code ${code}."
+                fail=1
+                ;;
+            esac
+          }
+          interpret "scan (new injections)" "${{ steps.scan.outputs.exit_code }}"
+          interpret "rescan (drift on cured/certified entities)" "${{ steps.rescan.outputs.exit_code }}"
+          exit $fail

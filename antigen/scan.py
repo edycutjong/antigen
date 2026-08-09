@@ -7,11 +7,17 @@ Enumerates the whole catalog via `search`, batch-pulls description + column text
 Idempotency: entities already tagged `injection-quarantined` are skipped, so
 `antigen scan && antigen cure` run twice with no state reset is a no-op.
 
-Fail-closed: a sweep that enumerated nothing, or whose reads degraded, records why in
-`ScanReport.degraded_reasons` and is reported as DEGRADED rather than clean. A dead or
-misconfigured GMS returns an empty catalog that is indistinguishable on the wire from a
-clean one, and for a security control "found nothing" must never be the same answer as
-"looked and there was nothing".
+Fail-closed: a sweep that enumerated nothing, that was handed back fewer entities than
+it asked for, or whose reads degraded records why in `ScanReport.degraded_reasons` and
+is reported as DEGRADED rather than clean. A dead or misconfigured GMS returns an empty
+catalog that is indistinguishable on the wire from a clean one, and for a security
+control "found nothing" must never be the same answer as "looked and there was
+nothing".
+
+Scoping (`Scope`) is the one narrowing that is NOT a degradation: an operator piloting
+on one domain asked for the smaller number, so an empty scope exits 0 and says which
+flag emptied it. Distinguishing "the catalog went dark" from "your filter excluded
+everything" is the whole reason the two live in different fields.
 """
 
 from __future__ import annotations
@@ -132,6 +138,67 @@ class ScanHit:
 EMPTY_CATALOG_REASON = ("0 entities enumerated — catalog empty or gateway "
                         "misconfigured")
 
+#: The same fail-closed rule, one step later in the pipeline. The enumeration guard
+#: above only proves the catalog answered `search`; it says nothing about whether the
+#: entities it named were ever READ. A gateway that lists 800 URNs and hands back 12
+#: entities (`_as_list` maps a `None` or an error envelope to `[]` without raising)
+#: produced a sweep that looked at 12 fields and reported the other 788 clean.
+#: Document scope already refuses that trade (`gateway._document_urns`); this is the
+#: entity-scope analogue, on the path that carries 10 of the 12 corpus payloads.
+UNDER_FETCH_REASON = ("get_entities returned {scanned}/{requested} requested entities "
+                      "— {missing} were never read, and an entity that was not read "
+                      "cannot be reported clean")
+
+
+@dataclass(frozen=True)
+class Scope:
+    """A read-side narrowing of the sweep — `scan --urn-contains / --max-entities`.
+
+    Why it exists: the standard way a platform team adopts a control is to pilot it on
+    one domain before pointing it at everything. Until this, the only lever for that
+    was a DataHub policy on a SECOND scoped service account — so "try it on finance
+    first" was a credential-provisioning exercise rather than a flag.
+
+    What it is NOT: server-side. It filters the URN list `search_all()` already
+    returned, so it saves `get_entities` round-trips and never the enumeration — and
+    that is deliberate, because the enumeration is what the fail-closed check reads.
+    `urn_contains` is a plain case-insensitive SUBSTRING, not a regex: a DataHub URN
+    is full of `(`, `)` and `,`, and every one of those is a regex metacharacter.
+
+    `urn_contains` narrows EVERY locus, KB documents included, so the flag means one
+    thing everywhere: sweep the URNs that contain this. `max_entities` is entity-only,
+    as its name says — truncating a document sweep to "the first N" is not a scope an
+    operator can reason about. `summary()` states both counts either way.
+    """
+
+    urn_contains: str | None = None
+    max_entities: int | None = None
+
+    @property
+    def active(self) -> bool:
+        return self.urn_contains is not None or self.max_entities is not None
+
+    def matches_urn(self, urn: str) -> bool:
+        """True if `urn` is inside the scope. The `--max-entities` cut is separate."""
+        return self.urn_contains is None or self.urn_contains.lower() in urn.lower()
+
+    def apply(self, urns: list[str]) -> list[str]:
+        selected = [u for u in urns if self.matches_urn(u)]
+        if self.max_entities is not None:
+            # Clamped at 0 because a negative bound would slice from the END of the
+            # list — a scope that quietly scans nearly everything when the operator
+            # asked for a handful is the one way a limit must never fail.
+            selected = selected[:max(self.max_entities, 0)]
+        return selected
+
+    def describe(self) -> str:
+        flags = []
+        if self.urn_contains is not None:
+            flags.append(f"--urn-contains {self.urn_contains!r}")
+        if self.max_entities is not None:
+            flags.append(f"--max-entities {self.max_entities}")
+        return " ".join(flags)
+
 
 @dataclass
 class ScanReport:
@@ -143,10 +210,32 @@ class ScanReport:
     #: Reads that failed or returned nothing. Non-empty ⇒ this sweep is NOT an
     #: all-clear, however few hits it found.
     degraded_reasons: list[str] = field(default_factory=list)
+    #: URNs `search_all` returned, BEFORE any scope. The fail-closed check reads this
+    #: one — a scope narrowing 800 entities to 3 is not a blackout, an enumeration
+    #: that returned 0 is.
+    entities_enumerated: int = 0
+    #: URNs left after the scope, i.e. what `get_entities` was asked for.
+    entities_in_scope: int = 0
+    #: The scope that narrowed this run, or None when the whole catalog was swept.
+    scope: Scope | None = None
 
     @property
     def degraded(self) -> bool:
         return bool(self.degraded_reasons)
+
+    @property
+    def scope_empty(self) -> bool:
+        """True when the operator's own filter — not a blackout — read nothing.
+
+        Deliberately NOT a degradation. `0 entities enumerated` means the catalog went
+        dark and has to fail closed; `--urn-contains finance` matching none of 78
+        enumerated entities is the filter doing exactly what it was asked to do.
+        Failing that closed would exit 2 on a working pilot run and teach operators
+        that exit 2 is noise — which is the one lesson that makes the real blackout
+        invisible.
+        """
+        return self.scope is not None and self.entities_enumerated > 0 \
+            and self.entities_in_scope == 0
 
     def summary(self) -> str:
         by_tool: dict[str, int] = {}
@@ -163,6 +252,12 @@ class ScanReport:
         parts += [f"{n} via {t}" for t, n in sorted(by_tool.items())]
         if self.skipped_quarantined:
             parts.append(f"{self.skipped_quarantined} already-quarantined (skipped)")
+        if self.scope is not None:
+            # A scoped run must never print a bare count that reads like whole-catalog
+            # coverage: say what was excluded, and by which flag.
+            parts.append(f"SCOPED by {self.scope.describe()}: "
+                         f"{self.entities_in_scope} of {self.entities_enumerated} "
+                         "enumerated entities")
         if self.degraded_reasons:
             # Never let a confident-looking count stand alone over a broken sweep.
             parts.append("DEGRADED: " + "; ".join(self.degraded_reasons))
@@ -170,9 +265,11 @@ class ScanReport:
 
 
 def scan(gateway: Gateway, *, skip_quarantined: bool = True,
-         grep_documents: bool = True) -> ScanReport:
-    urns = gateway.search_all()
-    degraded: list[str] = [] if urns else [EMPTY_CATALOG_REASON]
+         grep_documents: bool = True, scope: Scope | None = None) -> ScanReport:
+    enumerated = gateway.search_all()
+    scope = scope if scope is not None and scope.active else None
+    urns = scope.apply(enumerated) if scope is not None else enumerated
+    degraded: list[str] = [] if enumerated else [EMPTY_CATALOG_REASON]
     hits: list[ScanHit] = []
     clean: list[str] = []
     scanned = 0
@@ -204,10 +301,16 @@ def scan(gateway: Gateway, *, skip_quarantined: bool = True,
             if not entity_flagged:
                 clean.append(ent.urn)
 
+    if scanned < len(urns):
+        degraded.append(UNDER_FETCH_REASON.format(
+            scanned=scanned, requested=len(urns), missing=len(urns) - scanned))
+
     docs_scanned = 0
     if grep_documents:
         for doc in gateway.grep_documents(DOC_GREP_PATTERN):
             if is_own_incident(doc.title):
+                continue
+            if scope is not None and not scope.matches_urn(doc.urn):
                 continue
             docs_scanned += 1
             dd = detect(doc.content)
@@ -221,4 +324,6 @@ def scan(gateway: Gateway, *, skip_quarantined: bool = True,
 
     return ScanReport(hits=hits, entities_scanned=scanned,
                       documents_scanned=docs_scanned, skipped_quarantined=skipped,
-                      clean_entity_urns=clean, degraded_reasons=degraded)
+                      clean_entity_urns=clean, degraded_reasons=degraded,
+                      entities_enumerated=len(enumerated),
+                      entities_in_scope=len(urns), scope=scope)

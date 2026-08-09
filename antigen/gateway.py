@@ -173,10 +173,22 @@ class SdkGateway:
         self._tools = {t.name: t for t in tools}
         missing = self._required_tools() - set(self._tools)
         if missing:
+            # This message used to say "ensure TOOLS_IS_MUTATION_ENABLED=true", which
+            # cannot fix anything: in the pinned datahub-agent-context 1.6.0.17 that
+            # name appears only in `save_document.py`'s module docstring and is never
+            # read. Mutation tools are bound by the `include_mutations=True` kwarg
+            # above — a kwarg this class already passes — so a missing tool means the
+            # installed kit version, not a config flag. It also pointed at
+            # `specs/architecture.md`, which is a private design note that does not
+            # ship in the repo an adopter clones.
             raise RuntimeError(
                 f"DataHub tool binding is missing required tools: {sorted(missing)}. "
-                "Ensure TOOLS_IS_MUTATION_ENABLED=true and the Agent Context Kit "
-                "version matches specs/architecture.md."
+                "Mutation tools are bound by `build_langchain_tools(client, "
+                "include_mutations=True)`, which Antigen already passes — there is no "
+                "env var that enables them. A missing tool means the installed "
+                "Agent Context Kit does not provide it: pin "
+                "datahub-agent-context==1.6.0.17 (see `requirements.txt` and the "
+                "README's Setup section)."
             )
 
     @staticmethod

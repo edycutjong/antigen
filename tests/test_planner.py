@@ -21,7 +21,7 @@ from antigen.planner import (  # noqa: E402
     PlannedMutation,
     PlanningGateway,
     _diff_pair,
-    _short,
+    elide,
     format_plan,
 )
 
@@ -41,11 +41,11 @@ def _graph() -> InMemoryGateway:
 # Rendering
 # --------------------------------------------------------------------------- #
 
-def test_short_handles_empty_and_overlong():
-    assert _short("") == "(empty)"
-    assert _short("   \n ") == "(empty)"
-    assert _short("a b") == "a b"
-    assert _short("x" * 200).endswith("…") and len(_short("x" * 200)) == 96
+def test_elide_handles_empty_and_overlong():
+    assert elide("") == "(empty)"
+    assert elide("   \n ") == "(empty)"
+    assert elide("a b") == "a b"
+    assert elide("x" * 200).endswith("…") and len(elide("x" * 200)) == 96
 
 
 def test_diff_pair_collapses_a_long_shared_prefix():
@@ -243,3 +243,55 @@ def test_budget_stops_a_real_cure_partway_and_leaves_the_rest_poisoned():
         raise AssertionError("a 5-mutation budget cannot cover a 12-locus cure")
     # Honest about the cost: the sweep still finds the loci the run never reached.
     assert len(scan(inner).hits) > 0
+
+
+# --------------------------------------------------------------------------- #
+# The plan and the circuit breaker must count the same thing
+#
+# They did not. `PlanningGateway` records one ROW per aspect VALUE (three for a single
+# `add_structured_properties` call) while `BudgetedGateway` charges one unit per CALL —
+# so the plan's headline "would write 64 mutations" was 45% above the 44 the breaker
+# actually guards, on the very number the README tells operators to size
+# `--max-mutations` from. The plan now states both, and this pins that they agree.
+# --------------------------------------------------------------------------- #
+
+def _plan_and_spend(run):
+    """Run `run(gateway)` twice: once planning, once budgeted. Returns (plan, budget)."""
+    from antigen.seed import build_corpus_gateway
+    plan = PlanningGateway(build_corpus_gateway())
+    run(plan)
+    budget = BudgetedGateway(build_corpus_gateway(), 10 ** 6)
+    run(budget)
+    return plan, budget
+
+
+def test_the_plans_call_count_is_exactly_what_max_mutations_charges():
+    from antigen.cure import cure
+    from antigen.scan import scan
+    from antigen.seed import corpus_fixtures
+
+    def run_cure(gw):
+        fixtures = corpus_fixtures()
+        cure(gw, [h for h in scan(gw).hits if h.key in fixtures], fixtures=fixtures)
+
+    plan, budget = _plan_and_spend(run_cure)
+    assert len(plan.planned) == 64 and plan.calls == 44 == budget.written, \
+        f"{len(plan.planned)} rows / {plan.calls} calls / {budget.written} charged"
+
+    rendered = format_plan(plan.planned, command="cure")
+    assert "would write 64 mutations" in rendered, "the documented header is verbatim"
+    assert "64 rows = 44 tool calls" in rendered
+    assert "--max-mutations 44 is the exact cap for this plan" in rendered
+
+
+def test_certify_costs_two_calls_and_three_rows_per_clean_entity():
+    from antigen.certify import certify
+    from antigen.scan import scan
+
+    def run_certify(gw):
+        certify(gw, scan(gw).clean_entity_urns)
+
+    plan, budget = _plan_and_spend(run_certify)
+    clean = 28
+    assert len(plan.planned) == 3 * clean          # 1 tag + 2 property values
+    assert plan.calls == 2 * clean == budget.written

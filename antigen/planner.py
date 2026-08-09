@@ -6,10 +6,17 @@ untouched, and *records* each MUTATION as a :class:`PlannedMutation` instead of
 executing it. `scan`, `cure`, `certify` and `blast_radius` are handed the wrapper and
 never learn the difference, so the printed plan cannot drift from the behaviour.
 
-Why this matters: `cure` writes 4 mutations per hit and `certify` writes 2 per *clean*
-entity — on a 1k-entity catalog that is ~2,000 writes into a live production graph.
-Before this module the only approval gate in the project was English prose in
-`antigen-scan/SKILL.md` addressed to an LLM, which is a suggestion, not a control.
+Why this matters: `cure` writes 4 tool calls per entity/column hit (2 for a KB-document
+hit) and `certify` writes 2 per *clean* entity — on a 1k-entity catalog that is ~2,000
+writes into a live production graph. Before this module the only approval gate in the
+project was English prose in `antigen-scan/SKILL.md` addressed to an LLM, which is a
+suggestion, not a control.
+
+Counting, exactly, because `--max-mutations` is sized off it: a plan ROW is one aspect
+value and a plan CALL is one tool invocation. `add_structured_properties` writes three
+values (`cure`) or two (`certify`) in a single call, so the 12-payload corpus plans
+**64 rows / 44 calls** and certifying its 28 clean entities plans **84 rows / 56
+calls**. `BudgetedGateway` charges calls; `format_plan` prints both.
 
 One caveat, stated in the printed plan rather than hidden: because nothing is written,
 a read that a live run performs AFTER its own write (`cure` re-reads the cured entity
@@ -35,7 +42,13 @@ def _clip(text: str) -> str:
     return text if len(text) <= _ELIDE else text[: _ELIDE - 1] + "…"
 
 
-def _short(text: str) -> str:
+def elide(text: str) -> str:
+    """One elision policy for every operator-facing preview in the project.
+
+    Public because `cure`'s span-excision preview renders alongside the plan and has
+    to clip the same way: two truncation rules on one screen is how an approver comes
+    to trust a diff that is hiding something.
+    """
     collapsed = " ".join((text or "").split())
     return _clip(collapsed) if collapsed else "(empty)"
 
@@ -50,20 +63,29 @@ def _diff_pair(before: str, after: str) -> tuple[str, str]:
             break
         shared += 1
     if shared <= _SHARED:
-        return _short(b), _short(a)
+        return elide(b), elide(a)
     head = f"…{shared} identical chars…"
     return head + _clip(b[shared:]), head + _clip(a[shared:])
 
 
 @dataclass
 class PlannedMutation:
-    """One write a live run would perform: which tool, where, and what changes."""
+    """One write a live run would perform: which tool, where, and what changes.
+
+    ``call`` is the index of the TOOL CALL that produces this row. One
+    `add_structured_properties` call writes several property values and is rendered as
+    one row per value — genuinely what an approver needs to read — so rows and calls
+    are not the same count, and `--max-mutations` charges CALLS. Carrying the index
+    lets `format_plan` state both instead of leaving an operator to size the circuit
+    breaker off a number that measures something else.
+    """
 
     tool: str
     urn: str
     field_path: str | None
     before: str
     after: str
+    call: int = 0
 
     def render(self) -> str:
         loc = f" ::{self.field_path}" if self.field_path else ""
@@ -82,6 +104,15 @@ class PlanningGateway:
         # Entities the sweep already read. `before` values come from here, so a dry
         # run costs exactly the same reads as a live one — no extra round-trips.
         self._seen: dict[str, Entity] = {}
+        #: Tool calls recorded so far — the unit `BudgetedGateway` charges.
+        self.calls = 0
+
+    def _record(self, *mutations: PlannedMutation) -> None:
+        """Attach the current tool-call index to every row that call produces."""
+        self.calls += 1
+        for m in mutations:
+            m.call = self.calls
+            self.planned.append(m)
 
     # -- READ: straight through (and cached) ------------------------------ #
     def search_all(self) -> list[str]:
@@ -125,7 +156,7 @@ class PlanningGateway:
 
     def update_description(self, urn: str, description: str,
                            field_path: str | None = None) -> None:
-        self.planned.append(PlannedMutation(
+        self._record(PlannedMutation(
             "update_description", urn, field_path,
             self._before_description(urn, field_path), description))
 
@@ -133,7 +164,7 @@ class PlanningGateway:
                  field_path: str | None = None) -> None:
         ent = self._seen.get(urn)
         current = list(ent.tags) if ent is not None else []
-        self.planned.append(PlannedMutation(
+        self._record(PlannedMutation(
             "add_tags", urn, field_path,
             ", ".join(current),
             ", ".join(current + [t for t in tags if t not in current])))
@@ -141,15 +172,15 @@ class PlanningGateway:
     def add_structured_properties(self, urn: str, properties: dict[str, str]) -> None:
         ent = self._seen.get(urn)
         current = ent.structured_properties if ent is not None else {}
-        for key, value in properties.items():
-            self.planned.append(PlannedMutation(
-                "add_structured_properties", urn, key,
-                current.get(key, "(unset)"), value))
+        self._record(*(PlannedMutation(
+            "add_structured_properties", urn, key,
+            current.get(key, "(unset)"), value)
+            for key, value in properties.items()))
 
     def save_document(self, title: str, content: str,
                       parent: str = "Antigen/Incidents",
                       urn: str | None = None) -> None:
-        self.planned.append(PlannedMutation(
+        self._record(PlannedMutation(
             "save_document", urn or f"(new document under {parent})", title,
             "(overwrite existing document)" if urn else "(no such document yet)",
             content))
@@ -179,8 +210,9 @@ class BudgetedGateway:
     READs pass through; the Nth+1 mutation raises :exc:`MutationBudgetExceeded` INSTEAD
     of being executed, so the cap is a hard bound on writes, not a post-hoc count.
 
-    What this is: a circuit breaker for an unattended `--apply` run. `cure` writes 4
-    mutations per hit and `certify` 2 per clean entity, so a misconfigured
+    What this is: a circuit breaker for an unattended `--apply` run. It charges one
+    unit per TOOL CALL — `cure` spends 4 per entity/column hit and 2 per KB-document
+    hit, `certify` 2 per clean entity — so a misconfigured
     `DATAHUB_GMS_URL` pointed at the wrong catalog, or one badly-tuned detector change,
     is otherwise unbounded. What this is NOT: incremental scanning, or any claim about
     operating at catalog scale. It makes an unattended run survivable — it does not
@@ -252,6 +284,12 @@ def format_plan(planned: list[PlannedMutation], *, command: str) -> str:
     for m in planned:
         by_tool[m.tool] = by_tool.get(m.tool, 0) + 1
     breakdown = ", ".join(f"{n}× {t}" for t, n in sorted(by_tool.items()))
+    # The rows above are aspect VALUES; `--max-mutations` charges tool CALLS, and one
+    # `add_structured_properties` call carries three of them. Sizing the breaker off
+    # the headline count over-provisions it by ~45% on a `cure` plan, so the plan says
+    # both numbers rather than leaving an operator to discover the difference at
+    # exit 3 with a half-remediated catalog.
+    calls = len({m.call for m in planned})
     return "\n".join([
         f"DRY RUN — `antigen {command}` would write {len(planned)} mutations "
         f"({breakdown}). Nothing was written.",
@@ -260,4 +298,7 @@ def format_plan(planned: list[PlannedMutation], *, command: str) -> str:
         f"Re-run with --apply to execute this plan: antigen {command} --apply",
         "(Tamper-evidence hashes are computed from post-write state, so a live run "
         "stamps values this preview cannot show. The mutation set is exact.)",
+        f"({len(planned)} rows = {calls} tool calls; one add_structured_properties "
+        f"call writes several values. --max-mutations counts CALLS, so "
+        f"--max-mutations {calls} is the exact cap for this plan.)",
     ])

@@ -3,7 +3,10 @@
 Subcommands map to the engine:
 
     antigen scan     [--offline] [--fail-on-hit] [--json]   sweep the catalog
+                     [--urn-contains P] [--max-entities N]  …scoped to one domain
+                     [--include-quarantined]                …including cured entities
     antigen cure     [--offline] [--dry-run|--apply]        defuse every hit
+                     [--excise-span]                        …cutting the span in place
     antigen blast-radius [--offline] [--dry-run|--apply]    map downstream reach
     antigen rescan   [--offline]                            tamper-evidence drift
     antigen certify  [--offline] [--dry-run|--apply]        tag the clean remainder
@@ -16,8 +19,10 @@ quick look; the judge path is the live GMS (omit `--offline`, set DATAHUB_GMS_UR
 DATAHUB_GMS_TOKEN). Live scanning uses the real 9 Agent Context Kit tools.
 
 THE WRITE GATE. `cure`, `certify`, `blast-radius` and `demo` mutate the catalog —
-`cure` writes 4 mutations per hit, `certify` 2 per *clean* entity (~2,000 on a 1k
-catalog). So:
+`cure` writes 4 tool calls per entity/column hit (2 for a KB-document hit), `certify`
+2 per *clean* entity (~2,000 on a 1k catalog). Those are the units `--max-mutations`
+charges; the dry-run plan prints one ROW per aspect VALUE, which is more (see
+`planner`). So:
 
   * against a LIVE catalog they are **dry-run by default**: the exact mutation plan
     (URN, tool, field, before → after) is printed and NOTHING is written. Add
@@ -31,12 +36,19 @@ catalog). So:
 
 Exit codes: 0 success · 1 findings under `--fail-on-hit` · 2 refused, or a DEGRADED
 sweep (see `scan`) · 3 `--max-mutations` tripped (partial writes landed).
+
+Exit 1 means ONE thing: a working sweep found injections. Every infrastructure
+failure — unreachable GMS, wrong URL, missing live extras, an unencodable response —
+is exit 2, because it establishes nothing about the catalog. `main()` enforces that
+for uncaught exceptions too; without it Python's default exit 1 reported a dead GMS
+to CI as a dirty catalog.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 
@@ -126,14 +138,20 @@ def _enumeration_reasons(gw, urns: list[str]) -> list[str]:
 
 
 def cmd_scan(args) -> int:
-    from .scan import scan
+    from .scan import Scope, scan
     gw, _ = _gateway(args)
-    report = scan(gw)
+    report = scan(gw, skip_quarantined=not args.include_quarantined,
+                  scope=Scope(urn_contains=args.urn_contains,
+                              max_entities=args.max_entities))
     if args.json:
         print(json.dumps({
             "summary": report.summary(),
             "degraded": report.degraded,
             "degraded_reasons": report.degraded_reasons,
+            "scope": report.scope.describe() if report.scope else None,
+            "entities_enumerated": report.entities_enumerated,
+            "entities_in_scope": report.entities_in_scope,
+            "entities_scanned": report.entities_scanned,
             "hits": [{"urn": h.urn, "locus": h.locus.value,
                       "field_path": h.field_path, "source_tool": h.source_tool,
                       "signals": h.detection.signals,
@@ -146,6 +164,14 @@ def cmd_scan(args) -> int:
             loc = f" ::{h.field_path}" if h.field_path else ""
             zw = " [hidden-unicode]" if h.detection.hidden_unicode else ""
             print(f"  ⚑ {h.urn}{loc}  ({h.detection.safe_summary}){zw}  via {h.source_tool}")
+    if report.scope is not None and report.scope_empty:
+        # Loud on stderr, but exit 0 and NOT a degradation: the operator asked for
+        # this set and it is empty. A CI log still shows the line, so a typo'd filter
+        # is visible rather than silently green.
+        print(f"NOTICE: {report.scope.describe()} matched 0 of "
+              f"{report.entities_enumerated} enumerated entities — nothing was "
+              "scanned. That is your scope, not a blackout; widen it or drop it to "
+              "sweep the catalog.", file=sys.stderr)
     _warn_degraded(report.degraded_reasons)
     if args.fail_on_hit and report.hits:
         print(f"\nFAIL: {len(report.hits)} injection loci present (--fail-on-hit).",
@@ -155,7 +181,7 @@ def cmd_scan(args) -> int:
 
 
 def cmd_cure(args) -> int:
-    from .cure import cure
+    from .cure import EXCISION_MODES, cure, plan_remediation
     from .scan import scan
     gw, fixtures = _gateway(args)
     target, plan = _writer(args, gw)
@@ -168,14 +194,23 @@ def cmd_cure(args) -> int:
         # (Filtering here on a live gateway silently cured nothing.)
         hits = [h for h in report.hits if h.key in fixtures]
     if args.only_mode != "all":
-        # A fixture-backed hit is the surgical `excise` path; everything else falls
-        # through to whole-field `quarantine-field`, which destroys legitimate
-        # documentation. `--only-mode excise` lets an operator automate the safe half
-        # and leave the lossy half queued for a human.
-        want_fixture = args.only_mode == "excise"
-        hits = [h for h in hits if (h.key in fixtures) is want_fixture]
-    result = cure(target, hits, fixtures=fixtures, clock=_clock())
+        # `--only-mode excise` means "the surgical half" — the modes that KEEP the
+        # human-written text around the payload. It asks the real planner what each
+        # hit would get rather than re-deriving it from fixture membership, so
+        # `--excise-span` widens this set on a real catalog instead of leaving the
+        # flag a guaranteed no-op outside the demo corpus.
+        want_excision = args.only_mode == "excise"
+        hits = [h for h in hits
+                if (plan_remediation(h, fixtures, excise_span=args.excise_span).mode
+                    in EXCISION_MODES) is want_excision]
+    result = cure(target, hits, fixtures=fixtures, clock=_clock(),
+                  excise_span=args.excise_span)
     if plan is not None:
+        # The in-place cuts, before the mutation plan: an approver has to read what is
+        # being removed and what survives, which a collapsed before/after cannot show.
+        preview = result.excision_preview()
+        if preview:
+            print(preview + "\n")
         rc = _print_plan(plan, "cure")
         return 2 if _warn_degraded(report.degraded_reasons) else rc
     print(result.summary())
@@ -264,8 +299,8 @@ def cmd_demo(args) -> int:
     from .seed import align_document_fixtures, corpus_fixtures
 
     if not getattr(args, "offline", False) and not args.apply:
-        # `demo` is the whole write-back arc — sweep, 4 mutations per hit, one tag +
-        # two properties per clean entity, then blast-radius tags. There is no
+        # `demo` is the whole write-back arc — sweep, 4 write-back calls per hit, one
+        # tag + two properties per clean entity, then blast-radius tags. There is no
         # meaningful preview of an arc whose later stages read back its own writes,
         # so this refuses rather than pretending.
         print("REFUSED: `antigen demo` mutates a LIVE catalog and needs an explicit "
@@ -346,6 +381,22 @@ def build_parser() -> argparse.ArgumentParser:
     add_offline(sp)
     sp.add_argument("--fail-on-hit", action="store_true", help="exit 1 if any hit (CI)")
     sp.add_argument("--json", action="store_true")
+    sp.add_argument("--urn-contains", metavar="PATTERN", default=None,
+                    help="scope the sweep to URNs containing PATTERN — entities AND "
+                         "KB documents (case-insensitive SUBSTRING, not a regex: a "
+                         "DataHub URN is full of regex metacharacters). Pilot on one "
+                         "domain without minting a second scoped service account.")
+    sp.add_argument("--max-entities", type=int, default=None, metavar="N",
+                    help="scope the sweep to the first N enumerated ENTITIES (applied "
+                         "after --urn-contains; documents are not truncated). A scope "
+                         "that matches nothing exits 0 with a NOTICE — it is a filter, "
+                         "not a degraded sweep.")
+    sp.add_argument("--include-quarantined", action="store_true",
+                    help="also scan entities already tagged `injection-quarantined`. "
+                         "The default skips them (idempotency), which means a RE-"
+                         "poisoned cured entity is invisible to `scan`; `rescan` "
+                         "catches that via content drift, and this flag forces the "
+                         "full re-sweep directly.")
     sp.set_defaults(func=cmd_scan)
 
     sp = sub.add_parser("cure", help="defuse every hit by removal")
@@ -356,8 +407,18 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--only-mode", choices=["all", "excise", "quarantine-field"],
                     default="all",
                     help="restrict to one remediation mode. `excise` is the surgical "
-                         "fixture-backed path (safe to automate); `quarantine-field` "
-                         "replaces the WHOLE field and is the one to hold for a human.")
+                         "half that keeps the surrounding documentation — "
+                         "fixture-backed, plus span-excised when --excise-span is on; "
+                         "`quarantine-field` replaces the WHOLE field and is the one "
+                         "to hold for a human.")
+    sp.add_argument("--excise-span", action="store_true",
+                    help="OPT-IN, never the default. For a hit with no fixture, cut "
+                         "the detector's matched span out of the field and KEEP the "
+                         "text around it, instead of replacing the whole field. The "
+                         "dry-run plan prints the removed span and the survivor side "
+                         "by side. Any doubt — no span, a span that does not fit the "
+                         "text, nothing left over, or a survivor that still trips the "
+                         "detector — falls back to quarantine-field.")
     sp.set_defaults(func=cmd_cure)
 
     sp = sub.add_parser("blast-radius", help="map downstream reach of poisoned entities")
@@ -391,6 +452,12 @@ def build_parser() -> argparse.ArgumentParser:
     return p
 
 
+#: Set to any non-empty value to re-raise instead of mapping to exit 2. Catching
+#: everything is what makes the exit taxonomy true; it must not also make Antigen
+#: undebuggable, so the traceback stays one env var away.
+TRACEBACK_ENV = "ANTIGEN_TRACEBACK"
+
+
 def main(argv=None) -> int:
     from .planner import MutationBudgetExceeded
     args = build_parser().parse_args(argv)
@@ -402,6 +469,32 @@ def main(argv=None) -> int:
         # tripped and the catalog is now half-remediated".
         print(f"ABORTED: {exc}", file=sys.stderr)
         return 3
+    except ModuleNotFoundError as exc:
+        # `python -m antigen scan` with no live extras installed. Common enough — and
+        # recoverable enough — to deserve its own sentence rather than the generic one.
+        print(f"REFUSED: the live path needs the DataHub extras ({exc}). Install them "
+              "with `pip install -r requirements.txt` (or `pip install "
+              "'antigen-datahub[live]'`), or run against the in-memory corpus double "
+              "with --offline.", file=sys.stderr)
+        return 2
+    except Exception as exc:   # noqa: BLE001 - the exit code IS the contract here
+        # THE EXIT TAXONOMY, made true. Everything that escaped this block used to
+        # exit 1 — the code the shipped adopter workflow
+        # (`examples/ci/metadata-injection-scan.yml`) reads as
+        # "::error::Antigen found prompt injections in catalog metadata".
+        # So a wrong DATAHUB_GMS_URL, a dead GMS, or a lone surrogate that the
+        # content hash cannot encode were all reported to CI as a DIRTY CATALOG,
+        # which is precisely the confusion exit 2 exists to prevent. An
+        # infrastructure failure establishes nothing, and "establishes nothing" is
+        # exit 2 in every other command here.
+        if os.environ.get(TRACEBACK_ENV):
+            raise
+        print(f"DEGRADED SWEEP — Antigen could not establish anything: {exc!r}. This "
+              "is an infrastructure failure, NOT a finding: nothing about the catalog "
+              "was determined either way. Check DATAHUB_GMS_URL / DATAHUB_GMS_TOKEN "
+              f"and the tool env flags. Re-run with {TRACEBACK_ENV}=1 for the full "
+              "traceback.", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":  # pragma: no cover
