@@ -114,13 +114,19 @@ class InMemoryGateway:
 
     def save_document(self, title: str, content: str,
                       parent: str = "Antigen/Incidents",
-                      urn: str | None = None) -> None:
+                      urn: str | None = None,
+                      related_assets: list[str] | None = None,
+                      related_documents: list[str] | None = None) -> None:
         # Overwrite in place by (parent, title), exactly like the real tool with
-        # SAVE_DOCUMENT_RESTRICT_UPDATES=false.
+        # SAVE_DOCUMENT_RESTRICT_UPDATES=false. `related_assets`/`related_documents`
+        # are retained so an offline test can assert the incident record is an EDGE
+        # from the poisoned asset and not an orphan node.
         self.calls.append(("save_document", (parent, title)))
         from ..corpus import doc_urn
         self._documents[(parent, title)] = Document(
-            urn=doc_urn(parent, title), title=title, content=content, parent=parent)
+            urn=doc_urn(parent, title), title=title, content=content, parent=parent,
+            related_assets=list(related_assets or []),
+            related_documents=list(related_documents or []))
 
     # -- convenience ------------------------------------------------------ #
     def get_entity(self, urn: str) -> Entity | None:

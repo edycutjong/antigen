@@ -63,11 +63,26 @@ the pinned wheel actually does. Unzip `datahub_agent_context-1.6.0.17` and grep 
 **Why this is still a warning and not a shrug.** In-process scoping is the *better* case:
 `SAVE_DOCUMENT_RESTRICT_UPDATES=false` in the remediation job's environment lifts the
 restriction for that job and for nothing else, which is a genuinely small blast radius. The
-hazard is the deployment that looks equivalent and is not — **`mcp-server-datahub` runs
-this same code in its own process**, so the same variable exported into a shared MCP
-server's environment lifts the update restriction for *every* client of that server, giving
-all of them the ability to overwrite arbitrary KB documents. That is a strictly larger hole
-than the one Antigen is closing.
+hazard is the deployment that looks equivalent and is not — **`mcp-server-datahub` ships its
+own copy of this tool, which reads the same variable name**, so the same variable exported
+into a shared MCP server's environment lifts the update restriction for *every* client of
+that server, giving all of them the ability to overwrite arbitrary KB documents. That is a
+strictly larger hole than the one Antigen is closing.
+
+It is worth being exact about *why*, because "same code" would be the easy thing to say and
+it is wrong. [`acryldata/mcp-server-datahub`](https://github.com/acryldata/mcp-server-datahub)
+does **not** depend on `datahub-agent-context` at all — its `pyproject.toml` lists
+`acryl-datahub`, `fastmcp`, `google-re2`, `jmespath`, `pydantic` and friends, and a code
+search for `datahub_agent_context` in that repo returns zero results. It is a **parallel
+implementation**: `src/mcp_server_datahub/tools/save_document.py` reads
+`SAVE_DOCUMENT_RESTRICT_UPDATES` itself (`os.environ.get("SAVE_DOCUMENT_RESTRICT_UPDATES",
+"true")`, line 55). Two independent codebases that happen to agree on a variable name — which
+is exactly what makes the operational advice above hold and the "same code" shortcut false.
+
+One asymmetry worth carrying, since it cuts against the paragraph above it: that server
+**does** read `TOOLS_IS_MUTATION_ENABLED` (`src/mcp_server_datahub/mcp_server.py:228`),
+which the pinned Agent Context Kit never does. So the statement that the variable is never
+read is true **of this package** and only of this package.
 
 ```bash
 # in the ANTIGEN REMEDIATION JOB's environment — not in a shared mcp-server-datahub's

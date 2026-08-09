@@ -76,6 +76,12 @@ class Document:
     title: str
     content: str
     parent: str = "Shared"
+    #: Graph edges the document carries — the URNs `save_document` was asked to link
+    #: it to. Populated on the WRITE path (and by the in-memory double, so a test can
+    #: assert the edge exists); the live `grep_documents` read shape does not return
+    #: them, so they stay empty on documents parsed back off the wire.
+    related_assets: list[str] = field(default_factory=list)
+    related_documents: list[str] = field(default_factory=list)
 
 
 # --------------------------------------------------------------------------- #
@@ -114,13 +120,29 @@ class Gateway(Protocol):
 
     def save_document(self, title: str, content: str,
                       parent: str = "Antigen/Incidents",
-                      urn: str | None = None) -> None:
+                      urn: str | None = None,
+                      related_assets: list[str] | None = None,
+                      related_documents: list[str] | None = None) -> None:
         """`save_document` — write/overwrite a KB document.
 
         Pass `urn` to overwrite an EXISTING document in place; without it a live
         DataHub mints a brand-new document. Title is NOT an identity key on a live
         GMS: curing a poisoned document without its URN leaves the poisoned original
         readable and merely adds a clean copy next to it.
+
+        `related_assets` / `related_documents` are what turn a forensic incident
+        record from an orphan NODE into an EDGE. Both are real parameters of the
+        pinned tool (`datahub_agent_context/mcp_tools/save_document.py:345-346`) and
+        both flow through to `Document.create_document(...)` at `:583-584`; the
+        tool's own docstring for `related_assets` reads "Links the document to
+        specific data assets in the catalog / Users can then see this document when
+        viewing those assets" (`:427-430`). Without them the incident record for a
+        poisoned dataset was reachable only by grepping document titles, and the
+        asset's own page showed no trace of the incident it caused — Antigen
+        contributed a node to the graph and withheld the edge the SDK hands it for
+        free. Assets and documents are separate parameters because a KB-document
+        locus is not a data asset: `cure` links a document incident with
+        `related_documents` and an entity/column incident with `related_assets`.
         """
 
     # -- convenience (single-entity read used by cure/rescan) ------------- #
@@ -471,7 +493,9 @@ class SdkGateway:
 
     def save_document(self, title: str, content: str,
                       parent: str = "Antigen/Incidents",
-                      urn: str | None = None) -> None:
+                      urn: str | None = None,
+                      related_assets: list[str] | None = None,
+                      related_documents: list[str] | None = None) -> None:
         # The tool has no `parent`; the folder is carried as a topic so the incident
         # set stays grouped and greppable. Identity is the URN, NOT the title: a live
         # save without `urn` mints a new document, which would leave the poisoned
@@ -480,6 +504,14 @@ class SdkGateway:
                   "topics": [parent] if parent else None}
         if urn:
             kwargs["urn"] = urn
+        # Sent only when non-empty. The tool defaults both to None and passes them
+        # straight into `Document.create_document`, so an explicit empty list is not
+        # the same thing as omitting the kwarg — it would clear links a previous save
+        # established when this call is an overwrite addressed by `urn`.
+        if related_assets:
+            kwargs["related_assets"] = list(related_assets)
+        if related_documents:
+            kwargs["related_documents"] = list(related_documents)
         self._call("save_document", **kwargs)
 
     def get_entity(self, urn: str) -> Entity | None:

@@ -190,8 +190,25 @@ def main(argv=None) -> int:
     try:
         a = part_a(live=args.live, verbose=verbose)
     except Failure as f:
+        # A real finding: the graph-state gate looked and did not like what it saw.
+        # This is the ONLY thing that may exit 1.
         print(f"Part A — graph-state gate: FAIL\n  {f}", file=sys.stderr)
         return 1
+    except Exception as exc:   # noqa: BLE001 - the exit code IS the contract here
+        # THE EXIT TAXONOMY, applied here too. `--live` with no DataHub extras
+        # installed, a dead GMS or a wrong DATAHUB_GMS_URL used to escape as a raw
+        # traceback, which Python exits 1 for — and 1 is what the shipped adopter CI
+        # template (`examples/ci/metadata-injection-scan.yml`) reads as "Antigen found
+        # prompt injections in catalog metadata". An infrastructure failure establishes
+        # nothing about the catalog, and "establishes nothing" is exit 2 in every
+        # command Antigen ships. `cli.main` was fixed for this; this entry point and
+        # `seed_catalog.py` were missed.
+        print(f"Part A — graph-state gate: COULD NOT RUN: {exc!r}. This is an "
+              "infrastructure failure, NOT a finding: nothing about the catalog was "
+              "determined either way. Install the live extras with `pip install -r "
+              "requirements.txt` and check DATAHUB_GMS_URL / DATAHUB_GMS_TOKEN, or "
+              "run the offline proof with `python verify.py`.", file=sys.stderr)
+        return 2
 
     b = {"status": "skipped"}
     if not args.no_hijack:

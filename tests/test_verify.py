@@ -37,6 +37,145 @@ def test_near_miss_still_zero_fp():
     assert not fp, f"near-miss regressed to false positives: {fp}"
 
 
+# --------------------------------------------------------------------------- #
+# THE EXIT TAXONOMY at the entry points `cli.main` does not own
+# --------------------------------------------------------------------------- #
+# Exit 1 means ONE thing across this project: a working sweep found injections. It is
+# what the shipped adopter CI template
+# (`examples/ci/metadata-injection-scan.yml`) reads as "Antigen found prompt
+# injections in catalog metadata". An infrastructure failure establishes nothing and
+# must be exit 2. That was fixed in `cli.main` and missed in these three.
+
+def test_verify_live_without_the_sdk_exits_2_not_1():
+    """`verify.py --live` with no DataHub extras used to exit 1 with a traceback."""
+    import io
+    from contextlib import redirect_stderr
+
+    err = io.StringIO()
+    with redirect_stderr(err):
+        rc = verify.main(["--live", "--no-hijack", "--quiet"])
+    assert rc == 2, "a missing live dependency is not a finding"
+    assert "COULD NOT RUN" in err.getvalue()
+    assert "nothing about the catalog was determined" in err.getvalue()
+
+
+def test_verify_offline_still_passes_and_exits_0():
+    """The taxonomy change must not disturb the reproducible proof itself."""
+    import io
+    from contextlib import redirect_stdout
+
+    out = io.StringIO()
+    with redirect_stdout(out):
+        rc = verify.main(["--no-hijack", "--quiet"])
+    assert rc == 0 and "graph-state PASS" in out.getvalue()
+
+
+def test_verify_still_exits_1_on_a_real_finding():
+    """Exit 1 must keep meaning what it means — the fix must not swallow findings.
+
+    Patched by hand rather than with the `monkeypatch` fixture: `./run.sh` executes
+    this module directly (`python tests/test_verify.py`), where pytest fixtures do
+    not exist and a fixture argument is a TypeError.
+    """
+    import io
+    from contextlib import redirect_stderr
+
+    def boom(**kw):
+        raise verify.Failure("payload survived on a readable surface")
+
+    original = verify.part_a
+    verify.part_a = boom
+    try:
+        err = io.StringIO()
+        with redirect_stderr(err):
+            rc = verify.main(["--no-hijack", "--quiet"])
+    finally:
+        verify.part_a = original
+    assert rc == 1 and "FAIL" in err.getvalue()
+
+
+def test_seed_catalog_without_the_sdk_exits_2_not_1():
+    import io
+    from contextlib import redirect_stderr, redirect_stdout
+
+    import seed_catalog
+
+    out, err = io.StringIO(), io.StringIO()
+    with redirect_stdout(out), redirect_stderr(err):
+        rc = seed_catalog.main([])
+    assert rc == 2 and "REFUSED" in err.getvalue()
+
+
+# --------------------------------------------------------------------------- #
+# `./run.sh live` must be re-runnable
+# --------------------------------------------------------------------------- #
+
+class _MintingGateway:
+    """A double that mints a NEW document URN per save, exactly like a live GMS.
+
+    The in-memory double keys documents on (parent, title) and overwrites, which is
+    precisely why the duplication bug below never showed up offline.
+    """
+
+    def __init__(self):
+        self.docs = {}          # urn -> (parent, title, content)
+        self._n = 0
+        self.entities = {}
+
+    def search_all(self):
+        return list(self.entities)
+
+    def update_description(self, urn, description, field_path=None):
+        self.entities[urn] = description
+
+    def save_document(self, title, content, parent="Shared", urn=None,
+                      related_assets=None, related_documents=None):
+        if urn is None:
+            self._n += 1
+            urn = f"urn:li:document:shared-{self._n:04d}"   # a fresh URN, every time
+        self.docs[urn] = (parent, title, content)
+
+    def get_document(self, parent, title):
+        from antigen.gateway import Document
+        for urn, (p, t, c) in self.docs.items():
+            if (p, t) == (parent, title):
+                return Document(urn=urn, title=t, content=c, parent=p)
+        return None
+
+
+def test_seeding_the_corpus_twice_does_not_duplicate_the_kb_documents():
+    """The defect: `seed_corpus` saved KB documents with no `urn`, so a live GMS
+    minted a second copy each run — `./run.sh live` reported 14/12, then 16/12.
+
+    Runs in a scratch directory because `plant()` writes the locus map into the CWD,
+    and chdir'd by hand so `./run.sh`'s direct `python tests/test_verify.py` works.
+    """
+    import tempfile
+
+    import seed_corpus
+    from antigen.corpus import HELD_OUT, PAYLOADS, Locus
+
+    expected_docs = sum(1 for p in PAYLOADS if p.locus is Locus.KB_DOCUMENT)
+    assert expected_docs == 2, "precondition: the corpus plants 2 KB documents"
+
+    gw = _MintingGateway()
+    for urn in ({p.urn for p in PAYLOADS if p.locus is not Locus.KB_DOCUMENT}
+                | {h.urn for h in HELD_OUT}):
+        gw.entities[urn] = ""
+
+    cwd = os.getcwd()
+    with tempfile.TemporaryDirectory() as scratch:
+        os.chdir(scratch)
+        try:
+            for run_no in (1, 2, 3):
+                seed_corpus.plant(gw, verbose=False)
+                assert len(gw.docs) == expected_docs, (
+                    f"run {run_no} duplicated the KB documents "
+                    f"({len(gw.docs)} documents for {expected_docs} payloads)")
+        finally:
+            os.chdir(cwd)
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items())
              if k.startswith("test_") and callable(v)]

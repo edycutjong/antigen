@@ -35,7 +35,15 @@ charges; the dry-run plan prints one ROW per aspect VALUE, which is more (see
     (N+1)th write is refused instead of executed.
 
 Exit codes: 0 success · 1 findings under `--fail-on-hit` · 2 refused, or a DEGRADED
-sweep (see `scan`) · 3 `--max-mutations` tripped (partial writes landed).
+sweep (see `scan`) · 3 PARTIAL REMEDIATION — writes landed and the catalog is not
+fully remediated.
+
+Exit 3 has two causes, and they are the same state: `--max-mutations` tripped
+mid-run, or `cure` CONTAINED a locus it could not defuse because DataHub's
+`updateDescription` rejects that entity type (chart / dashboard / dataFlow / dataJob
+/ corpuser — see `antigen.entity_types`). Both leave a catalog that was written to
+and still carries live payloads. It is deliberately not 2: 2 means the run
+established nothing, and these runs established a great deal.
 
 Exit 1 means ONE thing: a working sweep found injections. Every infrastructure
 failure — unreachable GMS, wrong URL, missing live extras, an unencodable response —
@@ -53,15 +61,32 @@ import sys
 
 
 def _gateway(args):
-    """Return (gateway, fixtures) for the requested mode."""
-    if getattr(args, "offline", False):
-        from .seed import build_corpus_gateway, corpus_fixtures
-        return build_corpus_gateway(), corpus_fixtures()
-    from .gateway import SdkGateway
+    """Return (gateway, fixtures) for the requested mode.
+
+    `--fixtures` is resolved FIRST and applies to both paths. It used to be read only
+    on the live path, so `--offline --fixtures none` silently handed back the full
+    12-payload corpus anyway — which quietly falsified the one thing that flag exists
+    to demonstrate. `--fixtures none` is how the offline double is made to behave like
+    a catalog Antigen did not seed, so with it ignored:
+
+      * the published `--excise-span` reproduce command ran WITH fixtures, so every
+        corpus hit took the fixture-backed `excise` path and only the 3 held-out
+        injections reached span excision — the transcript showed 3 cuts where the
+        real fixture-free number is 11;
+      * `--only-mode excise` off-corpus planned a full 64-mutation run, while the
+        README promised it "matches nothing and writes nothing".
+
+    `demo` has no `--fixtures` flag at all; it re-establishes the corpus itself (see
+    `cmd_demo`), so the default here is "none" and the demo arc is unaffected.
+    """
     fixtures = {}
     if getattr(args, "fixtures", "none") == "corpus":
         from .seed import corpus_fixtures
         fixtures = corpus_fixtures()
+    if getattr(args, "offline", False):
+        from .seed import build_corpus_gateway
+        return build_corpus_gateway(), fixtures
+    from .gateway import SdkGateway
     return SdkGateway(), fixtures
 
 
@@ -185,7 +210,12 @@ def cmd_cure(args) -> int:
     from .scan import scan
     gw, fixtures = _gateway(args)
     target, plan = _writer(args, gw)
-    report = scan(target)
+    # `scan` skips already-quarantined entities for idempotency, which silently made
+    # `cure` unable to repair a RE-POISONED cured entity: the sweep feeding it never
+    # produced the hit. `rescan` is the command that detects that state, so `cure`
+    # needs the same escape hatch `scan` has, or the documented nightly workflow
+    # (rescan finds drift → cure repairs it) dead-ends at "cured 0 loci".
+    report = scan(target, skip_quarantined=not args.include_quarantined)
     hits = report.hits
     if args.fixtures == "corpus" and getattr(args, "offline", False):
         # Offline demo only: restrict to the seeded corpus so the run is exactly
@@ -211,14 +241,28 @@ def cmd_cure(args) -> int:
         preview = result.excision_preview()
         if preview:
             print(preview + "\n")
+        # A dry run writes nothing, so this is a forecast, not a partial state: it is
+        # reported (an approver must know the plan does NOT cover these loci) but it
+        # does not colour the exit code.
+        if result.contained:
+            print(result.containment_report() + "\n", file=sys.stderr)
         rc = _print_plan(plan, "cure")
         return 2 if _warn_degraded(report.degraded_reasons) else rc
     print(result.summary())
     for a in result.actions:
         print(f"  ✔ {a.payload_id}  {a.urn}  [{a.mode}]  content={a.content_sha256[:12]}…")
+    if result.contained:
+        print(result.containment_report(), file=sys.stderr)
     # A cure is only as complete as the sweep that fed it: a degraded read means the
     # loci NOT in this list were never looked at, so "cured N" must not read as done.
-    return 2 if _warn_degraded(report.degraded_reasons) else 0
+    if _warn_degraded(report.degraded_reasons):
+        return 2
+    # PARTIAL REMEDIATION. Writes landed AND payloads are still live, which is neither
+    # success nor "established nothing" — exit 3, the code this CLI already reserves
+    # for a half-remediated catalog. Reporting this as 2 would have been the dangerous
+    # answer: 2 says the run determined nothing, and these runs determined a great
+    # deal and changed the graph while doing it.
+    return 0 if result.fully_remediated else 3
 
 
 def cmd_blast_radius(args) -> int:
@@ -326,8 +370,15 @@ def cmd_demo(args) -> int:
     result = cure(gw, hits, fixtures=fixtures, clock=_clock())
     print(result.summary())
 
+    if result.contained:
+        print(result.containment_report(), file=sys.stderr)
+
     print("\n── 3. BLAST RADIUS (lineage) ─────────────────────────────")
-    sources = sorted({a.urn for a in result.actions if a.locus.value != "kb-document"})
+    # Contained loci are included deliberately: their payload is still live, so their
+    # downstream reach is the reach an operator most needs to see.
+    sources = sorted({a.urn for a in result.actions if a.locus.value != "kb-document"}
+                     | {c.urn for c in result.contained
+                        if c.locus.value != "kb-document"})
     print(map_blast_radius(gw, sources).summary())
 
     print("\n── 4. CERTIFY the clean remainder (standing control) ─────")
@@ -411,6 +462,13 @@ def build_parser() -> argparse.ArgumentParser:
                          "fixture-backed, plus span-excised when --excise-span is on; "
                          "`quarantine-field` replaces the WHOLE field and is the one "
                          "to hold for a human.")
+    sp.add_argument("--include-quarantined", action="store_true",
+                    help="also cure entities already tagged `injection-quarantined`. "
+                         "The default skips them (idempotency), which means a RE-"
+                         "poisoned cured entity cannot be repaired: `rescan` reports "
+                         "the drift and `cure` finds no hits. Pair this with `rescan` "
+                         "in the nightly workflow. Entities that have NOT drifted are "
+                         "still skipped, so this stays a no-op on a healthy catalog.")
     sp.add_argument("--excise-span", action="store_true",
                     help="OPT-IN, never the default. For a hit with no fixture, cut "
                          "the detector's matched span out of the field and KEEP the "

@@ -94,7 +94,28 @@ def _mcp(entity_urn: str, aspect):
     return MetadataChangeProposalWrapper(entityUrn=entity_urn, aspect=aspect)
 
 
-if __name__ == "__main__":  # pragma: no cover
-    urns = register_properties()
+def main() -> int:
+    """Entry point with Antigen's exit taxonomy — see `cli.main`.
+
+    A missing live extra or an unreachable GMS used to escape as a raw traceback,
+    which Python exits 1 for; 1 is the code the shipped adopter CI template reads as
+    "Antigen found prompt injections in catalog metadata". A setup step that could not
+    reach DataHub establishes nothing about any catalog, and that is exit 2.
+    """
+    import sys
+
+    try:
+        urns = register_properties()
+    except Exception as exc:   # noqa: BLE001 - the exit code IS the contract here
+        print(f"REFUSED: could not register the structured-property definitions "
+              f"({exc!r}). Install the live extras with `pip install -r "
+              "requirements.txt` and check DATAHUB_GMS_URL / DATAHUB_GMS_TOKEN.",
+              file=sys.stderr)
+        return 2
     for u in urns:
         print(f"registered {u}")
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

@@ -31,6 +31,19 @@ from .gateway import Gateway
 QUARANTINE_TAG = "injection-quarantined"
 CERTIFIED_TAG = "agent-safe-certified"
 
+#: Applied to a locus that was DETECTED and recorded but could NOT be defused,
+#: because DataHub's `updateDescription` resolver rejects the entity type (see
+#: `antigen.entity_types`). It is deliberately NOT `QUARANTINE_TAG`.
+#:
+#: The distinction is load-bearing, and getting it wrong would have been worse than
+#: the abort it replaces. `scan` skips `QUARANTINE_TAG` entities for idempotency, and
+#: `cure`'s guard skips anything quarantined AND stamped. So tagging a still-poisoned
+#: dashboard `injection-quarantined` would have made it invisible to every later
+#: sweep while the payload stayed live and readable — the sweep would have gone green
+#: over it, forever. A contained locus carries its own tag, is skipped by nothing, and
+#: therefore keeps being reported on every run until a human removes the payload.
+CONTAINED_TAG = "injection-contained"
+
 # --------------------------------------------------------------------------- #
 # The KB-document pre-filter
 # --------------------------------------------------------------------------- #

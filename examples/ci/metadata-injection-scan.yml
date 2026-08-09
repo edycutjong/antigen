@@ -119,6 +119,19 @@ jobs:
                 echo "::error::Antigen ${what}: FINDINGS in catalog metadata."
                 echo "Triage: download the antigen-report artifact, then preview the"
                 echo "remediation with 'python -m antigen cure --dry-run'."
+                # DRIFT is the re-poisoning case, and it needs the extra flag: the
+                # entity is already tagged `injection-quarantined` from its first
+                # cure, and `scan` skips those for idempotency — so a plain
+                # `cure --dry-run` would print "would write NOTHING" over a live
+                # payload. `--include-quarantined` is what re-opens it. Entities
+                # that have NOT drifted are still skipped, so it stays a no-op on a
+                # healthy catalog.
+                case "${what}" in
+                  rescan*)
+                    echo "This is DRIFT on an already-cured entity. Use:"
+                    echo "  python -m antigen cure --include-quarantined --dry-run"
+                    ;;
+                esac
                 fail=1
                 ;;
               2)

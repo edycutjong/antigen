@@ -44,10 +44,22 @@ def plant(gw, verbose: bool = True) -> dict:
     planted = 0
     for p in PAYLOADS:
         if p.locus is Locus.KB_DOCUMENT:
-            # create/overwrite the host KB document by (parent, title) — the identity
-            # the cure will later reuse to overwrite it in place.
+            # Create the host KB document, or OVERWRITE the one a previous run left
+            # behind — addressed by its URN, never by its title.
+            #
+            # Title is not an identity key on a live GMS: `save_document` without a
+            # `urn` mints a brand-new document every time. So a second `./run.sh live`
+            # planted a second copy of each poisoned document and the sweep reported
+            # 14/12, a third 16/12 — a judge running the live path twice saw a broken
+            # product, and the error message told them to re-run the command that
+            # caused it. The offline double keys documents on (parent, title) and
+            # overwrites, which is exactly why re-running the demo never surfaced it:
+            # the same blind spot, and the same fix, as the incident ledger in
+            # `cure.existing_incident_urns`.
+            existing_doc = gw.get_document(p.doc_parent, p.doc_title)
             gw.save_document(title=p.doc_title, content=p.poisoned_text,
-                             parent=p.doc_parent)
+                             parent=p.doc_parent,
+                             urn=existing_doc.urn if existing_doc else None)
             locus_map[p.id] = f"{p.doc_parent}/{p.doc_title}"
             planted += 1
             continue

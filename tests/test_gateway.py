@@ -689,3 +689,38 @@ def test_graph_builds_and_caches_client_from_env(monkeypatch):
     first = g._graph()
     assert built == [{"server": "http://gms.example:8080", "token": None}]
     assert g._graph() is first          # cached, not rebuilt
+
+
+def test_register_properties_main_exits_2_when_the_sdk_is_absent():
+    """THE EXIT TAXONOMY, at this entry point too.
+
+    A missing live extra used to escape as a raw traceback, which Python exits 1 for
+    — and 1 is what the shipped adopter CI template reads as "Antigen found prompt
+    injections in catalog metadata". A setup step that could not reach DataHub has
+    established nothing about any catalog, and that is exit 2 everywhere else.
+    """
+    import io
+    from contextlib import redirect_stderr
+
+    from antigen.register_properties import main
+
+    err = io.StringIO()
+    with redirect_stderr(err):
+        rc = main()          # the real datahub SDK is not installed offline
+    assert rc == 2, "infrastructure failure is exit 2, never 1"
+    assert "REFUSED" in err.getvalue()
+    assert "requirements.txt" in err.getvalue()
+
+
+def test_register_properties_main_prints_what_it_registered(monkeypatch):
+    import io
+    from contextlib import redirect_stdout
+
+    import antigen.register_properties as rp
+
+    monkeypatch.setattr(rp, "register_properties",
+                        lambda: ["urn:li:structuredProperty:antigen.contentSha256"])
+    out = io.StringIO()
+    with redirect_stdout(out):
+        rc = rp.main()
+    assert rc == 0 and "registered urn:li:structuredProperty:antigen." in out.getvalue()

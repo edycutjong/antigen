@@ -9,7 +9,8 @@
 [The threat, grounded in evidence](#the-threat-grounded-in-evidence) ·
 [DataHub's own automation is the amplifier](#datahubs-own-automation-is-the-amplifier) ·
 [Who can actually write catalog free text](#who-can-actually-write-catalog-free-text) ·
-[Why DataHub's own tooling doesn't close it](#why-datahubs-own-tooling-doesnt-close-it)
+[Why DataHub's own tooling doesn't close it](#why-datahubs-own-tooling-doesnt-close-it) ·
+[Why not an ingestion transformer](#why-not-an-ingestion-transformer)
 
 ---
 
@@ -201,6 +202,33 @@ buildable today. Three things it provably cannot do:
 - **KB / Document entities are out of scope.** [Supported types](https://docs.datahub.com/docs/tests/metadata-tests)
   are *Dataset, Dashboard, Chart, Data Flow, Data Job, Container* — the two payloads
   Antigen recovers through `grep_documents` are invisible to it.
+
+  **A correction that cuts against us, and then does not.** An earlier draft of this
+  page generalised that into "*none* of DataHub's tooling sees KB documents." That is
+  false, and the counter-example is the most important consumer on the platform:
+  **[Ask DataHub](https://docs.datahub.com/docs/features/feature-guides/ask-datahub)
+  reads them.** DataHub's term for the knowledge base is
+  **[Context Documents](https://docs.datahub.com/docs/features/feature-guides/context/context-documents)**,
+  and the docs are explicit — *"When you ask a question in Ask DataHub, the AI searches
+  your published documents alongside your metadata graph. If relevant context is found,
+  Ask DataHub cites the document in its response."* Ask DataHub *"can reference your
+  organization's **Context Documents**, Glossary Terms, Domains, and more."* The pinned
+  Agent Context Kit says the same from the write side: `save_document`'s docstring
+  promises a saved document *"will be visible to all users of DataHub and to Ask DataHub
+  AI assistant"* (`mcp_tools/save_document.py:349`).
+
+  **This makes the threat larger, not smaller, which is why the correction belongs
+  here.** A shipped, first-party DataHub AI assistant retrieves the exact surface
+  Antigen's two KB-document payloads live on, and *cites* it — so a poisoned Context
+  Document is not inert text waiting for a hypothetical third-party agent, it is
+  retrieved and quoted into an LLM's context by DataHub itself. What Ask DataHub does
+  **not** do is inspect, score, or repair that content: it is a read-side consumer of
+  the knowledge base, i.e. a **victim** of a poisoned document rather than a control
+  over it. (It is also `saasOnly` — Cloud-only, and in Public Beta — while Context
+  Documents themselves ship in Core.) So the accurate claim, and the one this page now
+  makes, is: **no DataHub governance or automation feature inspects Context Document
+  content; the one first-party feature that reads it is an LLM assistant that will
+  happily quote it back.**
 - **It is not a write-time gate you can rely on.** Scheduled evaluation runs *"typically
   every 24 hours"* and custom schedules *"cannot"* be configured. The same FAQ answer does
   describe real-time evaluation — *"When an individual asset changes in DataHub, all tests
@@ -274,3 +302,83 @@ right next step, and it is on the roadmap below for that reason.
   Custom SQL, Schema) evaluate rows, counts or schema — never metadata text. No assertion
   type can say *"this description contains an instruction."* That is why the survey names
   Metadata Tests, not Assertions, as the nearest native matcher.
+
+---
+
+## Why not an ingestion transformer
+
+**The obvious alternative design, asked by anyone who knows DataHub, and never previously
+answered on this page.** The threat model above names ingestion as *the widest path* into
+the catalog — a `COMMENT ON COLUMN` in the warehouse, copied in by the connector under no
+DataHub policy at all. So the natural objection is: *why scan and repair the catalog after
+the fact, instead of writing a [DataHub ingestion transformer](https://docs.datahub.com/docs/metadata-ingestion/docs/transformer/intro)
+that sanitises descriptions on the way in?*
+
+**Partly, yes — and where it wins, we say so.** For metadata that arrives *only* through
+ingestion, a transformer is genuinely the better instrument: it is cheaper (no sweep), it
+is preventative rather than corrective, and it never writes a poisoned value to the store
+at all. Nothing below argues otherwise, and *"an `antigen_sanitize` transformer for the
+inbound path"* is on the roadmap for exactly that reason. What a transformer cannot be is
+*the whole control*, for four reasons that are checkable rather than rhetorical.
+
+**1. It is an in-flight filter over one pipeline, not a control over the store.** DataHub's
+own description: transformers *"let you modify metadata events **in-flight** to enrich,
+filter, or rewrite records **before emit**"*, and *"before it reaches the ingestion sink."*
+Structurally they are stream filters over `RecordEnvelope[MetadataChangeProposal]` between
+a source and a sink (`metadata-ingestion/src/datahub/ingestion/transformer/base_transformer.py`),
+each subscribed to exactly one named aspect. They are declared inside a **recipe**, and
+*"one recipe file can only have 1 source and 1 sink"* — so a transformer's reach is,
+definitionally, that one `source → sink` run. Text already sitting in the catalog when you
+deploy it is untouched: there is no back-fill, because there is no run to back-fill.
+
+**2. Every other write path bypasses it entirely.** DataHub's ingestion architecture is
+explicit that the Python framework is one entrance among several: *"As long as you can emit
+a Metadata Change Proposal (MCP) event to Kafka or make a REST call over HTTP, you can
+integrate any system with DataHub."* A UI edit, a GraphQL mutation, a Change Proposal, or a
+direct REST/Kafka emitter never passes through any recipe, and therefore never through any
+transformer.
+
+**3. The strongest form of that, and it is a property of the metadata model itself: UI edits
+land in *different aspects*, and no shipped transformer subscribes to them.** DataHub
+deliberately separates the two, in the model's own words —
+`EditableSchemaMetadata.pdl`: *"EditableSchemaMetadata stores editable changes made to
+schema metadata. This **separates changes made from ingestion pipelines and edits in the
+UI** to avoid accidental overwrites of user-provided data by ingestion pipelines."*
+`EditableDatasetProperties.pdl` says the same for asset-level descriptions. So UI/GraphQL
+text lives in `editableSchemaMetadata` / `editableDatasetProperties`, ingested text lives in
+`schemaMetadata` / `datasetProperties`. Reading the aspects every shipped transformer
+subscribes to (`dataset_transformer.py`) — `ownership`, `globalTags`, `glossaryTerms`,
+`domains`, `status`, `datasetProperties`, `schemaMetadata`, `browsePaths`, `browsePathsV2`,
+`dataProductProperties`, `datasetUsageStatistics`, `containerProperties` — **not one is an
+`editable*` aspect**; a grep for `editable` across all 28 files in that directory returns
+zero matches. A transformer therefore cannot see human-authored catalog text *by
+construction*, which is precisely the text a compromised or careless editor writes. It is
+also the aspect Antigen has to read through a base-SDK overlay for exactly this reason
+(`SdkGateway._merge_editable_columns`).
+
+**4. Documentation Propagation fans a payload out server-side, to assets no recipe
+touched.** [Docs Propagation](https://docs.datahub.com/docs/automations/docs-propagation)
+*"automatically propagates column and asset descriptions based on downstream column-level
+lineage and sibling relationships"*, and it is *"enabled by default in Open Source
+DataHub."* It runs as a platform automation, not as part of any ingestion run — DataHub
+Cloud even offers to *"back-fill historical data for existing assets"* — so a single
+poisoned description reaches downstream and sibling columns that no transformer processed
+and no connector owns. This is the amplifier already documented above; a transformer sits
+upstream of it and cannot reach what it produces.
+
+**And no such transformer exists to adopt.** The 28 shipped transformers are add / remove /
+map / mark operations over tags, terms, ownership, domains, browse paths, data products and
+status. The three that sound like content filters are not: `pattern_cleanup_ownership` and
+`pattern_cleanup_dataset_usage_user` regex-clean **URNs**, and `replace_external_url`
+rewrites the **`externalUrl` field**. DataHub ships nothing that inspects, filters or
+sanitises description prose — so "just use a transformer" is today a proposal to write one,
+not a feature to point at.
+
+**The honest summary.** A transformer is the right *first* line for the inbound path and a
+good complement to Antigen; it is not a substitute, because it covers one of the three
+authoring paths, cannot repair the store of record, is structurally blind to the
+`editable*` aspects where human-authored text lives, and sits upstream of the propagation
+that spreads a payload furthest. Antigen's claim has always been the narrow one —
+**nobody repairs the store of record** — and the transformer question is the sharpest
+available test of it: the best in-flight sanitiser in the world still leaves every
+already-poisoned field exactly where it is.

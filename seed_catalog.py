@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import sys
 
 PLATFORM_DATASETS: list[tuple[str, str, str, list[tuple[str, str, str]]]] = [
     # (platform, name, description, [(field, type, field description)])
@@ -269,10 +270,21 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
     print(f"Seeding clean ecommerce catalog into "
           f"{os.environ.get('DATAHUB_GMS_URL', 'http://localhost:8080')}")
-    urns = seed(scale=args.scale)
-    # Indexing is asynchronous and roughly linear in catalog size; 13 datasets settle
-    # well inside 120 s, a --scale run needs longer.
-    await_indexed(len(urns), timeout_s=max(120, 5 * len(urns)))
+    try:
+        urns = seed(scale=args.scale)
+        # Indexing is asynchronous and roughly linear in catalog size; 13 datasets
+        # settle well inside 120 s, a --scale run needs longer.
+        await_indexed(len(urns), timeout_s=max(120, 5 * len(urns)))
+    except Exception as exc:   # noqa: BLE001 - the exit code IS the contract here
+        # Exit 2, not the raw traceback's 1: 1 is what the shipped adopter CI template
+        # reads as "injections found", and a seeder that could not reach the GMS has
+        # established nothing about any catalog. Same taxonomy as `cli.main` and
+        # `verify.py`.
+        print(f"REFUSED: could not seed the catalog ({exc!r}). Install the live extras "
+              "with `pip install -r requirements.txt` and check DATAHUB_GMS_URL / "
+              "DATAHUB_GMS_TOKEN — `datahub docker quickstart` brings a local GMS up.",
+              file=sys.stderr)
+        return 2
     print(f"\n{len(urns)} datasets created. Catalog is CLEAN "
           f"(no payloads — run seed_corpus.py next).")
     return 0

@@ -86,13 +86,20 @@ class PlannedMutation:
     before: str
     after: str
     call: int = 0
+    #: One extra operator-facing line, rendered only when set. Used for the graph
+    #: EDGES a `save_document` carries (`related_assets` / `related_documents`),
+    #: which are neither a before nor an after but are part of what gets written.
+    note: str = ""
 
     def render(self) -> str:
         loc = f" ::{self.field_path}" if self.field_path else ""
         before, after = _diff_pair(self.before, self.after)
-        return (f"  {self.tool}  {self.urn}{loc}\n"
-                f"      before: {before}\n"
-                f"      after:  {after}")
+        lines = [f"  {self.tool}  {self.urn}{loc}",
+                 f"      before: {before}",
+                 f"      after:  {after}"]
+        if self.note:
+            lines.append(f"      links:  {self.note}")
+        return "\n".join(lines)
 
 
 class PlanningGateway:
@@ -179,11 +186,19 @@ class PlanningGateway:
 
     def save_document(self, title: str, content: str,
                       parent: str = "Antigen/Incidents",
-                      urn: str | None = None) -> None:
+                      urn: str | None = None,
+                      related_assets: list[str] | None = None,
+                      related_documents: list[str] | None = None) -> None:
+        # The links are part of the write, so the approver sees them: a `save_document`
+        # that also creates an edge back to the poisoned asset changes what appears on
+        # that asset's page, which is not visible anywhere in a before/after diff.
+        links = [f"related_assets={list(related_assets)}"] if related_assets else []
+        if related_documents:
+            links.append(f"related_documents={list(related_documents)}")
         self._record(PlannedMutation(
             "save_document", urn or f"(new document under {parent})", title,
             "(overwrite existing document)" if urn else "(no such document yet)",
-            content))
+            content, note="  ".join(links)))
 
 
 class MutationBudgetExceeded(RuntimeError):
@@ -270,9 +285,13 @@ class BudgetedGateway:
 
     def save_document(self, title: str, content: str,
                       parent: str = "Antigen/Incidents",
-                      urn: str | None = None) -> None:
+                      urn: str | None = None,
+                      related_assets: list[str] | None = None,
+                      related_documents: list[str] | None = None) -> None:
         self._spend("save_document", urn or f"(new document `{title}`)")
-        self._inner.save_document(title, content, parent=parent, urn=urn)
+        self._inner.save_document(title, content, parent=parent, urn=urn,
+                                  related_assets=related_assets,
+                                  related_documents=related_documents)
 
 
 def format_plan(planned: list[PlannedMutation], *, command: str) -> str:
