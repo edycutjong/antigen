@@ -2,6 +2,17 @@
 
 <!-- version list -->
 
+## v1.3.2 (2026-08-09)
+
+### Bug Fixes
+
+- **safety**: Stop span excision writing a still-flagging survivor; contain unsupported entity types
+  ([`15ce064`](https://github.com/edycutjong/antigen/commit/15ce06485ca85adcb590c1d2cd955d73baa110b8))
+
+- **web**: Replace the 15-item gauntlet headline with the measured 0.063% flag rate
+  ([`acae822`](https://github.com/edycutjong/antigen/commit/acae8220a20baa37da17dce3b973163e4eedc6ba))
+
+
 ## v1.3.1 (2026-08-09)
 
 ### Bug Fixes
