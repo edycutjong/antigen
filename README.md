@@ -410,10 +410,11 @@ buildable today. Three things it provably cannot do:
   reads the payload.
 - **Its actions are label-only** — *"Adding or removing specific Tags / Glossary Terms /
   Owners / Domain."* A Metadata Test can *mark* a poisoned asset. It cannot excise the
-  span, cannot hash the field, cannot walk lineage for blast radius. The four mutations in
-  the table below are the part with no native equivalent.
+  span and it cannot hash the field. (It cannot walk lineage either — but the Actions
+  framework *can*, and does; that concession is below.) The four mutations in the table
+  below are the part with no native equivalent.
 
-Two adjacent tools complete the survey, because a DataHub PM would raise both.
+Three adjacent tools complete the survey, because a DataHub PM would raise all three.
 [`datahub-classify`](https://github.com/acryldata/datahub-classify/blob/main/datahub-classify/README.md)
 is the closest OSS ancestor — its `Description` prediction factor is a *"regex list
 which is to be matched against column description"* — but it exists to type PII,
