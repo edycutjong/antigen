@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v1.0.11 (2026-08-09)
+
+### Bug Fixes
+
+- **web**: Serve /pitch and /pitch/ via rewrites to pitch.html
+  ([`e516703`](https://github.com/edycutjong/antigen/commit/e51670399599ef71021fd9d55b053edd9ee2731c))
+
+- **web**: True-up site numbers — 80-test suite, 24/24 run.sh subset, ~5 ms gate, 9 DataHub tools,
+  drop leaked data-tbd marker
+  ([`a8756e0`](https://github.com/edycutjong/antigen/commit/a8756e0b8d7e2e6776639a2ae812c8feb9a8e44d))
+
+### Documentation
+
+- Reconcile cross-surface numbers — 9 tools, ~5 ms gate, offline-vs-live corpus labels, python -m
+  register_properties
+  ([`a638e3c`](https://github.com/edycutjong/antigen/commit/a638e3cbcca3982362df2cacd2fb63318a49dde5))
+
+
 ## v1.0.10 (2026-08-09)
 
 ### Bug Fixes
