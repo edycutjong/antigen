@@ -2,6 +2,10 @@
   "artifact": "live-tool-transcript",
   "what_this_proves": "Every DataHub SDK call Antigen made during a complete, unmodified run of the live path documented in DEMO.md, against a real DataHub GMS. Each record carries the tool name, the exact request kwargs and the response returned by the server. Nothing here comes from antigen._testkit.InMemoryGateway — that in-memory double is the OFFLINE path only, and is not exercised at all in this file.",
   "generated_at_utc": "2026-08-08T13:57:55Z",
+  "superseded_by": {
+    "file": "docs/live-tool-transcript.json",
+    "read_this_first": "THIS FILE IS THE EARLIER CAPTURE AND IT PREDATES THE CODE THAT SHIPS. It was recorded 2026-08-08, before three 2026-08-09 changes: the `--apply` write gate (so the commands listed below are the pre-gate forms — `python -m antigen demo` now exits 2 REFUSED against a live catalog and requires `--apply`), the 50-row paging fix (so every `search` call below requests num_results=500, which the server clamps to a 50-row page — that clamp is exactly why this file is kept), and the v1.2 convergence fix (so the cure banners below still interpolate the detection category labels). docs/live-tool-transcript.json is the canonical record of the current code. Nothing in this file has been rewritten to match later code: every recorded call, argument, response, timestamp and count is exactly as captured, and this `superseded_by` key plus the `key_renamed_note` in the summary are the only text ever added to it."
+  },
   "environment": {
     "gms_url": "http://localhost:8080",
     "gms_version": "v1.7.0",

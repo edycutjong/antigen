@@ -1,9 +1,18 @@
 ================================================================================
-Antigen — live DataHub run  (console transcript, verbatim)
+Antigen — live DataHub run  (console transcript, verbatim)  [SUPERSEDED CAPTURE]
+================================================================================
+SUPERSEDED, AND KEPT ON PURPOSE. This is the 2026-08-08 run. It predates the
+--apply write gate (so `python -m antigen demo` below is the pre-gate command; the
+shipped CLI now refuses it with exit 2 against a live catalog) and the 50-row
+paging fix. The current run is docs/live-run.log + docs/live-tool-transcript.json.
+This file is kept because it holds a `verify.py --live` attempt that failed closed
+on a search-index race and passed on the retry, and because its transcript is where
+the live GMS can be seen clamping num_results=500 down to a 50-row page. Only these
+header lines were added; the console output below is untouched.
 ================================================================================
 This is the unedited console output of the DEMO.md "Live (against a real DataHub
 GMS)" path, run end to end against a real GMS. The structured record of every SDK
-call made during this same run is docs/live-tool-transcript.json.
+call made during this same run is docs/live-tool-transcript-2026-08-08.json.
 
   GMS                      http://localhost:8080  (v1.7.0, quickstart)
   GMS commit               7f81ccbfe27b9acc947f5f600fcf9ddb72138a80

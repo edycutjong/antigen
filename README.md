@@ -130,8 +130,15 @@ The hero flow — **hijack → sweep → defuse → prove**:
 
 <sub>**AFTER** — the same entity, same page. The injected span is excised from the
 description, an `injection-quarantined` tag and the propagated `injection-blast-radius-*` tag
-are on the entity, and a graph-safe forensic banner records *what* was removed and *why*
-(detection signals by name — never the payload text, which would re-poison the field).</sub>
+are on the entity, and a graph-safe forensic banner records the date and a pointer to the
+out-of-band evidence — never the payload text, which would re-poison the field.
+**Captured 2026-08-08, and the banner has since changed:** on screen it ends *"Detection
+signals: instruction-override, persona-jailbreak"*, because at that point the banner
+interpolated the category labels verbatim. Those labels are themselves detector triggers,
+so v1.2 moved them out of the graph and into the Antigen incident record — the shipped
+banner now ends *"Detection signals: recorded in the Antigen incident record
+`antigen-incident-…`"*. See *Antigen must never write text its own detector flags* in
+**Honest limitations**; that entry is the fix this image predates.</sub>
 
 ### Real-world value — a standing control, not a one-shot demo
 
@@ -535,10 +542,16 @@ the pre-pass is what does the work.
 
 ![15 of 15 injection loci found across the live catalog](docs/screenshots/03-scan-15-loci.png)
 
-<sub>**SWEEP** — a real run against a live GMS: 17 entities + 2 KB documents, **15 loci
+<sub>**SWEEP** — a real run against a live GMS, from the **2026-08-08** capture
+([`docs/live-tool-transcript-2026-08-08.json`](docs/live-tool-transcript-2026-08-08.json)):
+17 entities + 2 KB documents, **15 loci
 flagged**, each with its resolved URN and the detection signals that fired. Two are
 `zero-width-unicode-evasion` (`[hidden-unicode]`) — the ones NFKC alone would have missed —
-and two live in KB documents reachable only through `grep_documents`.</sub>
+and two live in KB documents reachable only through `grep_documents`. The **15 loci** are
+the stable number: the 2026-08-09 re-capture flags the same 15 on the same catalog, and the
+same 15 again on a 78-entity one. The **entity** count is not stable and is not meant to be
+— it is whatever `search` had indexed at that moment (15, 17 and 78 across the three
+recorded sweeps); [DEMO.md](DEMO.md) says exactly why.</sub>
 
 ---
 
@@ -550,7 +563,7 @@ behavior breaks — this is the engine, not decoration.
 
 | # | Tool | Kind | Why it is load-bearing in Antigen |
 |---|------|------|-----------------------------------|
-| 1 | `search` | READ | paginated enumeration of the whole catalog — the entry point of every sweep. Paged at the server's real cap of **50**: the live GMS clamps `num_results` to 50 whatever you ask for (all 11 `search` calls in [`docs/live-tool-transcript.json`](docs/live-tool-transcript.json) request 500 and return `"count": 50`), so a loop that requests 500 and stops when a page comes back short terminates on iteration one and reports everything past entity 50 as clean |
+| 1 | `search` | READ | paginated enumeration of the whole catalog — the entry point of every sweep. Paged at the server's real cap of **50**: the live GMS clamps `num_results` to 50 whatever you ask for (all 11 `search` calls in the archived [`docs/live-tool-transcript-2026-08-08.json`](docs/live-tool-transcript-2026-08-08.json) request 500 and return `"count": 50`), so a loop that requests 500 and stops when a page comes back short terminates on iteration one and reports everything past entity 50 as clean. The current [`docs/live-tool-transcript.json`](docs/live-tool-transcript.json) is the fix executing on a real server: a 73-dataset catalog enumerated at `offset=0` then `offset=50`, envelope `total: 78` |
 | 2 | `get_entities` | READ | batch description **+ column/schema** pull — the text the detector inspects (10 of 12 payloads live here) |
 | 3 | `grep_documents` | READ | regex hunt over KB document bodies — surfaces the 2 doc-planted payloads nothing else would find |
 | 4 | `get_lineage` | READ | downstream blast-radius (2 hops) — retraces the edges Documentation Propagation copies docs along: *"where did the platform spread this poison, and did an agent act on it there?"* |
@@ -582,34 +595,65 @@ entity type the definition did not cover.)
 **Don't take the table's word for it — grep the transcript.**
 [`docs/live-tool-transcript.json`](docs/live-tool-transcript.json) records **every** SDK
 call from a real run against a live `datahub docker quickstart` **GMS v1.7.0** (commit
-`7f81ccb`, `acryl-datahub 1.6.0.6`): request kwargs and responses, 1,049 records,
-**229 Agent Context Kit tool calls, 0 failed** —
+`7f81ccb`, `acryl-datahub 1.6.0.6`), captured **2026-08-09 against the code in this
+repo**: request kwargs and responses, 1,547 records, **250 Agent Context Kit tool calls,
+0 failed** —
 
 ```
-get_entities 58 · update_description 46 · add_tags 34 · save_document 32
-add_structured_properties 24 · search 11 · get_lineage 10 · grep_documents 7 · search_documents 7
+update_description 59 · get_entities 58 · save_document 34 · add_tags 32
+add_structured_properties 22 · search 17 · get_lineage 10 · search_documents 9 · grep_documents 9
 ```
 
-The 820 base `acryl-datahub` `DataHubGraph` calls (seeding, property definitions, the
+The 1,297 base `acryl-datahub` `DataHubGraph` calls (seeding, property definitions, the
 `editableSchemaMetadata` overlay) are counted **separately** in the same file, so the
 "9 agent tools" claim above stays exactly true.
 
-<sub>The transcript is a **captured record of that run**, not a regenerated artifact, so it
-shows the banner text as it was on 2026-08-08 — including the `Detection signals: <labels>`
-form that the v1.2 convergence fix removed (see *Honest limitations*). We are not rewriting
-a captured proof artifact to match later code; the tool calls, arguments and responses are
-what they were.</sub>
-[`docs/live-run.log`](docs/live-run.log) is the console output of that run — including a
-first `verify.py --live` attempt that **failed** on an OpenSearch index race (`11/12`
-loci) before the cure ran, and passed `12/12` on the immediate retry. Both are kept: the
-gate fails closed, and a proof artifact that only shows the happy path is worth less.
+**The paging loop is proven live, not just fixed.** The run has three cycles: **A** the
+hero arc (`antigen demo --apply`), **B** the `verify.py --live` gate, and **C** a catalog
+seeded past one server page (`python seed_catalog.py --scale 60` → 73 datasets). In cycle C
+every catalog enumeration takes **two `search` pages** — `offset=0` then `offset=50`,
+envelope `total: 78` —
+and the sweep reads all **78 entities** and still flags exactly **15/15** loci. Under the
+pre-fix loop the first page would have ended the enumeration and entities 51–78 would have
+been reported clean without being read. The transcript's `pagination_proof` block lists
+every `search`/`search_documents` call with its requested offset and the envelope the
+server answered with, computed from the records themselves.
+
+<sub>**Two transcripts are checked in, and no recorded call in either was edited.**
+[`docs/live-tool-transcript-2026-08-08.json`](docs/live-tool-transcript-2026-08-08.json)
+(with [`docs/live-run-2026-08-08.log`](docs/live-run-2026-08-08.log)) is the earlier
+capture. It is kept, not deleted, because it is the evidence for a claim the new one
+cannot make: it is where you can watch the live GMS **clamp** `num_results: 500` down to
+a 50-row page across all 11 of its `search` calls — the bug the fix responds to. It also
+predates the `--apply` write gate and the v1.2 convergence fix, so its commands and cure
+banners are the older forms; that is what makes it the *before* picture. The 2026-08-09
+file is the canonical record of the code that ships. Neither is regenerated to match later
+code — every tool call, argument, response, timestamp and count in both is what it was. The
+archived file carries one added top-level key, `superseded_by`, which says so and says what
+changed underneath it; that annotation and the pre-existing `key_renamed_note` are the only
+text ever added to it.</sub>
+[`docs/live-run.log`](docs/live-run.log) is the console output of the 2026-08-09 run, with
+its rough edges left in: the reset before cycle C did not converge (three KB documents were
+still in the search index after 120 s of hard-delete polling, and it says so — those three
+are why cycle C sweeps 78 entities and not 75). The archived
+[`docs/live-run-2026-08-08.log`](docs/live-run-2026-08-08.log) keeps a `verify.py --live`
+attempt that **failed** on an OpenSearch index race (`11/12` loci) before the cure ran and
+passed `12/12` on the immediate retry. Both are kept: the gate fails closed, and a proof
+artifact that only shows the happy path is worth less.
 
 ![Four DataHub write-backs per hit — the cure lives in the graph](docs/screenshots/04-cure-writeback.png)
 
 <sub>**CURE** — the full pipeline on a live GMS: sweep → defuse (4 write-backs per hit) →
 blast radius through lineage → certify the clean remainder → re-scan to prove the control is
 *standing*, not one-shot. Every number here is graph state, readable back through the same
-catalog tools that wrote it.</sub>
+catalog tools that wrote it. **Two things in this image are from the 2026-08-08 run and are
+no longer what you would type or see.** The command is shown as `python -m antigen demo`;
+against a live catalog the shipped CLI now **refuses that with exit 2** and requires
+`python -m antigen demo --apply` (see *The write gate*) — copy the command from
+[DEMO.md](DEMO.md), not from this figure. And `17 entities` / `certified 4` are that run's
+enumeration; the 2026-08-09 re-capture reads `15` / `2` on the identical catalog for the
+index-timing reason [DEMO.md](DEMO.md) explains. The 12 cured loci, the 10-asset blast
+radius and the 0-drift re-scan reproduce unchanged.</sub>
 
 ### Open-source contribution
 
@@ -660,7 +704,9 @@ Reset → `scan` → `cure` → rescan the stamped entities, then assert per loc
 payload — **and any base64 / hex / urlsafe encoding of it** — is absent from every
 agent-readable surface, that every poisoned entity carries `injection-quarantined` +
 `antigen.contentSha256` + `.payloadSha256`, and that both doc payloads are gone from
-`grep_documents`. Deterministic, no LLM in the path, **< 30 s** (≈ 5 ms offline, ≈ 7.1 s live).
+`grep_documents`. Deterministic, no LLM in the path, **< 30 s** (≈ 5 ms offline; **4.6–7.1 s**
+live across the recorded runs — 4,637 ms in [`docs/live-run.log`](docs/live-run.log), 5,416 ms
+in the archived 2026-08-08 log, 7,055 ms on the slowest run observed).
 
 **Part B — reported hijack demo (NEVER gates).** With the pinned demo model, run the
 victim agent before the cure (`<pre>/12`, measured from real output) and cold after
@@ -676,7 +722,10 @@ them would force tune-to-pass and destroy the non-circularity they exist to prov
 
 <sub>**PROOF** — `python verify.py --live` against DataHub quickstart v1.7.0. Part A is the
 hard gate and it passes on graph state alone; Part B reports the hijack delta and can never
-fail the run. This is the command a judge runs to reproduce the headline number.</sub>
+fail the run. This is the command a judge runs to reproduce the headline number. The
+`6634 ms` on screen is that run's wall clock; the recorded runs land between 4,637 ms
+([`docs/live-run.log`](docs/live-run.log), 2026-08-09) and 7,055 ms. The Part A assertions
+and `held-out 3/3` are the parts that must reproduce, and they do.</sub>
 
 ### Tests & benchmarks
 
@@ -877,7 +926,12 @@ and being straight about that matters more than a clean demo:
    half-remediated"*. Be clear about what it does **not** do: writes already made are not
    rolled back (Antigen has no transaction across DataHub aspects), and this is a
    circuit breaker, not incremental scanning. It makes an unattended run survivable.
-6. **Scale is untested past ~1k entities.** Reads batch at 100; `certify` writes one tag
+6. **Scale is untested past ~1k entities.** The largest live catalog Antigen has actually
+   been run against is **78 entities** (`python seed_catalog.py --scale 60`, cycle C of
+   [`docs/live-run.log`](docs/live-run.log)) — enough to make the `search` enumeration
+   take more than one server page, which is what it was there to prove, and nowhere near
+   enough to call the write path scale-tested.
+   Reads batch at 100; `certify` writes one tag
    and one property per clean entity. A 100k-entity catalog means ~200k serial mutations
    with no concurrency, resume, or incremental mode — `--max-mutations` bounds the damage,
    it does not remove the ceiling. `certify` *is* incremental in one respect: an entity
@@ -972,8 +1026,10 @@ graph-state PASS (~5 ms) | held-out 3/3 | hijack demo skipped
 ```
 
 (These are the **offline in-memory double's** numbers — its corpus is deliberately larger:
-41 entities and a 3-asset blast radius here, versus 17 entities and a 10-asset blast radius
-on the live GMS run shown in the SWEEP figure and DEMO.md.)
+41 entities and a 3-asset blast radius here, versus 15 entities and a 10-asset blast radius
+on the live GMS run in [DEMO.md](DEMO.md) and [`docs/live-run.log`](docs/live-run.log). The
+entity count is whatever the live catalog had indexed at that moment — 15, 17 and 78 across
+the three recorded live sweeps; the 15 flagged loci are the same in all of them.)
 
 Individual pieces:
 
@@ -1043,7 +1099,9 @@ antigen/            detect.py · scan.py · cure.py · blast_radius.py · rescan
 verify.py  bench.py  victim_agent.py  seed_corpus.py  seed_near_miss.py
 tests/     examples/ (12 raw payloads + defused diffs + a forensic report)
            examples/ci/metadata-injection-scan.yml — copy-paste scheduled scan for ADOPTERS
-docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/
+docs/      ARCHITECTURE.md · RFC-output-sanitization.md · assets/ · screenshots/
+           live-tool-transcript.json + live-run.log            (canonical, 2026-08-09)
+           live-tool-transcript-2026-08-08.json + live-run-2026-08-08.log  (kept, superseded)
 antigen-scan/  SKILL.md · README.md · references/ · templates/ · evaluations/
 ```
 
@@ -1086,7 +1144,7 @@ The skill runs the read-only sweep, reports scope and findings by locus and by s
 and **stops**:
 
 ```
-17 entities + 2 documents | 15 injection loci flagged | 2 hidden in zero-width Unicode
+15 entities + 2 documents | 15 injection loci flagged | 2 hidden in zero-width Unicode
                           | 13 via get_entities | 2 via grep_documents
 ```
 

@@ -73,6 +73,15 @@ python -m antigen demo --apply
 #    on a freshly reset instance)
 python verify.py --live
 
+# 6b. OPTIONAL — prove the paging loop against a real server. The live GMS clamps
+#     `search` to 50 rows per page, so a 13-dataset catalog never leaves page one.
+#     `--scale N` appends N extra CLEAN padding datasets (no payloads, no tags) so
+#     the enumeration has to page. Reset first (`datahub docker nuke`), then:
+python seed_catalog.py --scale 60      # 13 demo datasets + 60 padding = 73
+python -m antigen.register_properties
+python seed_corpus.py
+python -m antigen scan                 # read-only; never mutates
+
 # 7. inspect in the DataHub UI at http://localhost:9002  (login datahub/datahub)
 #    - a poisoned entity's description, then the cleaned one (span gone) + quarantine tag
 #    - the antigen-incident-* forensic doc (hashes + repo pointer, no payload)
@@ -83,16 +92,43 @@ Reset between runs: `datahub docker nuke`, then repeat from step 1. A cured enti
 keeps its `injection-quarantined` tag and the sweep deliberately skips tagged
 entities, so re-planting without a reset finds nothing.
 
-Observed on a clean run:
+Observed on a clean run — every line below is quoted from
+[`docs/live-run.log`](docs/live-run.log), the verbatim console output of the
+**2026-08-09** capture against GMS v1.7.0:
 
 | Step | Output |
 |------|--------|
 | `seed_catalog.py` | `13 datasets created` + 6 lineage edges |
 | `seed_corpus.py` | `planted 12 payloads + 3 held-out injections` |
-| `antigen demo` sweep | `17 entities + 2 documents \| 15 injection loci flagged \| 2 hidden in zero-width Unicode \| 13 via get_entities \| 2 via grep_documents` |
-| `antigen demo` defuse | `cured 12 loci (12 excised, 0 field-quarantined)` |
-| `antigen demo` blast radius | `10 downstream assets across 10 quarantined entities` |
-| `verify.py --live` | `Part A — graph-state gate: PASS (7055 ms)` · `held-out 3/3` |
+| `antigen demo --apply` sweep | `15 entities + 2 documents \| 15 injection loci flagged \| 2 hidden in zero-width Unicode \| 13 via get_entities \| 2 via grep_documents` |
+| `antigen demo --apply` defuse | `cured 12 loci (12 excised, 0 field-quarantined)` |
+| `antigen demo --apply` blast radius | `10 downstream assets across 10 quarantined entities` |
+| `antigen demo --apply` certify | `certified 2 clean entities agent-safe-certified` |
+| `verify.py --live` | `Part A — graph-state gate: PASS (4637 ms)` · `held-out 3/3` |
+| `seed_catalog.py --scale 60` | `73 datasets created` (13 + 60 padding) |
+| `antigen scan` at scale | `78 entities + 2 documents \| 15 injection loci flagged` — enumerated across **two** pages (`offset=0`, then `offset=50`, envelope `total: 78`) |
+
+**Which numbers are stable, and which are not.** `15 injection loci`, `cured 12`,
+`held-out 3/3` and the blast radius are properties of the corpus and reproduce every run —
+including on the 78-entity catalog. **The entity count is not one of them, by design:** it
+is however many entities `search` had indexed at that moment. On a 13-dataset catalog that
+is 13 datasets + `urn:li:corpuser:datahub` + `urn:li:document:__system_shared_documents`
+= **15**, plus the two KB documents `seed_corpus.py` plants *once OpenSearch has indexed
+them* = **17** (what the archived 2026-08-08 capture and the SWEEP screenshot show). Both
+KB payloads are found either way — the document sweep runs through
+`search_documents` / `grep_documents`, not through the entity enumeration. The same
+asynchronous index is why `verify.py --live` can fail closed at `11/12` on the first
+attempt right after seeding and pass `12/12` on the retry; the archived
+[`docs/live-run-2026-08-08.log`](docs/live-run-2026-08-08.log) has that failure in it.
+The `verify.py --live` gate has been observed between **4,637 ms** and **7,055 ms**.
+
+**Two live transcripts are checked in.** [`docs/live-tool-transcript.json`](docs/live-tool-transcript.json)
+(+ [`docs/live-run.log`](docs/live-run.log)) is the canonical one, captured 2026-08-09
+against the code in this repo. [`docs/live-tool-transcript-2026-08-08.json`](docs/live-tool-transcript-2026-08-08.json)
+(+ [`docs/live-run-2026-08-08.log`](docs/live-run-2026-08-08.log)) is the earlier capture,
+kept rather than deleted: it predates the `--apply` write gate and the 50-row paging fix,
+so its commands are the pre-gate forms and its `search` calls ask for `num_results: 500` —
+which is exactly where you can watch the live GMS clamp them to a 50-row page.
 
 ## Demo video
 

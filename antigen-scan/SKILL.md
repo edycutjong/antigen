@@ -136,7 +136,7 @@ The JSON has this shape:
 
 ```jsonc
 {
-  "summary": "17 entities + 2 documents | 15 injection loci flagged | 2 hidden in zero-width Unicode | 13 via get_entities | 2 via grep_documents",
+  "summary": "15 entities + 2 documents | 15 injection loci flagged | 2 hidden in zero-width Unicode | 13 via get_entities | 2 via grep_documents",
   "degraded": false,
   "degraded_reasons": [],
   "hits": [
