@@ -411,7 +411,7 @@ strong { color: var(--text-hi); font-weight: 600; }
   border-left: 2px solid var(--border-default); padding-left: 16px; max-width: 56em;
 }
 
-/* --- Tools (4 READ / 4 MUTATION) -------------------------------------------- */
+/* --- Tools (5 READ / 4 MUTATION) -------------------------------------------- */
 .tools-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
 .tool-col {
   border: 1px solid var(--border-subtle);
@@ -688,8 +688,8 @@ strong { color: var(--text-hi); font-weight: 600; }
           <i></i><i></i><i></i><span class="title">antigen — ./run.sh</span>
         </div>
         <pre aria-hidden="true"><span class="cmd">./run.sh</span>
-<span class="dim">tests 26/26 · near-miss 15/15 clean</span>
-<span class="ok">graph-state PASS (4 ms) · held-out 3/3</span>
+<span class="dim">tests 24/24 · near-miss 15/15 clean</span>
+<span class="ok">graph-state PASS (~5 ms) · held-out 3/3</span>
 <span class="dim">── SWEEP ───</span> 41 entities + 2 docs scanned  <span class="dim">(offline run)</span>
   <span class="bad">15 loci flagged</span> · <span class="warn">2 in zero-width Unicode</span>
   <span class="dim">13 get_entities · 2 grep_documents</span>
@@ -870,10 +870,10 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="stat">
           <span class="num">&lt;30s</span>
           <span class="label">deterministic proof</span>
-          <p><code>verify.py</code>'s graph-state gate has no LLM in the path: reset → scan → cure → assert. About 4&nbsp;ms offline.</p>
+          <p><code>verify.py</code>'s graph-state gate has no LLM in the path: reset → scan → cure → assert. About 5&nbsp;ms offline.</p>
         </div>
         <div class="stat">
-          <span class="num">26</span>
+          <span class="num">80</span>
           <span class="label">tests passing</span>
           <p>Including <code>test_nfkc_alone_would_miss_zero_width</code> — the test that proves the Unicode pre-pass does the work.</p>
         </div>
@@ -893,7 +893,7 @@ strong { color: var(--text-hi); font-weight: 600; }
     <div class="wrap">
       <div class="section-head reveal">
         <p class="eyebrow amber">Use of DataHub</p>
-        <h2 id="tools-title">8 load-bearing tools. Write-back <em style="color:var(--accent);font-style:normal;">is</em> the product.</h2>
+        <h2 id="tools-title">9 load-bearing tools. Write-back <em style="color:var(--accent);font-style:normal;">is</em> the product.</h2>
         <p class="lede">
           Every other DataHub agent reads or enriches the graph and trusts its
           text. Antigen is the one that asks <strong>"what if the text is
@@ -906,7 +906,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="tool-col read">
           <div class="col-head">
             <h3>READ — the sweep</h3>
-            <span class="pill green">4 tools</span>
+            <span class="pill green">5 tools</span>
           </div>
           <ul class="tool-list">
             <li>
@@ -916,6 +916,10 @@ strong { color: var(--text-hi); font-weight: 600; }
             <li>
               <code class="tname">get_entities</code>
               <span class="tdesc">Batch description + column/schema pull — the text the detector inspects (10 of 12 payloads live here).</span>
+            </li>
+            <li>
+              <code class="tname">search_documents</code>
+              <span class="tdesc">Enumerates KB document URNs — the live <code>grep_documents</code> requires an explicit URN list, so without this the document sweep has nothing to hunt over.</span>
             </li>
             <li>
               <code class="tname">grep_documents</code>
@@ -1238,7 +1242,7 @@ strong { color: var(--text-hi); font-weight: 600; }
             <li><a href="#problem">The problem</a></li>
             <li><a href="#flow">Hijack → Sweep → Defuse → Prove</a></li>
             <li><a href="#numbers">The killer numbers</a></li>
-            <li><a href="#tools">8 DataHub tools</a></li>
+            <li><a href="#tools">9 DataHub tools</a></li>
             <li><a href="#detector">The detector</a></li>
           </ul>
         </nav>

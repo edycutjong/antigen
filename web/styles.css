@@ -374,7 +374,7 @@ strong { color: var(--text-hi); font-weight: 600; }
   border-left: 2px solid var(--border-default); padding-left: 16px; max-width: 56em;
 }
 
-/* --- Tools (4 READ / 4 MUTATION) -------------------------------------------- */
+/* --- Tools (5 READ / 4 MUTATION) -------------------------------------------- */
 .tools-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
 .tool-col {
   border: 1px solid var(--border-subtle);

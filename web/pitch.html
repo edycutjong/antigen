@@ -296,7 +296,7 @@
   .ask-list li::before { content: "→"; color: var(--color-primary); font-weight: 700; flex-shrink: 0; }
   .ask-side { flex: 0.85; display: flex; flex-direction: column; gap: 26px; align-items: flex-start; }
   .qr { width: 210px; height: 210px; border-radius: 16px; border: 1px solid var(--border); background: #fff; }
-  /* branded visit card — intentional placeholder in lieu of a generated QR */
+  /* branded visit card */
   .visit-card {
     width: 250px; border: 1px solid rgba(46,229,157,0.28); border-radius: 20px;
     background: linear-gradient(158deg, var(--surface-2), var(--surface-1));
@@ -484,9 +484,9 @@
 
     <!-- ============ SLIDE 5 — HOW IT WORKS ============ -->
     <section class="slide" data-title="How it works" data-kicker="Architecture">
-      <h2 class="kicker anim">How it works — 8 load-bearing DataHub tools</h2>
+      <h2 class="kicker anim">How it works — 9 load-bearing DataHub tools</h2>
       <div class="arch-wrap anim d1">
-        <svg viewBox="0 0 1745 560" role="img" aria-label="Architecture: a stock LangChain agent reads the poisoned catalog and is hijacked. Antigen's sweep uses four READ tools — search, get_entities, grep_documents, get_lineage — feeding a scored detector with a zero-width Unicode pre-pass. The cure uses four MUTATION write-backs — update_description, add_tags, add_structured_properties, save_document — landing back in the graph. verify.py then re-runs the agent cold for a deterministic graph-state proof.">
+        <svg viewBox="0 0 1745 560" role="img" aria-label="Architecture: a stock LangChain agent reads the poisoned catalog and is hijacked. Antigen's sweep uses five READ tools — search, search_documents, get_entities, grep_documents, get_lineage — feeding a scored detector with a zero-width Unicode pre-pass. The cure uses four MUTATION write-backs — update_description, add_tags, add_structured_properties, save_document — landing back in the graph. verify.py then re-runs the agent cold for a deterministic graph-state proof.">
           <defs>
             <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0 0 L10 5 L0 10 z" fill="#8FB3A3"/>
@@ -521,8 +521,8 @@
           <path d="M150 220 V 300" stroke="#2EE59D" stroke-width="2.5" fill="none" marker-end="url(#arwG)"/>
           <g>
             <rect x="0" y="300" width="740" height="120" rx="14" fill="#071b12" stroke="rgba(46,229,157,0.4)" stroke-width="2"/>
-            <text x="24" y="336" fill="#2EE59D" font-family="var(--font-mono)" font-size="19" font-weight="700">SWEEP · 4 READ tools</text>
-            <text x="24" y="372" fill="#EAF9F1" font-family="var(--font-mono)" font-size="19">search → get_entities → grep_documents → get_lineage</text>
+            <text x="24" y="336" fill="#2EE59D" font-family="var(--font-mono)" font-size="19" font-weight="700">SWEEP · 5 READ tools</text>
+            <text x="24" y="372" fill="#EAF9F1" font-family="var(--font-mono)" font-size="15">search → search_documents → get_entities → grep_documents → get_lineage</text>
             <text x="24" y="402" fill="#8FB3A3" font-family="var(--font-mono)" font-size="17">every description, column &amp; KB doc surface</text>
           </g>
 
@@ -570,7 +570,7 @@
         <span><span class="sw" style="background:#F43F5E"></span> the exploit path</span>
       </div>
       <aside class="speaker-notes"><b>How it works</b>
-        Four READ tools sweep every free-text surface into a stdlib scored detector with a zero-width Unicode pre-pass. Four MUTATION write-backs land the cure back in the graph. Then verify.py re-runs the agent cold and hard-gates on the graph state — no LLM in the path.
+        Five READ tools sweep every free-text surface into a stdlib scored detector with a zero-width Unicode pre-pass. Four MUTATION write-backs land the cure back in the graph. Then verify.py re-runs the agent cold and hard-gates on the graph state — no LLM in the path.
       </aside>
     </section>
 
@@ -603,7 +603,7 @@ Q: Summarize the customers table.
           </div>
           <div class="shot" style="grid-column: span 2;">
             <pre><span class="cmd">python verify.py</span>
-graph-state <span class="green">PASS (4 ms)</span> | held-out <span class="green">3/3</span>
+graph-state <span class="green">PASS (~5 ms)</span> | held-out <span class="green">3/3</span>
 Part B — same stock agent, same 12 questions, cold:  <span class="green">obeys 0/12</span></pre>
             <div class="cap"><span class="num-circle">4</span><span class="cap-label">PROVE — 0/12, deterministic, &lt;30s</span></div>
           </div>
@@ -664,7 +664,7 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">obeys
           <div class="why-side">
             <div class="why-card"><h3><span class="dot"></span>The threat is live now</h3><p>MCP agents on metadata catalogs are shipping today — and OWASP ranks prompt injection LLM01, the number-one risk.</p></div>
             <div class="why-card"><h3><span class="dot"></span>On the sponsor's own surface</h3><p>The vulnerable pattern is DataHub's own reference integration. A working exploit on it is undeniable.</p></div>
-            <div class="why-card"><h3><span class="dot"></span>Write-back is the product</h3><p>Wins the loudest rubric criterion — Use of DataHub — with 8 load-bearing tools, 4 of them mutations.</p></div>
+            <div class="why-card"><h3><span class="dot"></span>Write-back is the product</h3><p>Wins the loudest rubric criterion — Use of DataHub — with 9 load-bearing tools, 4 of them mutations.</p></div>
           </div>
         </div>
       </div>
@@ -682,14 +682,14 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">obeys
             <div class="bigstat"><div class="n">0/12</div><div class="l">hijacks after the cure — same stock agent, cold</div></div>
             <div class="bigstat"><div class="n">12/12</div><div class="l">payloads defused, + 3/3 held-out public injections</div></div>
             <div class="bigstat amber"><div class="n">0</div><div class="l">false positives on a 15-item near-miss gauntlet</div></div>
-            <div class="bigstat"><div class="n">&lt;30s</div><div class="l">deterministic verify.py graph-state gate (~4ms offline)</div></div>
+            <div class="bigstat"><div class="n">&lt;30s</div><div class="l">deterministic verify.py graph-state gate (~5ms offline)</div></div>
           </div>
           <div>
             <p style="font-size:22px;color:var(--text-mid);margin-bottom:18px;">Reproduce it all with one command — Python stdlib only, no Docker, no keys:</p>
             <div class="ship-list">
               <span class="chip green">./run.sh</span>
               <span class="chip">80 tests passing</span>
-              <span class="chip">8 DataHub tools wired</span>
+              <span class="chip">9 DataHub tools wired</span>
               <span class="chip amber">Apache-2.0</span>
               <span class="chip">RFC to mcp-server-datahub</span>
               <span class="chip">bench.py p50/p95/p99</span>
@@ -711,16 +711,16 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">obeys
             <h2 class="contrast-check">Run <span class="green">./run.sh</span>. Watch a stock agent get hijacked — then immunized.</h2>
             <ul class="ask-list">
               <li>Judge the exploit on DataHub's own reference integration, then the cure — in the graph.</li>
-              <li>Score Use of DataHub on 8 load-bearing tools, write-back as the product.</li>
+              <li>Score Use of DataHub on 9 load-bearing tools, write-back as the product.</li>
               <li>Verify every number yourself: <span class="mono hi">python verify.py</span>, under 30 seconds.</li>
             </ul>
           </div>
           <div class="ask-side">
-            <div class="visit-card" data-tbd="qr-code-not-generated" role="img"
-                 aria-label="antigen.edycu.dev — QR code to be added before presenting">
+            <div class="visit-card" role="img"
+                 aria-label="antigen.edycu.dev — project site link card">
               <img src="public/icon.svg" alt="" />
               <div class="u">antigen<b>.edycu.dev</b></div>
-              <div class="cap">Scan / visit · fully offline</div>
+              <div class="cap">Visit · fully offline</div>
             </div>
             <div class="ask-contact">
               <div class="hi">github.com/edycutjong/antigen</div>
