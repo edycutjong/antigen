@@ -111,8 +111,8 @@ class CappingSearchTool:
     """A search double that behaves like the REAL GMS, not like a generous fake.
 
     The live server CLAMPS `num_results` to 50 no matter what is requested: every one
-    of the 11 `search` calls in docs/live-tool-transcript.json asks for 500 and comes
-    back with `"count": 50`. The pre-existing double honoured 500 — it was *more
+    of the 11 `search` calls in docs/live-tool-transcript-2026-08-08.json asks for 500
+    and comes back with `"count": 50`. The pre-existing double honoured 500 — it was *more
     generous than the server it stood in for* — which is exactly why a suite at 100%
     line coverage never noticed that `search_all` broke out of its loop on iteration
     one and reported every entity past the first page as clean.
@@ -158,8 +158,16 @@ def test_document_urns_are_paginated_the_same_way():
 
 
 def test_search_all_terminates_when_total_overstates_the_result_set():
-    """A live envelope reported `total: 30` while returning 26 rows. A loop that
-    trusts only `total` never terminates — termination must rest on the page too."""
+    """A `total` that overstates the rows actually delivered must not hang the loop.
+
+    Defensive, not observed: `total` counts what the query matched, and nothing in
+    the tool contract promises the page delivers all of it. A loop that trusts only
+    `total` never terminates in that case — termination must rest on the page too.
+    (An earlier version of this docstring cited a live envelope reporting `total: 30`
+    while returning 26 rows. That was a misread: the transcript truncates recorded
+    lists at 25 items plus a `+N more items truncated` marker, so those 26 entries
+    were the full 30 rows. The claim is withdrawn; the behaviour under test stands on
+    its own.)"""
     pages = [
         {"total": 30, "searchResults": [{"entity": {"urn": f"urn:{i}"}}
                                         for i in range(26)]},

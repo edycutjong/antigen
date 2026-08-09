@@ -26,12 +26,14 @@ from typing import Protocol, runtime_checkable
 #: Page size for every paging search call.
 #:
 #: The live GMS CLAMPS `num_results` to 50 regardless of what is asked for: all 11
-#: `search` calls captured in docs/live-tool-transcript.json request 500 and come back
-#: with `"count": 50`. The old loop requested 500 and stopped on `len(batch) < 500`,
-#: so that guard fired on iteration one unconditionally — above 50 entities Antigen
-#: enumerated the first page and reported the entire rest of the catalog clean. It was
-#: latent in the demo only because the seeded catalog tops out at ~30 entities.
-#: Page at the server's real cap and advance by what actually came back.
+#: `search` calls captured in docs/live-tool-transcript-2026-08-08.json request 500 and
+#: come back with `"count": 50`. The old loop requested 500 and stopped on
+#: `len(batch) < 500`, so that guard fired on iteration one unconditionally — above 50
+#: entities Antigen enumerated the first page and reported the entire rest of the catalog
+#: clean. It was latent in the demo only because the seeded catalog tops out at ~30
+#: entities. Page at the server's real cap and advance by what actually came back.
+#: docs/live-tool-transcript.json (2026-08-09) is this loop running against a real GMS on
+#: a 73-dataset catalog: `offset=0`, then `offset=50`, envelope `total: 78`.
 _SEARCH_PAGE = 50
 
 # --------------------------------------------------------------------------- #
@@ -223,11 +225,14 @@ class SdkGateway:
           server that ignored `offset` and is replaying page one forever;
         * ``len(urns) >= total`` when the envelope carries a total.
 
-        `total` alone is NOT sufficient: one live call in
-        docs/live-tool-transcript.json reports ``total: 30`` while returning 26
-        results, so a total-only loop would spin. And `offset` advances by the
-        number of results RETURNED, never by the number requested — that mismatch
-        is exactly what the 500-vs-50 bug was.
+        `total` alone is NOT sufficient, and the no-fresh-results guard is the
+        primary one: the envelope does not always carry a `total` (hence the
+        `is not None` check below), and when it does it counts what the query
+        matched rather than what this page handed back. A loop resting on `total`
+        alone has nothing to stop on in the first case and over-trusts the server
+        in the second. And `offset` advances by the number of results RETURNED,
+        never by the number requested — that mismatch is exactly what the
+        500-vs-50 bug was.
         """
         urns: list[str] = []
         seen: set[str] = set()
