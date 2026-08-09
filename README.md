@@ -34,6 +34,30 @@
 
 ---
 
+## ⚡ Quickstart
+
+```bash
+git clone https://github.com/edycutjong/antigen.git && cd antigen
+./run.sh        # Python 3.10+ stdlib only — no Docker, no keys, no install
+```
+
+Expected tail: `graph-state PASS (~5 ms) | held-out 3/3 | hijack demo skipped` — the
+LLM-independent proof gate, green. The live-GMS path is in
+[Getting Started](#-getting-started).
+
+**Contents:**
+[The Problem & Solution](#-the-problem--solution) ·
+[Architecture](#️-architecture--tech-stack) ·
+[DataHub Integration](#-datahub-integration--write-back-is-the-product) ·
+[Engineering Rigor](#-engineering-rigor) ·
+[Getting Started](#-getting-started) ·
+[Testing & CI](#-testing--ci) ·
+[Project Structure](#-project-structure) ·
+[Roadmap](#️-roadmap) ·
+[Demo Materials](#️-demo-materials)
+
+---
+
 <div align="center">
 
   <img width="960" height="540" alt="Antigen in action — hijack → sweep → defuse → prove" src="https://github.com/user-attachments/assets/42f2d2c0-2ddb-4bc1-b090-f01eb0ec877e" />
