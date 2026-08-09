@@ -519,6 +519,12 @@ add_structured_properties 24 · search 11 · get_lineage 10 · grep_documents 7 
 The 820 base `acryl-datahub` `DataHubGraph` calls (seeding, property definitions, the
 `editableSchemaMetadata` overlay) are counted **separately** in the same file, so the
 "9 agent tools" claim above stays exactly true.
+
+<sub>The transcript is a **captured record of that run**, not a regenerated artifact, so it
+shows the banner text as it was on 2026-08-08 — including the `Detection signals: <labels>`
+form that the v1.2 convergence fix removed (see *Honest limitations*). We are not rewriting
+a captured proof artifact to match later code; the tool calls, arguments and responses are
+what they were.</sub>
 [`docs/live-run.log`](docs/live-run.log) is the console output of that run — including a
 first `verify.py --live` attempt that **failed** on an OpenSearch index race (`11/12`
 loci) before the cure ran, and passed `12/12` on the immediate retry. Both are kept: the

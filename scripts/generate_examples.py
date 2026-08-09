@@ -15,6 +15,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from antigen.corpus import HELD_OUT, PAYLOADS
+from antigen.cure import EVIDENCE_POINTER, inert_banner
 from antigen.detect import detect
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -62,10 +63,14 @@ def main() -> int:
             fh.write("## poisoned (what the agent read)\n```\n")
             fh.write(_visible(p.poisoned_text) + "\n```\n\n")
             fh.write("## defused (injected span removed + inert banner)\n```\n")
-            fh.write(p.original_text + "\n\n> ⚠ Antigen: a prompt-injection payload was "
-                     "removed from this field. Forensic evidence: "
-                     f"examples/payloads/{p.id}.txt. "
-                     f"Detection signals: {d.safe_summary}.\n```\n\n")
+            # Built by the REAL banner composer, so these examples cannot drift from
+            # what `cure` actually writes — and inherit its convergence guarantee.
+            fh.write(p.original_text + inert_banner(
+                p.original_text,
+                date="<cure timestamp>",
+                evidence=EVIDENCE_POINTER.format(pid=p.id),
+                incident=f"antigen-incident-{p.id}",
+            ) + "\n```\n\n")
             fh.write(f"- content-sha256 (cleaned): `{_sha(p.original_text)}`\n")
             fh.write(f"- payload-sha256 (removed, irreversible): `{_sha(p.injection)}`\n")
         index.append(f"| {p.id} | {p.locus.value} | {', '.join(p.categories)} | "
