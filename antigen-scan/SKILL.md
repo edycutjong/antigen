@@ -32,18 +32,30 @@ are reproducible and auditable. The model orchestrates and gates human approval.
    loci were flagged, how many were hidden in zero-width Unicode, and which tool surfaced
    each (`get_entities` vs `grep_documents`). Do NOT mutate anything yet.
 
-2. **Show the plan and ASK FOR APPROVAL.** For each flagged locus, present the URN, the
-   detected signals (e.g. `instruction-override`, `data-exfiltration`), and the fact that
-   the cure will *remove* the injected span, quarantine-tag the entity, stamp tamper-
-   evidence hashes, and file a forensic incident. Wait for explicit user confirmation.
+2. **Show the plan and ASK FOR APPROVAL.** Get the plan from the tool, not from your own
+   summary of it:
+   ```
+   python -m antigen cure --dry-run
+   ```
+   This prints every mutation a live run would perform — URN, tool, field, before → after
+   — and writes nothing. Relay it, note that the cure will *remove* the injected span,
+   quarantine-tag the entity, stamp tamper-evidence hashes and file a forensic incident,
+   and wait for explicit user confirmation.
 
-3. **Defuse (mutating).** Only after approval:
+   Where a locus is remediated as `quarantine-field` rather than `excise`, say so plainly:
+   that mode replaces the **whole field**, so legitimate documentation in it is lost from
+   the current aspect (recoverable only from DataHub aspect version history).
+
+3. **Defuse (mutating).** Only after approval — `--apply` is required, and without it a
+   live run is a dry run, not a mutation:
    ```
-   python -m antigen cure
+   python -m antigen cure --apply
    ```
+   Use `python -m antigen cure --apply --only-mode excise` to apply just the surgical,
+   fixture-backed remediations and leave whole-field quarantines for a human.
    Then map downstream reach and re-verify:
    ```
-   python -m antigen blast-radius
+   python -m antigen blast-radius --apply
    python -m antigen scan --fail-on-hit   # should report 0 remaining
    ```
 
@@ -56,7 +68,9 @@ are reproducible and auditable. The model orchestrates and gates human approval.
 - Never fabricate or override detection results — always report exactly what `antigen scan`
   returns.
 - Treat `cure` as destructive-with-approval: it removes text and writes back. Never run it
-  without step 2's confirmation.
+  with `--apply` without step 2's confirmation. This guardrail is now backed by the CLI
+  itself — against a live catalog every mutating subcommand is dry-run unless `--apply` is
+  passed — but the prose still applies: **you** must not supply `--apply` unprompted.
 - The raw payloads are written only to the repo `examples/` folder, never back to the
   graph; the graph holds only irreversible hashes. Do not print recovered payloads into
   chat beyond what `antigen scan` already surfaces.

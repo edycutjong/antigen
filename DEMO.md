@@ -25,6 +25,7 @@ Reproduces:
 | Tamper-evidence catches drift | `python tests/test_cure.py` | `test_rescan_detects_drift PASS` |
 | Latency p50/p95/p99 | `python bench.py --runs 20` | scan+cure p50 ≈ 2 ms (offline) |
 | The full hero arc | `python -m antigen demo --offline` | sweep → defuse → 0 remaining |
+| A live run writes nothing without `--apply` | `python -m antigen cure --dry-run` | `DRY RUN — … would write N mutations … Nothing was written.` |
 
 ## Live (against a real DataHub GMS)
 
@@ -59,8 +60,11 @@ python -m antigen.register_properties
 # 4. plant the corpus (the attacker step; labeled demo input)
 python seed_corpus.py
 
-# 5. the hero arc: sweep -> defuse -> blast radius -> certify -> prove standing
-python -m antigen demo
+# 5. the hero arc: sweep -> defuse -> blast radius -> certify -> prove standing.
+#    Every mutating subcommand is DRY-RUN by default against a live catalog, so the
+#    arc needs an explicit --apply. Preview the exact writes first if you like:
+#      python -m antigen cure --dry-run
+python -m antigen demo --apply
 
 # 6. the reproducible proof (re-runs its own scan+cure, so start from step 2
 #    on a freshly reset instance)

@@ -3,17 +3,32 @@
 Subcommands map to the engine:
 
     antigen scan     [--offline] [--fail-on-hit] [--json]   sweep the catalog
-    antigen cure     [--offline] [--fixtures corpus|none]   defuse every hit
-    antigen blast-radius [--offline]                        map downstream reach
+    antigen cure     [--offline] [--dry-run|--apply]        defuse every hit
+    antigen blast-radius [--offline] [--dry-run|--apply]    map downstream reach
     antigen rescan   [--offline]                            tamper-evidence drift
-    antigen certify  [--offline]                            tag the clean remainder
-    antigen demo     [--offline]                            the full hero arc
+    antigen certify  [--offline] [--dry-run|--apply]        tag the clean remainder
+    antigen demo     [--offline] [--apply]                  the full hero arc
     antigen detect   "<text>"                               score one string
     antigen corpus                                          print corpus stats
 
 `--offline` runs against the in-memory corpus double (no Docker) — useful for a
 quick look; the judge path is the live GMS (omit `--offline`, set DATAHUB_GMS_URL /
-DATAHUB_GMS_TOKEN). Live scanning uses the real 8 Agent Context Kit tools.
+DATAHUB_GMS_TOKEN). Live scanning uses the real 9 Agent Context Kit tools.
+
+THE WRITE GATE. `cure`, `certify`, `blast-radius` and `demo` mutate the catalog —
+`cure` writes 4 mutations per hit, `certify` 2 per *clean* entity (~2,000 on a 1k
+catalog). So:
+
+  * against a LIVE catalog they are **dry-run by default**: the exact mutation plan
+    (URN, tool, field, before → after) is printed and NOTHING is written. Add
+    `--apply` (alias `--yes`) to execute it. `demo` refuses outright without it.
+  * with `--offline` they apply to the in-memory double, because there is no live
+    catalog to damage and that is the reproducible-demo path `./run.sh` runs.
+  * `--dry-run` forces a preview in either mode. It is mutually exclusive with
+    `--apply`.
+
+Exit codes: 0 success · 1 findings under `--fail-on-hit` · 2 refused, or a DEGRADED
+sweep (see `scan`).
 """
 
 from __future__ import annotations
@@ -34,6 +49,37 @@ def _gateway(args):
         from .seed import corpus_fixtures
         fixtures = corpus_fixtures()
     return SdkGateway(), fixtures
+
+
+def _is_dry_run(args) -> bool:
+    """Resolve the write gate for a mutating subcommand.
+
+    `--dry-run` and `--apply` are mutually exclusive at the parser level, so only
+    three cases reach here. With NEITHER flag the default is chosen by target: an
+    `--offline` run mutates the in-memory double (the `./run.sh` demo path, where
+    there is nothing to damage), and a LIVE run previews, because an unattended
+    write into a production catalog is the failure mode this gate exists to stop.
+    """
+    if args.dry_run:
+        return True
+    if args.apply:
+        return False
+    return not getattr(args, "offline", False)
+
+
+def _writer(args, gw):
+    """Return (gateway-to-use, plan-or-None). Reads are identical either way."""
+    if not _is_dry_run(args):
+        return gw, None
+    from .planner import PlanningGateway
+    plan = PlanningGateway(gw)
+    return plan, plan
+
+
+def _print_plan(plan, command: str) -> int:
+    from .planner import format_plan
+    print(format_plan(plan.planned, command=command))
+    return 0
 
 
 def cmd_scan(args) -> int:
@@ -66,7 +112,8 @@ def cmd_cure(args) -> int:
     from .cure import cure
     from .scan import scan
     gw, fixtures = _gateway(args)
-    report = scan(gw)
+    target, plan = _writer(args, gw)
+    report = scan(target)
     hits = report.hits
     if args.fixtures == "corpus" and getattr(args, "offline", False):
         # Offline demo only: restrict to the seeded corpus so the run is exactly
@@ -74,7 +121,16 @@ def cmd_cure(args) -> int:
         # ones are excised, the rest fall through to whole-field quarantine.
         # (Filtering here on a live gateway silently cured nothing.)
         hits = [h for h in report.hits if h.key in fixtures]
-    result = cure(gw, hits, fixtures=fixtures, clock=_clock())
+    if args.only_mode != "all":
+        # A fixture-backed hit is the surgical `excise` path; everything else falls
+        # through to whole-field `quarantine-field`, which destroys legitimate
+        # documentation. `--only-mode excise` lets an operator automate the safe half
+        # and leave the lossy half queued for a human.
+        want_fixture = args.only_mode == "excise"
+        hits = [h for h in hits if (h.key in fixtures) is want_fixture]
+    result = cure(target, hits, fixtures=fixtures, clock=_clock())
+    if plan is not None:
+        return _print_plan(plan, "cure")
     print(result.summary())
     for a in result.actions:
         print(f"  ✔ {a.payload_id}  {a.urn}  [{a.mode}]  content={a.content_sha256[:12]}…")
@@ -85,10 +141,14 @@ def cmd_blast_radius(args) -> int:
     from .blast_radius import map_blast_radius
     from .scan import scan
     gw, _ = _gateway(args)
-    report = scan(gw)
+    target, plan = _writer(args, gw)
+    report = scan(target)
     # Sources = entities that scan flagged (or that already carry the quarantine tag).
     sources = sorted({h.urn for h in report.hits if h.locus.value != "kb-document"})
-    br = map_blast_radius(gw, sources)
+    br = map_blast_radius(target, sources)
+    if plan is not None:
+        print(br.summary())
+        return _print_plan(plan, "blast-radius")
     print(br.summary())
     for src, downstream in br.per_source.items():
         if downstream:
@@ -114,8 +174,11 @@ def cmd_certify(args) -> int:
     from .certify import certify
     from .scan import scan
     gw, _ = _gateway(args)
-    report = scan(gw)
-    result = certify(gw, report.clean_entity_urns)
+    target, plan = _writer(args, gw)
+    report = scan(target)
+    result = certify(target, report.clean_entity_urns)
+    if plan is not None:
+        return _print_plan(plan, "certify")
     print(result.summary())
     return 0
 
@@ -142,6 +205,18 @@ def cmd_demo(args) -> int:
     from .rescan import rescan
     from .scan import scan
     from .seed import align_document_fixtures, corpus_fixtures
+
+    if not getattr(args, "offline", False) and not args.apply:
+        # `demo` is the whole write-back arc — sweep, 4 mutations per hit, one tag +
+        # two properties per clean entity, then blast-radius tags. There is no
+        # meaningful preview of an arc whose later stages read back its own writes,
+        # so this refuses rather than pretending.
+        print("REFUSED: `antigen demo` mutates a LIVE catalog and needs an explicit "
+              "--apply.\n"
+              "  preview the writes:  python -m antigen cure --dry-run\n"
+              "  run the arc:         python -m antigen demo --apply\n"
+              "  no catalog at all:   python -m antigen demo --offline", file=sys.stderr)
+        return 2
 
     gw, fixtures = _gateway(args)
     if not fixtures:
@@ -193,6 +268,15 @@ def build_parser() -> argparse.ArgumentParser:
         sp.add_argument("--offline", action="store_true",
                         help="run against the in-memory corpus double (no Docker)")
 
+    def add_write_gate(sp):
+        """--dry-run / --apply. Live runs preview by default; offline runs apply."""
+        g = sp.add_mutually_exclusive_group()
+        g.add_argument("--dry-run", action="store_true",
+                       help="print the mutation plan (urn, tool, field, before → after) "
+                            "and write NOTHING. Default against a live catalog.")
+        g.add_argument("--apply", "--yes", dest="apply", action="store_true",
+                       help="actually write. REQUIRED for any live mutating run.")
+
     sp = sub.add_parser("scan", help="sweep the catalog for injections")
     add_offline(sp)
     sp.add_argument("--fail-on-hit", action="store_true", help="exit 1 if any hit (CI)")
@@ -201,12 +285,19 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("cure", help="defuse every hit by removal")
     add_offline(sp)
+    add_write_gate(sp)
     sp.add_argument("--fixtures", choices=["corpus", "none"], default="corpus",
                     help="corpus = exact fixture-backed excision; none = field quarantine")
+    sp.add_argument("--only-mode", choices=["all", "excise", "quarantine-field"],
+                    default="all",
+                    help="restrict to one remediation mode. `excise` is the surgical "
+                         "fixture-backed path (safe to automate); `quarantine-field` "
+                         "replaces the WHOLE field and is the one to hold for a human.")
     sp.set_defaults(func=cmd_cure)
 
     sp = sub.add_parser("blast-radius", help="map downstream reach of poisoned entities")
     add_offline(sp)
+    add_write_gate(sp)
     sp.set_defaults(func=cmd_blast_radius)
 
     sp = sub.add_parser("rescan", help="tamper-evidence drift check")
@@ -216,10 +307,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("certify", help="tag the clean remainder agent-safe-certified")
     add_offline(sp)
+    add_write_gate(sp)
     sp.set_defaults(func=cmd_certify)
 
     sp = sub.add_parser("demo", help="run the full hero arc on the corpus")
     add_offline(sp)
+    sp.add_argument("--apply", "--yes", dest="apply", action="store_true",
+                    help="required to run the arc against a LIVE catalog (it mutates)")
     sp.set_defaults(func=cmd_demo)
 
     sp = sub.add_parser("detect", help="score a single string")

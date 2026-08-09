@@ -90,15 +90,83 @@ def test_live_branch_via_monkeypatched_sdkgateway(monkeypatch):
     # No --offline → _gateway() imports SdkGateway (now the fake). Exercises the
     # non-offline branch of every command including the fixtures="corpus" default.
     assert run(["scan"])[0] == 0
-    assert run(["cure"])[0] == 0                       # fixtures=corpus default
-    assert run(["blast-radius"])[0] == 0
-    assert run(["certify"])[0] == 0
+    assert run(["cure", "--apply"])[0] == 0            # fixtures=corpus default
+    assert run(["blast-radius", "--apply"])[0] == 0
+    assert run(["certify", "--apply"])[0] == 0
     assert run(["rescan"])[0] == 0
     # cure with --fixtures none on the live branch (fixtures stay empty)
-    assert run(["cure", "--fixtures", "none"])[0] == 0
+    assert run(["cure", "--fixtures", "none", "--apply"])[0] == 0
     # demo on the live branch: _gateway returns empty fixtures → demo falls back to
-    # corpus_fixtures() (cli.py line 144).
-    assert run(["demo"])[0] == 0
+    # corpus_fixtures().
+    assert run(["demo", "--apply"])[0] == 0
+
+
+# --------------------------------------------------------------------------- #
+# The write gate: --dry-run / --apply
+# --------------------------------------------------------------------------- #
+
+def test_live_mutating_commands_are_dry_run_by_default(monkeypatch):
+    """The whole point: pointing `cure` at a real catalog must not write to it."""
+    gw = build_corpus_gateway()
+    before = {e.urn: e.description for e in gw.get_entities(gw.search_all())}
+    monkeypatch.setattr(gateway_mod, "SdkGateway", lambda: gw)
+
+    for argv, needle in ((["cure"], "antigen cure"),
+                         (["certify"], "antigen certify"),
+                         (["blast-radius"], "antigen blast-radius")):
+        rc, out = run(argv)
+        assert rc == 0
+        assert "DRY RUN" in out and needle in out and "--apply" in out
+
+    after = {e.urn: e.description for e in gw.get_entities(gw.search_all())}
+    assert after == before, "a defaulted live run must not have mutated anything"
+    assert all(c[0] in ("search", "get_entities", "grep_documents", "get_lineage")
+               for c in gw.calls), "only READ tools may be invoked without --apply"
+
+
+def test_explicit_dry_run_previews_even_offline():
+    gw_rc, out = run(["cure", "--offline", "--dry-run"])
+    assert gw_rc == 0 and "DRY RUN" in out
+    assert "update_description" in out and "before:" in out and "after:" in out
+    # blast-radius still reports its lineage summary alongside the plan.
+    rc, out = run(["blast-radius", "--offline", "--dry-run"])
+    assert rc == 0 and "blast radius" in out and "DRY RUN" in out
+
+
+def test_offline_still_applies_by_default():
+    """`./run.sh` and the reproducible demo depend on this — do not regress it."""
+    rc, out = run(["certify", "--offline"])
+    assert rc == 0 and "certified" in out and "DRY RUN" not in out
+
+
+def test_dry_run_and_apply_are_mutually_exclusive():
+    try:
+        run(["cure", "--offline", "--dry-run", "--apply"])
+        raise AssertionError("expected argparse to reject the flag pair")
+    except SystemExit as e:
+        assert e.code == 2
+
+
+def test_yes_is_an_alias_for_apply():
+    rc, out = run(["certify", "--offline", "--yes"])
+    assert rc == 0 and "DRY RUN" not in out
+
+
+def test_live_demo_refuses_without_apply(monkeypatch):
+    gw = build_corpus_gateway()
+    monkeypatch.setattr(gateway_mod, "SdkGateway", lambda: gw)
+    rc, out = run(["demo"])
+    assert rc == 2 and "REFUSED" in out and "--apply" in out
+    assert gw.calls == [], "a refused demo must not touch the catalog at all"
+
+
+def test_only_mode_splits_the_surgical_and_lossy_halves():
+    """`excise` is fixture-backed and safe to automate; `quarantine-field` destroys
+    the legitimate text in the field and is the half to hold for a human."""
+    rc, out = run(["cure", "--offline", "--dry-run", "--only-mode", "excise"])
+    assert rc == 0 and "update_description" in out
+    rc, out = run(["cure", "--offline", "--dry-run", "--only-mode", "quarantine-field"])
+    assert rc == 0 and "would write NOTHING" in out   # the corpus is fully fixture-backed
 
 
 def test_rescan_drift_failonhit_live(monkeypatch):
