@@ -23,6 +23,11 @@ htmlcov/
 # Antigen runtime artifacts (live seeding)
 .antigen-locus-map.json
 
+# False-positive study corpus cache — 22 MB of third-party text we deliberately do
+# NOT redistribute; regenerate with `python scripts/fp_corpus.py harvest`.
+# Provenance + fingerprints are committed instead (docs/fp-corpus-*).
+scripts/.fp_corpus_cache/
+
 # Node (assets tooling only)
 node_modules/
 

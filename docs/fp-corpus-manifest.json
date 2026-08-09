@@ -1,0 +1,2016 @@
+{
+  "generated_by": "scripts/fp_corpus.py",
+  "detector": "antigen.detect.detect (FLAG_THRESHOLD=2)",
+  "raw_descriptions": 65891,
+  "unique_scanned": 38031,
+  "flagged": 24,
+  "flag_rate": 0.0006310641318924035,
+  "english_like_scanned": 25565,
+  "english_like_flagged": 24,
+  "english_like_flag_rate": 0.0009387834930569138,
+  "corpus_digest": "485c9cec80cbc38d78810f7c2bfcfa03d99dc5e6350f1c4e309ebb9f18c15c58",
+  "by_source": {
+    "dbt": {
+      "scanned": 8640,
+      "flagged": 2
+    },
+    "socrata": {
+      "scanned": 29391,
+      "flagged": 22
+    }
+  },
+  "by_kind": {
+    "dbt:macro": {
+      "scanned": 167,
+      "flagged": 1
+    },
+    "dbt:argument": {
+      "scanned": 233,
+      "flagged": 0
+    },
+    "dbt:model": {
+      "scanned": 1021,
+      "flagged": 0
+    },
+    "dbt:column": {
+      "scanned": 5802,
+      "flagged": 0
+    },
+    "dbt:docs-block": {
+      "scanned": 842,
+      "flagged": 1
+    },
+    "dbt:metric": {
+      "scanned": 58,
+      "flagged": 0
+    },
+    "dbt:table": {
+      "scanned": 357,
+      "flagged": 0
+    },
+    "dbt:semantic_model": {
+      "scanned": 59,
+      "flagged": 0
+    },
+    "dbt:seed": {
+      "scanned": 26,
+      "flagged": 0
+    },
+    "dbt:node": {
+      "scanned": 10,
+      "flagged": 0
+    },
+    "dbt:source": {
+      "scanned": 42,
+      "flagged": 0
+    },
+    "dbt:snapshot": {
+      "scanned": 7,
+      "flagged": 0
+    },
+    "dbt:exposure": {
+      "scanned": 15,
+      "flagged": 0
+    },
+    "dbt:analysis": {
+      "scanned": 1,
+      "flagged": 0
+    },
+    "socrata:dataset": {
+      "scanned": 4637,
+      "flagged": 22
+    },
+    "socrata:column": {
+      "scanned": 24754,
+      "flagged": 0
+    }
+  },
+  "by_signal": {
+    "data-exfiltration": 23,
+    "tool-poisoning": 1
+  },
+  "provenance": {
+    "dbt": {
+      "query_set": "code-search filename:dbt_project.yml (+5 sibling queries)",
+      "repos": [
+        {
+          "full_name": "fivetran/dbt_ad_reporting",
+          "sha": "c51b83428447fc2e08337399510bd07426f6f182",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 12512,
+          "html_url": "https://github.com/fivetran/dbt_ad_reporting",
+          "descriptions": 200
+        },
+        {
+          "full_name": "EqualExperts/dbt-unit-testing",
+          "sha": "fbfd8967ddd9b6c919e2ba487e9f37f75950c4e0",
+          "default_branch": "master",
+          "license": "MIT",
+          "size_kb": 347,
+          "html_url": "https://github.com/EqualExperts/dbt-unit-testing",
+          "descriptions": 10
+        },
+        {
+          "full_name": "fivetran/dbt_google_ads",
+          "sha": "5f90a793a56a4d734d5365d35032de0a7969a767",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 4085,
+          "html_url": "https://github.com/fivetran/dbt_google_ads",
+          "descriptions": 680
+        },
+        {
+          "full_name": "dbt-labs/semantic-layer-llm-benchmarking",
+          "sha": "ac20c9292fa88ec44d30aeeae61ee41a51e31748",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 41293,
+          "html_url": "https://github.com/dbt-labs/semantic-layer-llm-benchmarking",
+          "descriptions": 23
+        },
+        {
+          "full_name": "grafana/dbt_leaner_query",
+          "sha": "b0b91a4a380cca5a083410c75759bfb9c78dfd40",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 95,
+          "html_url": "https://github.com/grafana/dbt_leaner_query",
+          "descriptions": 106
+        },
+        {
+          "full_name": "gitlabhq/snowflake_spend",
+          "sha": "e49af81ebcad0f7958b4d957682ca575bc45d1ff",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 515,
+          "html_url": "https://github.com/gitlabhq/snowflake_spend",
+          "descriptions": 11
+        },
+        {
+          "full_name": "ubie-oss/dbt-data-privacy",
+          "sha": "0d8d7780cd9c543455cdeff84178bcf8623914bc",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 559,
+          "html_url": "https://github.com/ubie-oss/dbt-data-privacy",
+          "descriptions": 61
+        },
+        {
+          "full_name": "pvcy/dbt-privacy",
+          "sha": "4b2092ea09f63520052debbd5234804e281ea8d1",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 597,
+          "html_url": "https://github.com/pvcy/dbt-privacy",
+          "descriptions": 52
+        },
+        {
+          "full_name": "fivetran/dbt_iterable",
+          "sha": "0b65c481a984f8f0e63829366dae317bae955e63",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 4086,
+          "html_url": "https://github.com/fivetran/dbt_iterable",
+          "descriptions": 601
+        },
+        {
+          "full_name": "dwreeves/dbt_linreg",
+          "sha": "5bf4f01f58aef30c9249b19e0aeb72c2afb0979c",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 2976,
+          "html_url": "https://github.com/dwreeves/dbt_linreg",
+          "descriptions": 11
+        },
+        {
+          "full_name": "dbt-labs/jaffle-sl-template",
+          "sha": "c54c8fb8bea86c0c4d3d5c588d55f8de9de57ade",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 49575,
+          "html_url": "https://github.com/dbt-labs/jaffle-sl-template",
+          "descriptions": 87
+        },
+        {
+          "full_name": "tnightengale/dbt-activity-schema",
+          "sha": "a56760029b88675164f3b377a725b992adda80b4",
+          "default_branch": "main",
+          "license": "GPL-3.0",
+          "size_kb": 22379,
+          "html_url": "https://github.com/tnightengale/dbt-activity-schema",
+          "descriptions": 5
+        },
+        {
+          "full_name": "Health-Union/dbt-xdb",
+          "sha": "46c23c1272eef98538e014675b9d394be3e137fe",
+          "default_branch": "master",
+          "license": "Apache-2.0",
+          "size_kb": 654,
+          "html_url": "https://github.com/Health-Union/dbt-xdb",
+          "descriptions": 48
+        },
+        {
+          "full_name": "snowplow/dbt-snowplow-media-player",
+          "sha": "941a77f7c4792d1397e40370c4c40553d7a123ab",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 2290,
+          "html_url": "https://github.com/snowplow/dbt-snowplow-media-player",
+          "descriptions": 795
+        },
+        {
+          "full_name": "Jam516/BundleBear",
+          "sha": "3bda157caecce7924e43bfe728e7916c337c790d",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 805,
+          "html_url": "https://github.com/Jam516/BundleBear",
+          "descriptions": 356
+        },
+        {
+          "full_name": "snowplow/dbt-snowplow-ecommerce",
+          "sha": "2571d1512244335ee8823c42590314eece60ee7d",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 1483,
+          "html_url": "https://github.com/snowplow/dbt-snowplow-ecommerce",
+          "descriptions": 909
+        },
+        {
+          "full_name": "dbt-labs/dbt-proserv",
+          "sha": "fcc408500697259eb8953e05dff459220f5b5695",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 733,
+          "html_url": "https://github.com/dbt-labs/dbt-proserv",
+          "descriptions": 19
+        },
+        {
+          "full_name": "godatadriven/dbt-data-ai-summit",
+          "sha": "72423a5cf50ea2c968b6f597ef4f0c9f74d3220e",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 77,
+          "html_url": "https://github.com/godatadriven/dbt-data-ai-summit",
+          "descriptions": 4
+        },
+        {
+          "full_name": "fivetran/dbt_pardot",
+          "sha": "8affaa8ba3e90e4c91b9dcbcc62b6752558089db",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 2264,
+          "html_url": "https://github.com/fivetran/dbt_pardot",
+          "descriptions": 356
+        },
+        {
+          "full_name": "fivetran/dbt_greenhouse",
+          "sha": "96b2814be124d3ed037c446f84b6d9c7426de207",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 2651,
+          "html_url": "https://github.com/fivetran/dbt_greenhouse",
+          "descriptions": 854
+        },
+        {
+          "full_name": "ecos-labs/ecos",
+          "sha": "4e6bf6c0b5775a7e888cd86d1799898ecbf801a1",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 311,
+          "html_url": "https://github.com/ecos-labs/ecos",
+          "descriptions": 1263
+        },
+        {
+          "full_name": "fivetran/dbt_apple_search_ads",
+          "sha": "d19c15bfd37b9a344bdeb3356ea8311f2243686a",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 2718,
+          "html_url": "https://github.com/fivetran/dbt_apple_search_ads",
+          "descriptions": 400
+        },
+        {
+          "full_name": "hightouchio/dbt-hightouch",
+          "sha": "ee17ad53df4c5cd74f8af5658e1bccfa2ab990d5",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 25,
+          "html_url": "https://github.com/hightouchio/dbt-hightouch",
+          "descriptions": 38
+        },
+        {
+          "full_name": "kgmcquate/dbt-testgen",
+          "sha": "237f55955835c7736fd46552a2c07f933fa0fd52",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 985,
+          "html_url": "https://github.com/kgmcquate/dbt-testgen",
+          "descriptions": 18
+        },
+        {
+          "full_name": "MetricsDAO/harmony_dbt",
+          "sha": "f29c23d40d9d4ea506e4d0a0c95ad19ddcf03d06",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 1901,
+          "html_url": "https://github.com/MetricsDAO/harmony_dbt",
+          "descriptions": 502
+        },
+        {
+          "full_name": "Cedar-Cat-Studios/dbt_query_game",
+          "sha": "9161bab0b09ed47313c184614676dfbf247580b3",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 220,
+          "html_url": "https://github.com/Cedar-Cat-Studios/dbt_query_game",
+          "descriptions": 6
+        },
+        {
+          "full_name": "techindicium/dbt-dag-monitoring",
+          "sha": "3fba34b2ddc19b6586126988974c8946d24f2f0a",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 571,
+          "html_url": "https://github.com/techindicium/dbt-dag-monitoring",
+          "descriptions": 161
+        },
+        {
+          "full_name": "Divergent-Insights/dbt-dataquality",
+          "sha": "389381625fca15933f086b1555fb57e262476383",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 10794,
+          "html_url": "https://github.com/Divergent-Insights/dbt-dataquality",
+          "descriptions": 7
+        },
+        {
+          "full_name": "techvaquero/dbtpcdi",
+          "sha": "e2350022307fbdb14fade1346132e7b44412dbf5",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 866,
+          "html_url": "https://github.com/techvaquero/dbtpcdi",
+          "descriptions": 4110
+        },
+        {
+          "full_name": "richardhe-fundamenta/dbt-container-for-bigquery",
+          "sha": "5d32829267ea67df5b011d5d4a40ffb2a23964e5",
+          "default_branch": "master",
+          "license": "MIT",
+          "size_kb": 159,
+          "html_url": "https://github.com/richardhe-fundamenta/dbt-container-for-bigquery",
+          "descriptions": 4
+        },
+        {
+          "full_name": "dbt-labs/Semantic-Layer-Online-Course",
+          "sha": "bc94977b1acf646119a44805fcfdc84107b637ea",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 7162,
+          "html_url": "https://github.com/dbt-labs/Semantic-Layer-Online-Course",
+          "descriptions": 36
+        },
+        {
+          "full_name": "albumprinter/Storio-Data-PrincipalEngineerAssignment",
+          "sha": "3ffc67fb36ba93636e10d6adcfc11e1664717fbd",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 239,
+          "html_url": "https://github.com/albumprinter/Storio-Data-PrincipalEngineerAssignment",
+          "descriptions": 19
+        },
+        {
+          "full_name": "Matts52/dbt-orphan",
+          "sha": "407bcfebf8316a008f4704e83805dd2948f9f36e",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 553,
+          "html_url": "https://github.com/Matts52/dbt-orphan",
+          "descriptions": 11
+        },
+        {
+          "full_name": "jpmmcneill/dbt-graph-theory",
+          "sha": "0087ce21faeb57314ac72d42cbfca48a2892578c",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 86,
+          "html_url": "https://github.com/jpmmcneill/dbt-graph-theory",
+          "descriptions": 13
+        },
+        {
+          "full_name": "irvingpop/dbt_otel_export",
+          "sha": "dae7447ee4e89e3c457ef9a2d5418d33708d96ac",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 712,
+          "html_url": "https://github.com/irvingpop/dbt_otel_export",
+          "descriptions": 1
+        },
+        {
+          "full_name": "fivetran/dbt_tutorial",
+          "sha": "0cc634e1808b5b35bdca356d12347df217c5b8e8",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 504,
+          "html_url": "https://github.com/fivetran/dbt_tutorial",
+          "descriptions": 4
+        },
+        {
+          "full_name": "localstack-samples/snowflake-smart-factory-app",
+          "sha": "00a9fc8a4eae4017107fa8fc71a34e630d670d9b",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 663,
+          "html_url": "https://github.com/localstack-samples/snowflake-smart-factory-app",
+          "descriptions": 31
+        },
+        {
+          "full_name": "shankararul/dbt_eda_tools",
+          "sha": "b6eb00cc8139f6a2487a8fd200acc355517de7ce",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 1817,
+          "html_url": "https://github.com/shankararul/dbt_eda_tools",
+          "descriptions": 27
+        },
+        {
+          "full_name": "footprintanalytics/footprint-datalake",
+          "sha": "9bdfc23e1580a1b136a2f88e05099c102388231b",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 17477,
+          "html_url": "https://github.com/footprintanalytics/footprint-datalake",
+          "descriptions": 108
+        },
+        {
+          "full_name": "fivetran-anthonydelacruz/dbt-tutorial",
+          "sha": "c2f91cc60efb14fa5dbb28785b8b24a139124699",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 3,
+          "html_url": "https://github.com/fivetran-anthonydelacruz/dbt-tutorial",
+          "descriptions": 4
+        },
+        {
+          "full_name": "dpguthrie/snowflake-dbt-demo-project",
+          "sha": "8e626c5bf41dd281a1e52b10641bd6ec8b411001",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 5882,
+          "html_url": "https://github.com/dpguthrie/snowflake-dbt-demo-project",
+          "descriptions": 360
+        },
+        {
+          "full_name": "dbt-labs/c24-workshops-platform",
+          "sha": "825db5b638cd29750df189510cdfe90124b47e2b",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 67,
+          "html_url": "https://github.com/dbt-labs/c24-workshops-platform",
+          "descriptions": 367
+        },
+        {
+          "full_name": "djouallah/analytics-as-code",
+          "sha": "cb234510379f4d08ae36dac0efd42b2a1d05b594",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 2242,
+          "html_url": "https://github.com/djouallah/analytics-as-code",
+          "descriptions": 14
+        },
+        {
+          "full_name": "rittmananalytics/ra_warehouse_internal_clone",
+          "sha": "ac5b799ec6b23ac9a69d5837cb4e2a2706b592f4",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 9420,
+          "html_url": "https://github.com/rittmananalytics/ra_warehouse_internal_clone",
+          "descriptions": 15
+        },
+        {
+          "full_name": "krissemmy/Polygon-Finance-Data-ELT",
+          "sha": "6a62efc3b3ce37ee7e2e9a2662d2e79958234052",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 179,
+          "html_url": "https://github.com/krissemmy/Polygon-Finance-Data-ELT",
+          "descriptions": 134
+        },
+        {
+          "full_name": "saras-daton/AmazonSellerCentral",
+          "sha": "bfdceecb91192bd6ae90fbf128449992088f66c1",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 258,
+          "html_url": "https://github.com/saras-daton/AmazonSellerCentral",
+          "descriptions": 20
+        },
+        {
+          "full_name": "RedPillAnalytics/dbt_coalesce_workshop",
+          "sha": "3a173033a14235df632ad35cd22e2da2d6938eac",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 47,
+          "html_url": "https://github.com/RedPillAnalytics/dbt_coalesce_workshop",
+          "descriptions": 6
+        },
+        {
+          "full_name": "wisemuffin/data-cicd-tpch",
+          "sha": "b58677a07c60d3b6dd50ebcbf4eeb00133254b08",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 727,
+          "html_url": "https://github.com/wisemuffin/data-cicd-tpch",
+          "descriptions": 135
+        },
+        {
+          "full_name": "dbt-labs/bigquery_dbt_partner_demo",
+          "sha": "df4708cbba8c330f8ff4b70f9a416cbb0f64aed3",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 37,
+          "html_url": "https://github.com/dbt-labs/bigquery_dbt_partner_demo",
+          "descriptions": 310
+        },
+        {
+          "full_name": "ricklamers/orchest-dbt",
+          "sha": "e345fc5ce6f13acb8c0cec4a487a8345ba287909",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 147,
+          "html_url": "https://github.com/ricklamers/orchest-dbt",
+          "descriptions": 20
+        },
+        {
+          "full_name": "synccomputingcode/databricks-tpcdi",
+          "sha": "171cd8aa1b10ba839791599812ad704e58041174",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 97,
+          "html_url": "https://github.com/synccomputingcode/databricks-tpcdi",
+          "descriptions": 4
+        },
+        {
+          "full_name": "TheDataFoundryAU/dbt_sample_project",
+          "sha": "30fbcad26837ee70897083de5e7506540db08538",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 207,
+          "html_url": "https://github.com/TheDataFoundryAU/dbt_sample_project",
+          "descriptions": 41
+        },
+        {
+          "full_name": "TFG-Labs/snow-mask",
+          "sha": "902a2b9d9527877bceb8548c719080a7dbee8e77",
+          "default_branch": "main",
+          "license": "GPL-3.0",
+          "size_kb": 89,
+          "html_url": "https://github.com/TFG-Labs/snow-mask",
+          "descriptions": 1
+        },
+        {
+          "full_name": "psychoanalyze/psychoanalyze",
+          "sha": "28766efc11605f8a225b732d46e158f34c8fb61c",
+          "default_branch": "main",
+          "license": "GPL-3.0",
+          "size_kb": 8729,
+          "html_url": "https://github.com/psychoanalyze/psychoanalyze",
+          "descriptions": 1
+        },
+        {
+          "full_name": "dbt-labs/snowflake-tpcds-core",
+          "sha": "a814c2a3d1b2736f3d712d4641b8bd4ad06a8a5c",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 44,
+          "html_url": "https://github.com/dbt-labs/snowflake-tpcds-core",
+          "descriptions": 17
+        },
+        {
+          "full_name": "dbt-labs/jaffle-shop-guides-materializations",
+          "sha": "ad1e1cf0d77e866effe0c25129563ac9c95a77f0",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 6322,
+          "html_url": "https://github.com/dbt-labs/jaffle-shop-guides-materializations",
+          "descriptions": 49
+        },
+        {
+          "full_name": "datalakehouse/dlh-salesforce-analytics-dbt",
+          "sha": "529a25e740d928fb36668065f2b91897c70b31c0",
+          "default_branch": "main",
+          "license": "GPL-3.0",
+          "size_kb": 687,
+          "html_url": "https://github.com/datalakehouse/dlh-salesforce-analytics-dbt",
+          "descriptions": 20
+        },
+        {
+          "full_name": "haas-binge/dwa-compare-dbt",
+          "sha": "3602ae35e20bf9e9610c746db40e39a5405ee111",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 3343,
+          "html_url": "https://github.com/haas-binge/dwa-compare-dbt",
+          "descriptions": 68
+        },
+        {
+          "full_name": "YukiTechnologies/dbt-foundation",
+          "sha": "b412d1ccf636346759031d886e1d81ce9fb8f6b1",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 220,
+          "html_url": "https://github.com/YukiTechnologies/dbt-foundation",
+          "descriptions": 4
+        },
+        {
+          "full_name": "Inzhenerka/dbt-scooters",
+          "sha": "317909b84aeee2bd6a7b46968d028f604c2d429c",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 2643,
+          "html_url": "https://github.com/Inzhenerka/dbt-scooters",
+          "descriptions": 115
+        },
+        {
+          "full_name": "fivetran/dbt_salesforce",
+          "sha": "a9d2b20457eb57d3a1cc02fc4f2f99d9d7f4a7f8",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 4942,
+          "html_url": "https://github.com/fivetran/dbt_salesforce",
+          "descriptions": 1688
+        },
+        {
+          "full_name": "airbytehq/quickstarts",
+          "sha": "5a55b2121ca992517afc8d22a8f480530621fd54",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 7598,
+          "html_url": "https://github.com/airbytehq/quickstarts",
+          "descriptions": 125
+        },
+        {
+          "full_name": "tooploox/dbt-unit-testing-bq",
+          "sha": "d34a03bcc819980491af6924174d83d723016d84",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 233,
+          "html_url": "https://github.com/tooploox/dbt-unit-testing-bq",
+          "descriptions": 10
+        },
+        {
+          "full_name": "mbforr/modern-gis-live",
+          "sha": "11ba86f002738a86d404c0aa2f912969902a0206",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 17320,
+          "html_url": "https://github.com/mbforr/modern-gis-live",
+          "descriptions": 10
+        },
+        {
+          "full_name": "dingxin-tech/elementary",
+          "sha": "684a0d21b7baf0581875fcb16923be29c7d6037b",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 218,
+          "html_url": "https://github.com/dingxin-tech/elementary",
+          "descriptions": 111
+        },
+        {
+          "full_name": "jordandakota/dbt-duckdb-iceberg-azure",
+          "sha": "124fb725df947fbe001cbe0ae0c96deac70e7976",
+          "default_branch": "dev",
+          "license": "MIT",
+          "size_kb": 26,
+          "html_url": "https://github.com/jordandakota/dbt-duckdb-iceberg-azure",
+          "descriptions": 123
+        },
+        {
+          "full_name": "mayurjainf007/dbtDemo",
+          "sha": "e2350022307fbdb14fade1346132e7b44412dbf5",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 1270,
+          "html_url": "https://github.com/mayurjainf007/dbtDemo",
+          "descriptions": 4110
+        },
+        {
+          "full_name": "albumprinter/Storio-AnalyticsEngineer-TechAssignment",
+          "sha": "e4d464f71c1f294838cea9124fe32b227ba84020",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 241,
+          "html_url": "https://github.com/albumprinter/Storio-AnalyticsEngineer-TechAssignment",
+          "descriptions": 19
+        },
+        {
+          "full_name": "thalleslemos/deel_globepay_project",
+          "sha": "b382c0b9523cb44cbdc8cbf55b1a036b16e1b839",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 26,
+          "html_url": "https://github.com/thalleslemos/deel_globepay_project",
+          "descriptions": 72
+        },
+        {
+          "full_name": "odxscholars/dbt-learn",
+          "sha": "579f7f8e5f6d506dac8d519d34a8224c2d71b706",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 4,
+          "html_url": "https://github.com/odxscholars/dbt-learn",
+          "descriptions": 7
+        },
+        {
+          "full_name": "sureshb208/dbt-demo",
+          "sha": "c4ae3489d3502c3487a59ab2a6b6cc2184e95dec",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 5,
+          "html_url": "https://github.com/sureshb208/dbt-demo",
+          "descriptions": 4
+        },
+        {
+          "full_name": "ArturoAcf/curso_data_engineering",
+          "sha": "b6fb3c800684390acbb819f37bfdaa9f72b7c381",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 65,
+          "html_url": "https://github.com/ArturoAcf/curso_data_engineering",
+          "descriptions": 13
+        },
+        {
+          "full_name": "manon-siohan/high-peak",
+          "sha": "c8fd07269273131b2fa73e5c6035f24b3b75b055",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 9343,
+          "html_url": "https://github.com/manon-siohan/high-peak",
+          "descriptions": 244
+        },
+        {
+          "full_name": "tomnagengast/netlify-dbt-docs-starter",
+          "sha": "43d026ccb7b83d927f140cd6a1a9e83aa35712ca",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 82,
+          "html_url": "https://github.com/tomnagengast/netlify-dbt-docs-starter",
+          "descriptions": 4
+        },
+        {
+          "full_name": "leocmcheung/gz-dbt-repository",
+          "sha": "26ff5089d9015f201cd25ec6bf1875a8d13710dc",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 13,
+          "html_url": "https://github.com/leocmcheung/gz-dbt-repository",
+          "descriptions": 32
+        },
+        {
+          "full_name": "muruasimon/DBT_SNOWFLAKE_REAL_SCENARIO",
+          "sha": "b1eab549f656793303de34301b478f6cfd1c1ff6",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 39,
+          "html_url": "https://github.com/muruasimon/DBT_SNOWFLAKE_REAL_SCENARIO",
+          "descriptions": 11
+        },
+        {
+          "full_name": "UncleJosef/dbt_my_practice",
+          "sha": "5610f6c980f906bdada9500342cbdeedb3865fb1",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 10,
+          "html_url": "https://github.com/UncleJosef/dbt_my_practice",
+          "descriptions": 22
+        },
+        {
+          "full_name": "yas-archetype/dbt_starter",
+          "sha": "acb34edca65924a7be6ce772d43cd025b25ebef9",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 27,
+          "html_url": "https://github.com/yas-archetype/dbt_starter",
+          "descriptions": 54
+        },
+        {
+          "full_name": "TrainingUser7/DBT_TRAINING-",
+          "sha": "b66b677ccc731bedebbe5354ee85f4bf21dabfdb",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 50,
+          "html_url": "https://github.com/TrainingUser7/DBT_TRAINING-",
+          "descriptions": 7
+        },
+        {
+          "full_name": "desmondjeffery/dbt_demo_ma",
+          "sha": "c1242e8634e191b83b15de5eddd3cbcef3be3a4a",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 8,
+          "html_url": "https://github.com/desmondjeffery/dbt_demo_ma",
+          "descriptions": 17
+        },
+        {
+          "full_name": "swang2016/dbt-learn-on-demand",
+          "sha": "252ff7e700c49ca8ac047e3f20ec959c7c2abe22",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 7,
+          "html_url": "https://github.com/swang2016/dbt-learn-on-demand",
+          "descriptions": 11
+        },
+        {
+          "full_name": "miaaaalu/dbt_bigquery",
+          "sha": "be0fc013da1cd7ab89e1dd5b9c1bf32bb547016e",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 33,
+          "html_url": "https://github.com/miaaaalu/dbt_bigquery",
+          "descriptions": 10
+        },
+        {
+          "full_name": "fivetran-seanodriscoll/dbt",
+          "sha": "a32a614cb441d787f19e02b52e1c26e1a32eb880",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 759,
+          "html_url": "https://github.com/fivetran-seanodriscoll/dbt",
+          "descriptions": 4
+        },
+        {
+          "full_name": "jpgat/taxi_rides_ny",
+          "sha": "27167e2d7d2c2c95d2f7d7b59300741b19bbd69b",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 13,
+          "html_url": "https://github.com/jpgat/taxi_rides_ny",
+          "descriptions": 5
+        },
+        {
+          "full_name": "quannm2k2/DBT-demo",
+          "sha": "5cf681835abee5762da9930c0052492d9a0334dc",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 454,
+          "html_url": "https://github.com/quannm2k2/DBT-demo",
+          "descriptions": 31
+        },
+        {
+          "full_name": "jott2006/demo-for-dbt",
+          "sha": "f8813b76406979125dd4f8fad058d5fc63ea6c4d",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 4253,
+          "html_url": "https://github.com/jott2006/demo-for-dbt",
+          "descriptions": 62
+        },
+        {
+          "full_name": "PriamF/db_final_project",
+          "sha": "859fafc1a7220e3acd88347f5509cd2844feff9a",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 8,
+          "html_url": "https://github.com/PriamF/db_final_project",
+          "descriptions": 15
+        },
+        {
+          "full_name": "noelAngelo/dbt-demo",
+          "sha": "b40f9166b4735d425c44afd93bf1ee66aecca61b",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 325,
+          "html_url": "https://github.com/noelAngelo/dbt-demo",
+          "descriptions": 360
+        },
+        {
+          "full_name": "jwills/jsttest",
+          "sha": "22aab74294e7c9c912e97c77a0fbae3a2c52264e",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 9354,
+          "html_url": "https://github.com/jwills/jsttest",
+          "descriptions": 49
+        },
+        {
+          "full_name": "Bil3al/urban-mobility-platform",
+          "sha": "6af09c47ee063a76668f6efb8512b4c1abc779a9",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 42,
+          "html_url": "https://github.com/Bil3al/urban-mobility-platform",
+          "descriptions": 16
+        },
+        {
+          "full_name": "AliBnh/urban-mobility-platform",
+          "sha": "1ab4533fe7b3263193604e76fa781102ac1252ae",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 1209,
+          "html_url": "https://github.com/AliBnh/urban-mobility-platform",
+          "descriptions": 16
+        },
+        {
+          "full_name": "oshaltaev-1995/satisfaction-prediction-ml",
+          "sha": "6883916304aff3f8eda3072525c05261cd3d7a52",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 32306,
+          "html_url": "https://github.com/oshaltaev-1995/satisfaction-prediction-ml",
+          "descriptions": 43
+        },
+        {
+          "full_name": "bgall1976/IOT_aws_snowflake_looker",
+          "sha": "cdd61a5fdd368686368dbac6f5c6e673e00f7196",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 31,
+          "html_url": "https://github.com/bgall1976/IOT_aws_snowflake_looker",
+          "descriptions": 176
+        },
+        {
+          "full_name": "tinnluo/entity-data-lakehouse",
+          "sha": "b7c14b0a2e1fb7dcfa4916d1c0c92b7f077b5dfe",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 521,
+          "html_url": "https://github.com/tinnluo/entity-data-lakehouse",
+          "descriptions": 18
+        },
+        {
+          "full_name": "tinnlo/entity-data-lakehouse",
+          "sha": "67cf1bf5c91f2bab0de1ecab0adba7348acb0a78",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 573,
+          "html_url": "https://github.com/tinnlo/entity-data-lakehouse",
+          "descriptions": 18
+        },
+        {
+          "full_name": "caiombribeiro/1engenharia_dados_claude",
+          "sha": "2b79829f03ce9c558d003ad74f82cd165bb85d9c",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 58,
+          "html_url": "https://github.com/caiombribeiro/1engenharia_dados_claude",
+          "descriptions": 27
+        },
+        {
+          "full_name": "RamonaFlores/qversity-data-2025-Cali-JuanJoseAngaritaYela",
+          "sha": "a9349269462b22fbaafad51dc96585414d59f9ed",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 1280,
+          "html_url": "https://github.com/RamonaFlores/qversity-data-2025-Cali-JuanJoseAngaritaYela",
+          "descriptions": 53
+        },
+        {
+          "full_name": "rizkyhaksono/mlops-airflow-tutorial",
+          "sha": "20a312d37a28e47f61aa3b3cc64c96b7e8cbc002",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 119,
+          "html_url": "https://github.com/rizkyhaksono/mlops-airflow-tutorial",
+          "descriptions": 12
+        },
+        {
+          "full_name": "Circhastic/de-zoomcamp-2025",
+          "sha": "f8ed01dfc7b5106e47a6fca103f37557550f2ae2",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 124,
+          "html_url": "https://github.com/Circhastic/de-zoomcamp-2025",
+          "descriptions": 71
+        },
+        {
+          "full_name": "bekk/oppdrift-data-analyse",
+          "sha": "0250f2d4f3ce5d27260a796cf0e63578f6e83a61",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 621,
+          "html_url": "https://github.com/bekk/oppdrift-data-analyse",
+          "descriptions": 1
+        },
+        {
+          "full_name": "jazz-min/earthquake-data-pipeline",
+          "sha": "b45c6104bf7567ea62bd8586603b747b03a7c90f",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 556,
+          "html_url": "https://github.com/jazz-min/earthquake-data-pipeline",
+          "descriptions": 51
+        },
+        {
+          "full_name": "proyectosdateneo/especializacion-ingenieria-de-datos",
+          "sha": "ed0dab7ce8805925abffbebc371638a3725aa4cf",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 391,
+          "html_url": "https://github.com/proyectosdateneo/especializacion-ingenieria-de-datos",
+          "descriptions": 181
+        },
+        {
+          "full_name": "ZACKHADD/Snowflake_dbt_dagster_CICD",
+          "sha": "ed96c2af83bf4d02a5d19763fc520233b18eb09a",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 88,
+          "html_url": "https://github.com/ZACKHADD/Snowflake_dbt_dagster_CICD",
+          "descriptions": 12
+        },
+        {
+          "full_name": "suvenk31/dbtZerotoHero",
+          "sha": "94e869c5628e8f0a9933860c05a4fe92198a29d4",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 190,
+          "html_url": "https://github.com/suvenk31/dbtZerotoHero",
+          "descriptions": 14
+        },
+        {
+          "full_name": "Carol123-huang/dbt-bootcamp",
+          "sha": "3366a49c314a97f31a8ddc019b91840336b2e213",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 97,
+          "html_url": "https://github.com/Carol123-huang/dbt-bootcamp",
+          "descriptions": 14
+        },
+        {
+          "full_name": "IVRAMA/complete-dbt-zero-to-hero",
+          "sha": "a0bd3324a648ce4e681449be07356ef82c464292",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 97,
+          "html_url": "https://github.com/IVRAMA/complete-dbt-zero-to-hero",
+          "descriptions": 14
+        },
+        {
+          "full_name": "TheDataSculptor/dbt",
+          "sha": "94e869c5628e8f0a9933860c05a4fe92198a29d4",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 190,
+          "html_url": "https://github.com/TheDataSculptor/dbt",
+          "descriptions": 14
+        },
+        {
+          "full_name": "diosamuel/city-analysis-pipeline",
+          "sha": "2484039757fd2301857d5a16b78c5c50e763cfe0",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 17755,
+          "html_url": "https://github.com/diosamuel/city-analysis-pipeline",
+          "descriptions": 1
+        },
+        {
+          "full_name": "Henryhall97/marine-risk-mapping",
+          "sha": "71d7962b4768a3292a9d33e484a8060aab64a3a0",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 6020,
+          "html_url": "https://github.com/Henryhall97/marine-risk-mapping",
+          "descriptions": 752
+        },
+        {
+          "full_name": "mehd-io/sql-spaghetti-refactoring",
+          "sha": "55b604ea91a1fd5e216efec1f56283ff41355b07",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 35996,
+          "html_url": "https://github.com/mehd-io/sql-spaghetti-refactoring",
+          "descriptions": 16
+        },
+        {
+          "full_name": "jakeshivers/airbnb-dbt",
+          "sha": "9fbbd8206f89dffae2ff85ad7b9cdaf171f21eb6",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 439,
+          "html_url": "https://github.com/jakeshivers/airbnb-dbt",
+          "descriptions": 10
+        },
+        {
+          "full_name": "achrafhadari1/olist-dbt-powerbi",
+          "sha": "b5356fbfd7d341fce2a5fe0053ac88d5af6d5e27",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 50957,
+          "html_url": "https://github.com/achrafhadari1/olist-dbt-powerbi",
+          "descriptions": 4
+        },
+        {
+          "full_name": "hlrd93/F1-analitica",
+          "sha": "fa40b273e468baf5dca25bfa47bcfff23fea2603",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 54606,
+          "html_url": "https://github.com/hlrd93/F1-analitica",
+          "descriptions": 7
+        },
+        {
+          "full_name": "pe5kataa/automated-market-intelligence-system",
+          "sha": "1b37431a4321ad5d78dde8884eda903d59e266bc",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 296,
+          "html_url": "https://github.com/pe5kataa/automated-market-intelligence-system",
+          "descriptions": 1
+        },
+        {
+          "full_name": "pedromateusalmeida/receita-federal-api",
+          "sha": "b213be9f01e933ed93849a199ccbb8a797cf6716",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 19923,
+          "html_url": "https://github.com/pedromateusalmeida/receita-federal-api",
+          "descriptions": 4
+        },
+        {
+          "full_name": "Isaac-Ndirangu-Muturi-749/End_to_end_data_pipeline--Optimizing_Online_Retail_Analytics_with_Data_and_Analytics_Engineering",
+          "sha": "7f124fdd05f4bed07b470a8d336f5a41976e7e1b",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 31451,
+          "html_url": "https://github.com/Isaac-Ndirangu-Muturi-749/End_to_end_data_pipeline--Optimizing_Online_Retail_Analytics_with_Data_and_Analytics_Engineering",
+          "descriptions": 15
+        },
+        {
+          "full_name": "dbt-conceptual/dbt-conceptual",
+          "sha": "36c1b6acbbdf8baaea62393f8889db2ad58743b2",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 5786,
+          "html_url": "https://github.com/dbt-conceptual/dbt-conceptual",
+          "descriptions": 534
+        },
+        {
+          "full_name": "ChaJiKwon/mavenfuzzyfactory-etl-pipeline",
+          "sha": "fbd04e413904b2351594ba2311f6f9839033854f",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 59,
+          "html_url": "https://github.com/ChaJiKwon/mavenfuzzyfactory-etl-pipeline",
+          "descriptions": 7
+        },
+        {
+          "full_name": "gwygain/mini-project",
+          "sha": "302abfd1e9a49fc507beef84d0400dfb7c00dc4b",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 19389,
+          "html_url": "https://github.com/gwygain/mini-project",
+          "descriptions": 37
+        },
+        {
+          "full_name": "taticorrea/dataengineering",
+          "sha": "328698421a92a4890e525b44093a3a551cd5f85d",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 10956,
+          "html_url": "https://github.com/taticorrea/dataengineering",
+          "descriptions": 4
+        },
+        {
+          "full_name": "dylanprole/formula-one-analytics",
+          "sha": "ea396d57fba291a04a1c4df4c3a88da3e4e49f72",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 707,
+          "html_url": "https://github.com/dylanprole/formula-one-analytics",
+          "descriptions": 25
+        },
+        {
+          "full_name": "awaemma/altshool_final_project",
+          "sha": "004acba7a25fa061e9b75e6ee7bd2474fa172c12",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 57704,
+          "html_url": "https://github.com/awaemma/altshool_final_project",
+          "descriptions": 10
+        },
+        {
+          "full_name": "pawel26/movies_analysis",
+          "sha": "fd47da0eb9bde22befa430ae5e6b806d24096fc3",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 1397,
+          "html_url": "https://github.com/pawel26/movies_analysis",
+          "descriptions": 1
+        },
+        {
+          "full_name": "the-gauss/tiny-projects-de",
+          "sha": "56a4e963f3ec23383adc5854595ba9756c023464",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 332,
+          "html_url": "https://github.com/the-gauss/tiny-projects-de",
+          "descriptions": 26
+        },
+        {
+          "full_name": "HuhtaLauri/gitsights",
+          "sha": "002b72024886dd972ea25e13b0a391bd8a69dc62",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 103,
+          "html_url": "https://github.com/HuhtaLauri/gitsights",
+          "descriptions": 6
+        },
+        {
+          "full_name": "tigisthailay/financial-analytics-pipeline",
+          "sha": "4dc67e61cb3772d480d13b860e505a28a16553c7",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 3771,
+          "html_url": "https://github.com/tigisthailay/financial-analytics-pipeline",
+          "descriptions": 13
+        },
+        {
+          "full_name": "hungnguyen0508/FSDS",
+          "sha": "44c4b3bb088b339cd13d26448bd4db307683de03",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 7151,
+          "html_url": "https://github.com/hungnguyen0508/FSDS",
+          "descriptions": 6
+        },
+        {
+          "full_name": "SilverPeak2299/dbt_gen_demo01",
+          "sha": "6aebf5be072b979ab51aef9f77993f49972580fc",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 41,
+          "html_url": "https://github.com/SilverPeak2299/dbt_gen_demo01",
+          "descriptions": 73
+        },
+        {
+          "full_name": "Razellion/datafellowship-11",
+          "sha": "0f440a97720d8bdc61a6cb42b05ba1131d99e462",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 1639,
+          "html_url": "https://github.com/Razellion/datafellowship-11",
+          "descriptions": 66
+        },
+        {
+          "full_name": "mosaleem2/lakehouse",
+          "sha": "761a376561e59d5e91e52924ccda95f51764376c",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 2957,
+          "html_url": "https://github.com/mosaleem2/lakehouse",
+          "descriptions": 5
+        },
+        {
+          "full_name": "eduardogalba/SakstarETL",
+          "sha": "3f9b229c35fccbb8042ea357ceab4f73472290f2",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 2590,
+          "html_url": "https://github.com/eduardogalba/SakstarETL",
+          "descriptions": 176
+        },
+        {
+          "full_name": "Francois-lenne/cinema_freq_data",
+          "sha": "f7ae755a50daa2076ba0b5493f5c9cfc261aa27c",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 39,
+          "html_url": "https://github.com/Francois-lenne/cinema_freq_data",
+          "descriptions": 4
+        },
+        {
+          "full_name": "zeeshan8088/cloud-data-engineer-portfolio",
+          "sha": "86de74bd8580868e5a36ad7335983bf72d236a06",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 6468,
+          "html_url": "https://github.com/zeeshan8088/cloud-data-engineer-portfolio",
+          "descriptions": 103
+        },
+        {
+          "full_name": "harbor-framework/harbor-adapters-experiments",
+          "sha": "92a1ffe8fca31d0c743232b87e3b61d08d55fad7",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 53399,
+          "html_url": "https://github.com/harbor-framework/harbor-adapters-experiments",
+          "descriptions": 154
+        },
+        {
+          "full_name": "accelerate-data/migration-utility",
+          "sha": "34c6946533d20c3005d5b5ca151e636fd4119a54",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 31299,
+          "html_url": "https://github.com/accelerate-data/migration-utility",
+          "descriptions": 245
+        },
+        {
+          "full_name": "dhruvalpatel/dhruval-capstone-project",
+          "sha": "9584b1fee036d30c05ececf89c991d99a8fd6b90",
+          "default_branch": "main",
+          "license": "Apache-2.0",
+          "size_kb": 9232,
+          "html_url": "https://github.com/dhruvalpatel/dhruval-capstone-project",
+          "descriptions": 49
+        },
+        {
+          "full_name": "XDJBPX02/web-server-analytics-pipeline",
+          "sha": "052a9c32fc0f02da0dfb034c6597a3e7b00aa85b",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 1097,
+          "html_url": "https://github.com/XDJBPX02/web-server-analytics-pipeline",
+          "descriptions": 47
+        },
+        {
+          "full_name": "federicofavero/dbt-labs-dbt-core",
+          "sha": "e0b9bee293a62f088ed216d93711b0c659f62935",
+          "default_branch": "1.0.latest",
+          "license": "Apache-2.0",
+          "size_kb": 63165,
+          "html_url": "https://github.com/federicofavero/dbt-labs-dbt-core",
+          "descriptions": 193
+        },
+        {
+          "full_name": "datarootsio/prefect-dbt-flow",
+          "sha": "4dbd1de51bf5cc32114fd517fcfa02879cdeba43",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 2999,
+          "html_url": "https://github.com/datarootsio/prefect-dbt-flow",
+          "descriptions": 42
+        },
+        {
+          "full_name": "moritzkoerber/local-data-stack",
+          "sha": "0a08a06d508dd29bb57389a88e7d175df7236e61",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 1852,
+          "html_url": "https://github.com/moritzkoerber/local-data-stack",
+          "descriptions": 4
+        },
+        {
+          "full_name": "NiclasOlofsson/dbt-core-mcp",
+          "sha": "343225e50c7fde0b15f2f603edc93364967c005b",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 841,
+          "html_url": "https://github.com/NiclasOlofsson/dbt-core-mcp",
+          "descriptions": 17
+        },
+        {
+          "full_name": "datalakehouse/dlh-stripe-analytics-dbt",
+          "sha": "79b4b344375f3e42afa9c8fb5ea1763fb3dc3537",
+          "default_branch": "main",
+          "license": "GPL-3.0",
+          "size_kb": 742,
+          "html_url": "https://github.com/datalakehouse/dlh-stripe-analytics-dbt",
+          "descriptions": 18
+        },
+        {
+          "full_name": "aaronsime/cloud-warehouse-snowflake",
+          "sha": "93d3fde23144ffdad248bc4d18e82363db628bd9",
+          "default_branch": "main",
+          "license": "MIT",
+          "size_kb": 386,
+          "html_url": "https://github.com/aaronsime/cloud-warehouse-snowflake",
+          "descriptions": 66
+        },
+        {
+          "full_name": "grey8848/my_dbt_project",
+          "sha": "afa26e65a3dbfa90bcc7ec0a89284c26939f7b64",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 11,
+          "html_url": "https://github.com/grey8848/my_dbt_project",
+          "descriptions": 11
+        },
+        {
+          "full_name": "dgarhdez/dbt-ie",
+          "sha": "17f193d41b6b99e416400ef6f262ceca728c9196",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 9040,
+          "html_url": "https://github.com/dgarhdez/dbt-ie",
+          "descriptions": 363
+        },
+        {
+          "full_name": "winniemutai21/gz-dbt-repository",
+          "sha": "5e634ddd1e7a6a8db8eb6b715675bbc1ff480281",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 17,
+          "html_url": "https://github.com/winniemutai21/gz-dbt-repository",
+          "descriptions": 48
+        },
+        {
+          "full_name": "GuuhRodrigues/northwind-academy",
+          "sha": "de6822fc12e7585802f9fd4df23b9c274f86bb4b",
+          "default_branch": "main",
+          "license": "NOASSERTION",
+          "size_kb": 12,
+          "html_url": "https://github.com/GuuhRodrigues/northwind-academy",
+          "descriptions": 29
+        },
+        {
+          "full_name": "modernth3ory/bde-at3-dbt",
+          "sha": "2059ed6c4d29fe94582d4e3eb45095a08c7befe7",
+          "default_branch": "master",
+          "license": "NOASSERTION",
+          "size_kb": 13831,
+          "html_url": "https://github.com/modernth3ory/bde-at3-dbt",
+          "descriptions": 1
+        }
+      ]
+    },
+    "socrata": {
+      "api": "https://api.us.socrata.com/api/catalog/v1",
+      "datasets_scanned": 6000,
+      "portals": 198,
+      "top_portals": [
+        [
+          "www.datos.gov.co",
+          1189
+        ],
+        [
+          "data.cityofnewyork.us",
+          328
+        ],
+        [
+          "data.bayareametro.gov",
+          249
+        ],
+        [
+          "opendata.maryland.gov",
+          212
+        ],
+        [
+          "data.edmonton.ca",
+          200
+        ],
+        [
+          "data.cdc.gov",
+          141
+        ],
+        [
+          "data.wa.gov",
+          137
+        ],
+        [
+          "data.ny.gov",
+          135
+        ],
+        [
+          "performance.seattle.gov",
+          134
+        ],
+        [
+          "internal.open.piercecountywa.gov",
+          131
+        ],
+        [
+          "data.cityofchicago.org",
+          129
+        ],
+        [
+          "performance.smcgov.org",
+          117
+        ],
+        [
+          "data.novascotia.ca",
+          111
+        ],
+        [
+          "data.texas.gov",
+          100
+        ],
+        [
+          "datahub.austintexas.gov",
+          98
+        ],
+        [
+          "data.ct.gov",
+          88
+        ],
+        [
+          "data.oregon.gov",
+          84
+        ],
+        [
+          "data.colorado.gov",
+          83
+        ],
+        [
+          "data.montgomerycountymd.gov",
+          74
+        ],
+        [
+          "www.datahub.va.gov",
+          70
+        ],
+        [
+          "datahub.smcgov.org",
+          69
+        ],
+        [
+          "datahub.transportation.gov",
+          66
+        ],
+        [
+          "stat.montgomerycountymd.gov",
+          66
+        ],
+        [
+          "datacatalog.cookcountyil.gov",
+          63
+        ],
+        [
+          "www.data.act.gov.au",
+          63
+        ],
+        [
+          "data.calgary.ca",
+          59
+        ],
+        [
+          "performance.commerce.gov",
+          58
+        ],
+        [
+          "bronx.lehman.cuny.edu",
+          56
+        ],
+        [
+          "data.pa.gov",
+          53
+        ],
+        [
+          "data.lacity.org",
+          51
+        ]
+      ]
+    }
+  },
+  "flagged_items": [
+    {
+      "text": "Splits an email address into its address and domain parts. Will `safe_mask` the address and also `safe_mask` the domain, if there are fewer than `domain_n` records with that domain.\nReturns `null` if `expr` is `null`, but does not return `null` if `expr` is not a valid email address (with no \"@\").\nNote: Masking unique domains is important for protecting individuals with addresses like `personal@famouscelebrity.com`\n",
+      "source": "dbt",
+      "origin": "pvcy/dbt-privacy",
+      "ref": "4b2092ea09f63520052debbd5234804e281ea8d1",
+      "locator": "macros/docs/mask_email.yml#mask_email",
+      "kind": "macro",
+      "sha256": "ab8a3dbad5c682be9e44d1d4b711cd6756ac9e5a5134bca0d074cc227a57fd92",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email address' → 'personal@famouscelebrity.com')"
+    },
+    {
+      "text": "\nUnique ID set by business e.g. ‘jon.doe@email.com’\n",
+      "source": "dbt",
+      "origin": "snowplow/dbt-snowplow-media-player",
+      "ref": "941a77f7c4792d1397e40370c4c40553d7a123ab",
+      "locator": "docs/markdown/snowplow_media_player_common_cols.md#col_user_id",
+      "kind": "docs-block",
+      "sha256": "a08e601521b1f8874823e2b52a0b1b4fed7a3bd89ffb46afb1d9107b30646921",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email' → 'jon.doe@email.com')"
+    },
+    {
+      "text": "The Department of City Planning (DCP) processes land use applications submitted by City or other public agencies and other (private) applicants. This data set provides information on land use applications, specifically the project tracking and description data related to approximately 30,000 projects since the late 1970s.\n\nZAP project data appears on NYC Planning - Zoning Application Portal Search. It includes data migrated from the prior applications tracking system (LUCATS) and covers all projects that have been \"Noticed\" (that they will appear before the City Planning Commission in 30 or more days for Certification as complete for the ULURP process to begin) or Filed (a CEQR or Land Use application has been formally submitted to the Department for review) through completion (approval, disapproval, withdrawal, or termination). For more information on the land use and environmental review application process see: <a href=\"https://www1.nyc.gov/site/planning/applicants/applicant-portal/application-process.page\">Application Process Overview</a>\n\nYou can explore this data in the <a href=\"https://zap.planning.nyc.gov/projects\">Zoning Application Portal</a>\n\nTo report data errors or for questions, email <a href=\"mailto:zap_feedback_dl@planning.nyc.gov\">zap_feedback_dl@planning.nyc.gov</a>.\n\nAll previously released versions of this data are available on the <a href=\"https://www.nyc.gov/content/planning/pages/resources/datasets/zoning-application-portal\">DCP Website: BYTES of the BIG APPLE</a>. Current version: 20260427",
+      "source": "socrata",
+      "origin": "data.cityofnewyork.us",
+      "ref": "2iga-a6mk",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "292000942176bbe5a18de666abdc4140cbcb8e303535681d366d5ad9bd24f02c",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email' → 'https://www1.nyc.gov/site/planning/applicants/applicant-portal/application-process.page\">Application')"
+    },
+    {
+      "text": "This dataset contains records for completed Residential Clean Energy Improvement Program (RCEIP) projects in Calgary’s single-family detached homes from 2023 onward. Each row represents one home and includes the completion year, installed energy-efficiency and renewable-energy measures, financing and incentives disbursed, and estimated annual energy savings, greenhouse gas reductions and utility-cost avoidance.\t\n\t\n<b>What it contains</b> \nEach row describes one home with completed RCEIP upgrades. The row lists the completion year, property type, upgrade measures, financing and incentives paid, and estimated yearly energy, greenhouse gas (GHG), and utility-cost impacts.\n\t\n<b>Coverage</b> \nThis release contains completed single-family detached home records from 2023 onward. Approved or in-progress work is not included and may appear in a future update after completion.\n\t\n<b>How to read counts</b> \nUpgrade-measure fields contain whole-number counts. A value of 0 means no measure was recorded. “Completed Projects” is the sum of the upgrade-measure fields in that row. It is not a count of buildings.\n\t\n<b>Solar PV fields</b> \nThe three fields labelled “with Solar PV” report the impact attributed to solar PV in this file. They are separate from the non-solar energy, GHG, and cost fields. “Total energy cost avoidance” adds the non-solar and solar PV cost avoidance amounts.\n\t\n<b>Estimated results</b> \nEnergy, GHG, and cost impacts are estimates, not measured utility-bill results. Actual results may differ because of equipment sizing, installation quality, occupant behaviour, weather, energy prices, and changes to emissions factors.\n\t\n<b>Emissions factors</b> \nEstimated energy changes are converted to GHG impacts using electricity factors based on Alberta’s grid and standard natural-gas combustion factors. These factors can change over time.\n\t\n<b>Energy costs</b> \nEstimated cost avoidance uses blended electricity and natural-gas rates. The estimates may use a reference year and a constant escalation assumption. They do not necessarily match current, site-specific, time-of-use, or premium solar-export rates.\n\t\n<b>Zeros, blanks, and negative values</b> \nA zero means no value was reported for that impact. A blank means the value is missing. A negative savings or cost-avoidance value means the model estimated an increase rather than a reduction.\n\t\n<b>Rounding</b> \nValues are rounded for publication. Component amounts may differ from a displayed total by up to $1 or 0.1 in the reported unit because calculations may use unrounded source values.\n\t\n<b>Updates and use</b> \nThis file reflects information available at publication and may be updated. It is provided for information only, without warranty of accuracy or completeness. Use of the data does not imply City endorsement of a product, service, contractor, or analysis.\n\t\n<b>Contact</b> \nQuestions about the dataset or RCEIP: ceip@calgary.ca",
+      "source": "socrata",
+      "origin": "data.calgary.ca",
+      "ref": "2jxp-s4bx",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "736c3bfbf9f0fb3534472aab1b9aebf4941b37c0c66f18d4e0a7ec62bc9fd4c8",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('export' … 'records' → 'ceip@calgary.ca')"
+    },
+    {
+      "text": "This dataset allows you to view information about government spending. Disclosure of payments is based on the legislative requirements of CB-19-2011 which can be accessed via https://princegeorgescountymd.legistar.com/Legislation.aspx, which is an effort to provide enhanced transparency and convenient public access to this information. Certain expenditures are subject to review on a case-by-case basis to ensure that confidential or privileged material is maintained in accordance with legal requirements. As such, these expenditures may not appear on this website.\r\n\r\nUnaudited data is updated quarterly for all payees with combined spending of $25,000 or more. When cumulative payee spending exceeds $25,000 threshold, all payments made during the Fiscal Year will be reported. Datasets, current and up to seven prior fiscal periods, will be available for your search by Fiscal Year. The following information will be displayed: Payee Name, County Agency Name, Payee Zip Code, Amount and Payment Description. Website options include: sorting, exporting data, creating graphs, and customizing your display format - among other features. There is an online tutorial.\r\n\r\nIf you have any questions or comments about this citizen portal site, please send an email at any time to: CountyClick311@co.pg.md.us, or call 3-1-1 (301-883-4748), Monday - Friday, 7am - 7pm, and a Customer Service Representative will be glad to assist you.",
+      "source": "socrata",
+      "origin": "data.princegeorgescountymd.gov",
+      "ref": "2qma-7ez9",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "61f261190f2539d1a6fdd3a2399f563fda862f69b60209b9d57a558bdba376e3",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('send' … 'email' → 'https://princegeorgescountymd.legistar.com/Legislation.aspx,')"
+    },
+    {
+      "text": "This dataset shows 2020 Census Block Group Boundaries, with population, for the State of Hawaii, excluding northwest Hawaiian Islands and clipped to the coastline. \n\nSource: US Census Bureau, September 2021. For additional information about this layer, please refer to metadata at https://files.hawaii.gov/dbedt/op/gis/data/blkgrp20.pdf or contact Hawaii Statewide GIS Program, Office of Planning and Sustainable Development, State of Hawaii; PO Box 2359, Honolulu, Hi. 96804; (808) 587-2846; email: gis@hawaii.gov; Website: https://planning.hawaii.gov/gis.",
+      "source": "socrata",
+      "origin": "highways.hidot.hawaii.gov",
+      "ref": "2tw7-ygpr",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "cdc68278bda75023e0b24b11e877fbea78ad318078b1f0a5e38bda1378fca1c4",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email' → 'https://files.hawaii.gov/dbedt/op/gis/data/blkgrp20.pdf')"
+    },
+    {
+      "text": "The dataset contains the date/time of the request; the name, position, and email of the requestor; the name and email of the elected official; and the name(s) of the city agency/agencies they are requesting to engage.\r\n\r\nhttps://www.nyc.gov/office-of-the-mayor/elected-officials-engagement-request.page",
+      "source": "socrata",
+      "origin": "data.cityofnewyork.us",
+      "ref": "3aje-fhc5",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "49d4962705a623a17e0c115af9dfd42bc3ebc669869c52409c84e47f7e846b25",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email' → 'https://www.nyc.gov/office-of-the-mayor/elected-officials-engagement-request.page')"
+    },
+    {
+      "text": "More than 450 public health, clinical, and commercial laboratories located throughout the United States voluntarily participate in surveillance for respiratory syncytial virus (RSV) through CDC's National Respiratory and Enteric Virus Surveillance System (NREVSS) (https://www.cdc.gov/surveillance/nrevss/labs/index.html). The data contain weekly, aggregate counts of RSV tests performed and RSV detections as reported to NREVSS since April 11, 2020. \n\nNREVSS data are reported weekly at the national and 10 HHS regional levels (https://www.hhs.gov/about/agencies/iea/regional-offices/index.html). The presented data are RSV Nucleic Acid Amplification Test (NAAT) results, which include reverse transcription-polymerase chain reaction (RT-PCR) tests. These data exclude antigen, antibody, and at-home test results. Less than 5% of RSV tests reported to NREVSS are from antigen tests. All data are provisional and subject to change. Reporting is less complete for the most recent weeks, but relatively complete (>90%) for the period up to 2 weeks earlier. \n\nPercent positivity is a surveillance metric used to monitor RSV activity over time and by geographic area. Participating laboratories send weekly reports of the total number of RSV tests performed that week, and the number of those tests that were positive. In the table and upon hovering on the map, the total test counts reflect the latest data reported to NREVSS and may differ from data presented by public health jurisdictions. Public health jurisdictions may have additional data not reported to NREVSS and may use a different reporting cadence. The RSV trend graphs display the weekly average percent of tests positive for RSV among all the tests performed. Each point on the regional table displays the average number of RSV tests that were performed, and the average percent of those that were positive during a 3-week period (i.e., the specified week, and the weeks immediately preceding and following it). This is also known as a centered, 3-week moving average. The RSV detections displayed are the 5-week moving average (average of the 4 previous and current weeks) in accordance with the recommendations for assessing RSV trends by detections (https://academic.oup.com/jid/article/216/3/345/3860464). \n\nNREVSS strives to present precise estimates of respiratory viral trends and minimize reporting burden for participating laboratories. However, there are several limitations to this surveillance system. NREVSS is a laboratory-based surveillance system that does not have patient-specific data; multiple tests from a single patient may be included. In addition, NREVSS does not collect demographic or clinical data (i.e., hospitalizations or deaths). Testing practices may vary regionally, and the number of participating laboratories may change from year to year. Laboratories from all 50 states report data weekly, but reporting is voluntary and may not be representative of local RSV activity. The data do not include all test results within a jurisdiction and therefore do not reflect all RSV NAATs administered regionally or nationally. Participating laboratories vary in size, testing capabilities, and areas and populations served. Geographic results from clinical laboratories are based on testing location and laboratories may test samples from across one or more states.  For more information on NREVSS and RSV surveillance please visit: https://www.cdc.gov/surveillance/nrevss.",
+      "source": "socrata",
+      "origin": "data.cdc.gov",
+      "ref": "3cxc-4k8q",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "148012d851c8601938765c66736418a38b624b8af2a9e2d3695c45a327ef4517",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('send' … 'the regional table' → 'https://www.cdc.gov/surveillance/nrevss/labs/index.html).')"
+    },
+    {
+      "text": "This tool makes it easier to explore environmental permits that may affect your area. It includes applications for projects regulated under state law, such as landfills, incinerators, industrial and municipal water discharges, sewage sludge use, and the handling of hazardous substances. You can use the tool to find proposed projects near you, check the status of applications, see upcoming public meetings or hearings, and learn how to get involved in the review process by submitting comments or attending hearings. If you need help or can’t find what you’re looking for, call us at 410-537-3000.",
+      "source": "socrata",
+      "origin": "opendata.maryland.gov",
+      "ref": "3iva-5cca",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "d3f04de451318c8c42e77e7ca025c5ef3cd0b638ccc4b2e3a9ac2ecbbb1f148b",
+      "score": 2,
+      "signals": [
+        "tool-poisoning"
+      ],
+      "categories": [
+        "tool-poisoning"
+      ],
+      "hidden_unicode": false,
+      "matched_text": "use the tool",
+      "rule_fired": "tool-poisoning ('use the tool')"
+    },
+    {
+      "text": "Listing of active warrants for Baton Rouge City Court.\r\n\r\nWarrants are posted to the site daily, however it may take up to 7-10 days for information processed in court to be reflected on the site.  If you have questions please contact the Criminal Traffic Division via email at traffic@brgov.com or call (225) 389-5278.\r\n\r\nThis lookup is not confirmation of an active warrant.  All City Court warrants should be confirmed by the official court file.  Please contact the City Constable's Office at 389-3889 or 389-3004 for confirmation.",
+      "source": "socrata",
+      "origin": "data.brla.gov",
+      "ref": "3j5u-jyar",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "a53571f84cf1ae6763bcac69b70e39476cc6d887ec6216427b91a8390778d8de",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email' → 'traffic@brgov.com')"
+    },
+    {
+      "text": "This map is a representation of each depth layers in the Surface Surcharge map from the 2014 Flood Mitigation Study.\r\n\r\nThis spatial data was created as a result of a 2016 study, using 2014 data, done for the Edmonton area to determine the vulnerable drainage and sewage areas of Edmonton in regards to a 1 in 100 year rainfall event.\r\n\r\nDue to the constant changing of subsurface infrastructure (adding, upgrading, etc.) combined with the constant changing definition of a 1 in 100 year rainfall event (based on historic rainfall amounts), this raster file reflects the results of a study done in 2016 and should neither suggest previous year’s vulnerabilities nor future year’s vulnerabilities.\r\n\r\nFor a more regional Edmonton area breakdown of the Study’s results: \r\n\r\nhttps://www.edmonton.ca/city_government/documents/RoadsTraffic/City-wide_Flood_Mitigation_Study.pdf\r\n\r\nThere are three different colour to the vulnerability of the roadways and the corresponding ponding depth that would occur for that area during a large rainstorm.\r\n\r\nThose colours are:\r\n\r\nGreen (representing the depth from surface that sanitary flows can surcharge from less than 2.5 m)\r\nYellow (representing the depth from surface that sanitary flows can surcharge from 1.5 to 2.5 m)\r\nRed (representing the depth from surface that sanitary flows can surcharge from greater than 1.5 m)\r\n\r\nThis Raster file is best viewed overlaid with the 2016 Flood Mitigation Study - Drainage and Sanitation Surcharge Map; as the various coloured areas follow the subsurface infrastructure (and the corresponding roadways if you are also viewing the street map as a layer).\r\n\r\nDisclaimer: No Warranty with Flood Risk Maps.\r\nYour use of the flood risk maps is solely at your own risk, and you are fully responsible for any consequences arising from your use of the flood risk maps. The flood risk maps are provided on an “as is” and “as available” basis, and you agree to use them solely at your own risk. There are no warranties, expressed or implied in respect to the flood risk maps or your use of them, including without limitation, implied warranties and conditions of merchantability and fitness for any particular purpose.\r\n\r\nPlease note that the flood risk maps have been modified from their original source, and that all data visualization on maps are approximate and include only records that can be mapped.\r\n\r\nThis dataset is based on 2014 information and will not be updated further. The model is based on a theoretical, worst-case scenario storm that has never occurred in the Edmonton area.\r\n\r\nModel Accuracy:\r\n\r\nThe LiDar used was a 5 meter grid system.  LiDar has an accuracy of ? cm horizontally/vertically.  Bare Earth LiDar was used in for this model surface.  \r\nThis is a spline fit interpolations model.  This is a 1D-1D model with 2D interpolations.The accuracy of the information provided in these data sets is plus or minus 10 cm vertically, and 10 cm horizontally.   \r\n\r\nThe 100 year flood was based on the 2015 Edmonton 4 year Chicago storm event over 20 plus neighbourhoods.  The data is a collection of the worst case scenario of model runs.  \r\n\r\nThis is a common practice for Edmonton drainage models.  These models are high level concept and projects determined from this data set will undergo finer, more detailed modeling.\r\n\r\nThese maps are a visual representation and intended to be used when prioritization of the best engineering solutions that are scheduled to be brought forward to Utility Council to mitigate future flooding in the City.  The best engineering solutions are high level concept designs and require further modeling and design.  At the time of the PDF release, November 9, 2016 there was no funding for any projects to be completed or for further design.  Strategy will be brought forward to Utility Committee on June 7, 2017.  Council will be determining funding and rate of project completion.  \r\nThe Storm size used in these models are larger than Edmonton has historically seen.  Histo",
+      "source": "socrata",
+      "origin": "data.edmonton.ca",
+      "ref": "3trg-p57p",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "0ab553df92636d4fe2b8f727562e4e7ece6e0566a8bcd9a7ed5f7ddd27d0a36c",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('forward' … 'records' → 'https://www.edmonton.ca/city_government/documents/RoadsTraffic/City-wide_Flood_Mitigation_Study.pdf')"
+    },
+    {
+      "text": "Connecticut’s Superior Court was created in 1711. It was the second level of the court system, sitting above the county and probate courts, but below the final court of appeal, which up until 1785 was the General Assembly and afterward was the Supreme Court of Errors.\n\nThe early Superior Court was an itinerant or circuit court, meaning that instead of having separate sitting courts for each county, the four judges, as well as the clerks and other officers, traveled from county to county holding sessions in each several times per year.  Many famous names of Connecticut history were judges of the Superior Court, including Roger Sherman, Jonathan Trumbull, Eliphalet Dyer, William Pitkin, Jonathan Law, Oliver Ellsworth, and others.\n\nThis index of divorces is from the early Superior Court’s 31 volumes of record books, which were the official record of the court kept by the clerk. The record books run from the establishment of the court in 1711 to 1798, the first divorce is recorded in 1716.\n\nIn this time period, divorces were either granted by the General Assembly or by the Superior Court. Someone wishing to be divorced from their spouse would have to submit a petition to the court.\n\nDivorce laws were very strict, usually permitting a petitioner to divorce their spouse only in very clear-cut cases of desertion, adultery, or deformity. Staunchly Puritan courts in the early part of the eighteenth century were very hesitant to grant divorces, but as the century wore on and divorce laws loosened up somewhat, they did so with much greater frequency. This process accelerated after independence from Great Britain; the majority of the 1,080 records in this index are from 1776 and after.\n\nDivorce case records usually contain the husband and wife’s names, their marriage date, the town of the petitioner, and reasons why the petitioner is asking for the divorce. Due to the formal, legalistic way record entries were written, maiden names were usually not part of the record unless the husband was the one making the petition. This unfortunately means that maiden names were rarely recorded, as the vast majority of petitioners were female. Children were almost never mentioned.\n\nIn 1801, the General Assembly added two judges to the overburdened Superior Court and split it into two circuits of four counties each. All record books from 1798 forward are arranged by their respective counties, which is why this index ends with that year.\n\nPlease note that there are many direct quotes from the records books in the “notes” field and elsewhere. The index therefore includes terms that are considered archaic, offensive, and inappropriate to use in modern times.\n\nMost, though not all, of these records have corresponding case files that may have more information. To find those, either consult <a href=\"https://libguides.ctstatelibrary.org/hg/divorce/indexes\">county-specific indexes</a> or ask the History & Genealogy Unit staff for assistance.\n\nTo request a copy of a record, please contact the staff of the <a href=\"https://libguides.ctstatelibrary.org/hg/home\">History & Genealogy Unit</a> by telephone at (860) 757-6580 or through our <a href=\"https://portal.ct.gov/csl/email-us?language=en_US\">email form</a>.  When requesting a copy of a record, please include the names of the individuals as well as the volume and page number. You are also more than welcome to visit the Connecticut State Library to see the record books for yourself!\n\nSeveral volumes have extra, non-numbered pages at the end; these are denoted by a typographical mark and the word “misc.”\n\n*The February, 1769 term of the Superior Court in Fairfield is filed in a folder in the state archives RG 003, Superior Court Fairfield County Records/Dockets, Box 51.\n\n**Volume 19 contains miscellaneous papers at the end of the numbered pages. These papers are mostly in chronological order, and include court files, invoices, and the records of a few Superior Court terms.\n\n†Volume 21 contains miscellaneous papers",
+      "source": "socrata",
+      "origin": "internal-data.ct.gov",
+      "ref": "3txk-7972",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "5b7120290c9221011ce7e677cf2b93539fc24ef93b8762ed53c3f5547ac90953",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('forward' … 'records' → 'https://libguides.ctstatelibrary.org/hg/divorce/indexes\">county-specific')"
+    },
+    {
+      "text": "Maryland Roadway Centerline data consists of linear geometric features which represent the street centerline for all public roadways in the State of Maryland. The centerline represents the geographic location on the roadway between both shoulders (physical center), which often but not always coincides with the center painted line dividing bi-directional travel lanes. Roadway Centerlines data plays an important role in transportation management and planning, while also being the basis for all other roadway related data products. Maryland Roadway Centerline data is the end product of a statewide data sharing process between the Federal Highway Administration (FHWA), Maryland Department of Transportation (MDOT), Maryland Department of Transportation State Highway Administration (MDOT SHA), county governments and local municipal governments. Using a common centerline allows for better exchange of information related to the roadway system and provides opportunities for more efficient collection of information about roadway assets. Some centerlines were created in-house using imagery, GPS data, and MDOT SHA's Highway Performance Monitoring System (HPMS) database and others were received from county governments and updated in house using imagery, GPS data and MDOT SHA's HPMS database. The Centerline data includes annual HPMS updates / improvements submitted to the Federal Highway Administration (FHWA). Maryland Roadway Centerline data is needed for emergency response and management, routing buses and other vehicles, planning for land use and transportation needs, continuity of roadway data and display at county boundaries leading to the same \"look and feel\" across jurisdictions, tracking assets on and along the roadway network, producing maps at various scales, and numerous other applications. There are opportunities to make these processes more efficient, and this program addresses a shared foundation to solve some of these issues. This data is also used by various business units throughout MDOT, as well as many other Federal, State and local government agencies. Maryland Roadway Centerline data is updated and published on an annual basis for the prior year. This data is for the year 2017. For additional information, contact MDOT SHA Geospatial Technologies Email: GIS@mdot.state.md.us For additional information related to the Maryland Department of Transportation (MDOT) Website: https://www.mdot.maryland.gov/ For additional information related to the Maryland Department of Transportation State Highway Administration (MDOT SHA): Website: https://roads.maryland.gov/Home.aspx MDOT SHA Geospatial Data Legal Disclaimer: The Maryland Department of Transportation State Highway Administration (MDOT SHA) makes no warranty, expressed or implied, as to the use or appropriateness of geospatial data, and there are no warranties of merchantability or fitness for a particular purpose or use. The information contained in geospatial data is from publicly available sources, but no representation is made as to the accuracy or completeness of geospatial data. MDOT SHA shall not be subject to liability for human error, error due to software conversion, defect, or failure of machines, or any material used in the connection with the machines, including tapes, disks, CD-ROMs or DVD-ROMs and energy. MDOT SHA shall not be liable for any lost profits, consequential damages, or claims against MDOT SHA by third parties.",
+      "source": "socrata",
+      "origin": "opendata.maryland.gov",
+      "ref": "3xda-h6fq",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "0724d11f47d9bfff1f93d2f4e0e2a06853faf2802a53529b96db5f6f81dd92b2",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('Email' … 'Email' → 'GIS@mdot.state.md.us')"
+    },
+    {
+      "text": "Any person whose request to inspect or copy public records has been denied, delayed, or not completely fulfilled, may request mediation of their request through the Public Ethics Commission (PEC). The data below summarizes mediations completed by the PEC. For more information visit www.oaklandca.gov/pec.",
+      "source": "socrata",
+      "origin": "data.oaklandca.gov",
+      "ref": "3z3b-ybca",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "bf0771d0a734825dc8f994fabd51e462aa47c23b491fe7b5965ee8c32ef6df00",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('copy' … 'records' → 'www.oaklandca.gov/pec.')"
+    },
+    {
+      "text": "Public comments for the Oregon Draft Data Strategy.  Phase 1 extends from July 6, 2020 - August 24, 2020.\r\nComments are received through a google form (https://forms.gle/7a6wAfG2ZNgATrqF9) and synced daily at 5pm PST.\r\n\r\nIndividuals who submitted files (pdf, word) to the Oregon.Data@oregon.gov email address in lieu of using the google form will have their comments posted directly to the Oregon Data Strategy Website at https://www.oregon.gov/das/OSCIO/Pages/DataStrategy.aspx",
+      "source": "socrata",
+      "origin": "data.oregon.gov",
+      "ref": "3z65-a459",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "eb9e89c88fa1b6508f72dcac61e2eb8fd457e3972714e59d8e09726649528b0a",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email address' → 'https://forms.gle/7a6wAfG2ZNgATrqF9)')"
+    },
+    {
+      "text": "This dataset provides a complete time history of RSV wastewater sample data and calculated metrics from US sampling locations.\n\nCDC’s National Wastewater Surveillance System (NWSS) includes data collected and reported by:\n• All data with a source designation of “State_Territory” were generated by state and local health departments are reported to CDC and supported with funding through the Epidemiology and Laboratory Capacity for the Prevention and Control of Emerging Infectious Diseases (ELC) Cooperative Agreement (https://www.cdc.gov/epidemiology-laboratory-capacity/php/our-work/index.html).\n• All data with a source designation of “CDC_Verily” were generated by CDC’s national wastewater testing contract (currently with Verily Life Sciences, LLC).\n• All data with a source designation of “WastewaterSCAN” were generated by WastewaterSCAN, a partnership between Stanford University, Emory University, and Verily. All results are understood to be based on inputs that are experimental in nature and are not intended to diagnose or treat any disease. The results are provided “as is” and without warranty of any kind. Stanford does not accept liability for any claim arising out of or in connection with the disclosure of these results. WastewaterSCAN indicates that by accessing or copying any part of the database, the user accepts the terms of Stanford’s license (CC BY-NC 4.0). These data are being made available to inform public health decision making. Anyone seeking to use the database for other purposes or for research is required to contact the WastewaterSCAN / SCAN team (email: wwscan_stanford_emory@lists.stanford.edu) and any use of the data should be cited appropriately (https://data.wastewaterscan.org/about/#18).\n\nLearn more at: https://www.cdc.gov/nwss/index.html.\n\nThis dataset is updated weekly on Fridays.",
+      "source": "socrata",
+      "origin": "data.cdc.gov",
+      "ref": "45cq-cw4i",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "d04405ac0c721d84aae512a8f1b93d29d53a8cc726407e1958349fdd0d9ec157",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email' → 'https://www.cdc.gov/epidemiology-laboratory-capacity/php/our-work/index.html).')"
+    },
+    {
+      "text": "This dataset reflects reported incidents of crime (with the exception of murders where data exists for each victim) that occurred in the City of Chicago from 2001 to present, minus the most recent seven days. Data is extracted from the Chicago Police Department's CLEAR (Citizen Law Enforcement Analysis and Reporting) system. In order to protect the privacy of crime victims, addresses are shown at the block level only and specific locations are not identified. Should you have questions about this dataset, you may contact the Research & Development Division of the Chicago Police Department at 312.745.6071 or RDAnalysis@chicagopolice.org.  Disclaimer: These crimes may be based upon preliminary information supplied to the Police Department by the reporting parties that have not been verified. The preliminary crime classifications may be changed at a later date based upon additional investigation and there is always the possibility of mechanical or human error. Therefore, the Chicago Police Department does not guarantee (either expressed or implied) the accuracy, completeness, timeliness, or correct sequencing of the information and the information should not be used for comparison purposes over time. The Chicago Police Department will not be responsible for any error or omission, or for the use of, or the results obtained from the use of this information. All data visualizations on maps should be considered approximate and attempts to derive specific addresses are strictly prohibited. The Chicago Police Department is not responsible for the content of any off-site pages that are referenced by or that reference this web page other than an official City of Chicago or Chicago Police Department web page. The user specifically acknowledges that the Chicago Police Department is not responsible for any defamatory, offensive, misleading, or illegal conduct of other users, links, or third parties and that the risk of injury from the foregoing rests entirely with the user.  The unauthorized use of the words \"Chicago Police Department,\" \"Chicago Police,\" or any colorable imitation of these words or the unauthorized use of the Chicago Police Department logo is unlawful. This web page does not, in any way, authorize such use. Data are updated daily. The dataset contains more than 65,000 records/rows of data and cannot be viewed in full in Microsoft Excel. Therefore, when downloading the file, select CSV from the Export menu. Open the file in an ASCII text editor, such as Wordpad, to view and search. To access a list of Chicago Police Department - Illinois Uniform Crime Reporting (IUCR) codes, go to http://data.cityofchicago.org/Public-Safety/Chicago-Police-Department-Illinois-Uniform-Crime-R/c7ck-438e",
+      "source": "socrata",
+      "origin": "cityofchicago-v2.demo.socrata.com",
+      "ref": "4spy-zn25",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "db8173b38473429a01b2453145607c0c22111965a3563da33193aae4a96be1e2",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('Export' … 'records' → 'RDAnalysis@chicagopolice.org')"
+    },
+    {
+      "text": "This dataset allows you to view information about government spending. Disclosure of payments is based on the legislative requirements of CB-19-2011 which can be accessed via https://princegeorgescountymd.legistar.com/Legislation.aspx, which is an effort to provide enhanced transparency and convenient public access to this information. Certain expenditures are subject to review on a case-by-case basis to ensure that confidential or privileged material is maintained in accordance with legal requirements. As such, these expenditures may not appear on this website.\n\nUnaudited data is updated quarterly for all payees with combined spending of $25,000 or more. When cumulative payee spending exceeds $25,000 threshold, all payments made during the Fiscal Year will be reported. Datasets, current and up to seven prior fiscal periods, will be available for your search by Fiscal Year. The following information will be displayed: Payee Name, County Agency Name, Payee Zip Code, Amount and Payment Description. Website options include: sorting, exporting data, creating graphs, and customizing your display format - among other features. There is an online tutorial.\n\nIf you have any questions or comments about this citizen portal site, please send an email at any time to: CountyClick311@co.pg.md.us, or call 3-1-1 (301-883-4748), Monday - Friday, 7am - 7pm, and a Customer Service Representative will be glad to assist you.",
+      "source": "socrata",
+      "origin": "data.princegeorgescountymd.gov",
+      "ref": "5aqg-y7tm",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "cd414add5a2fd0e84e388a7cfd8de40c7b1b90baa283b4889e222d2b41636b27",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('send' … 'email' → 'https://princegeorgescountymd.legistar.com/Legislation.aspx,')"
+    },
+    {
+      "text": "Roadway Maintenance Responsibility data consists of linear geometric features which specifically show the government agencies responsible for maintain roadways throughout the State of Maryland. Roadway Maintenance Responsibility data is primarily used for general planning and road maintenance coordination purposes, and for Federal Highway Administration (FHWA) Highway Performance Monitoring System (HPMS) annual submission & coordination. The Maryland Department of Transportation State Highway Administration (MDOT SHA) currently reports this data only on the ing publicinventory direction (generally North or East) side of the roadway. Roadway Maintenance Responsibility data is not a complete representation of all roadway geometry. Roadway Maintenance Responsibility data is developed as part of the Highway Performance Monitoring System (HPMS) which maintains and reports transportation related information to the Federal Highway Administration (FHWA) on an annual basis. HPMS is maintained by the Maryland Department of Transportation State Highway Administration (MDOT SHA), under the Office of Planning and Preliminary Engineering (OPPE) Data Services Division (DSD). Roadway Maintenance Responsibility data is used by various business units throughout MDOT, as well as many other Federal, State and local government agencies. Roadway Maintenance Responsibility data is key to understanding which government agenices are responsible for maintaining public roadways throughout the State of Maryland. Roadway Maintenance Responsibility data is updated and published on an annual basis for the prior year. This data is for the year 2017. View the most current Roadway Maintenance Responsibility data in the Maryland Know Your Roads Application. For additional information, contact the MDOT SHA Geospatial Technologies Email: GIS@mdot.state.md.us For additional information related to the Maryland Department of Transportation (MDOT) Website: https://www.mdot.maryland.gov/ For additional information related to the Maryland Department of Transportation State Highway Administration (MDOT SHA): Website: https://roads.maryland.gov/Home.aspx MDOT SHA Geospatial Data Legal Disclaimer: The Maryland Department of Transportation State Highway Administration (MDOT SHA) makes no warranty, expressed or implied, as to the use or appropriateness of geospatial data, and there are no warranties of merchantability or fitness for a particular purpose or use. The information contained in geospatial data is from publicly available sources, but no representation is made as to the accuracy or completeness of geospatial data. MDOT SHA shall not be subject to liability for human error, error due to software conversion, defect, or failure of machines, or any material used in the connection with the machines, including tapes, disks, CD-ROMs or DVD-ROMs and energy. MDOT SHA shall not be liable for any lost profits, consequential damages, or claims against MDOT SHA by third parties.",
+      "source": "socrata",
+      "origin": "opendata.maryland.gov",
+      "ref": "5dkb-uymf",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "471d9dc0874711b101099210a66987e5fc4b21a3aa8a53d1378e1f37e3e199b4",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('Email' … 'Email' → 'GIS@mdot.state.md.us')"
+    },
+    {
+      "text": "In association with the November 2022 process for 12th ward residents to apply for the opportunity to fill the aldermanic vacancy in that ward, residents were also invited to fill out an online survey, seeking their opinions on issues. The results of that survey are shown in this dataset.\n\nRespondents were presented with seven issues and asked to rank them from most urgent to least urgent.\n\nThe final question was free text, intended to capture other issues but if the respondent provided other text, it is included.\n\nPlease note that the survey is not and was not intended to be a random sample or otherwise scientifically or statistically valid. There were no formal barriers to people not residents of the 12th ward responding, people responding more than once, or other things of that nature. It was intended only as a simple tool to collect such information as people cared to submit and should be interpreted in that spirit.\n\nA copy of the original survey is at <a href=\"https://forms.office.com/Pages/DesignPageV2.aspx?subpage=design&token=bfa6889e0f674cd6a4f1fedccb402c8d&wdlor=cF4F6C0D3-9163-45CB-A834-4D4CA5D9F255&id=qc02cC0GUUGBRJfdxW5wJ2WUSmVcTNRNtAgDSPV9FxxUMUMyUDQ5RUw1WTRSTDdNRlY2U1lCVUhDVy4u&analysis=false\">this link</a>.",
+      "source": "socrata",
+      "origin": "data.cityofchicago.org",
+      "ref": "5n77-2d6a",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "e1933a6d582c78c8998b8b18e575ba3d6b73339a4a6aec9e8f8596bd5a0cc866",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('copy' … 'token' → 'https://forms.office.com/Pages/DesignPageV2.aspx?subpage=design&token=bfa6889e0f674cd6a4f1fedccb402c8d&wdlor=cF4F6C0D3-9163-45CB-A834-4D4CA5D9F255&id=qc02cC0GUUGBRJfdxW5wJ2WUSmVcTNRNtAgDSPV9FxxUMUMyUDQ5RUw1WTRSTDdNRlY2U1lCVUhDVy4u&analysis=false\">this')"
+    },
+    {
+      "text": "PLEASE NOTE: This dataset of all TLC licensed street hail livery (SHL) drivers in good standing is updated daily between 4–7 PM. Check the “Last Update Date” to confirm it shows today’s or yesterday’s date. If it’s older, find the latest data here: <a href=\"https://app.powerbigov.us/view?r=eyJrIjoiMGIxY2IxMTEtMTBlOS00NGUxLTgyYzMtMTFkMGQ5MmZiMmJjIiwidCI6IjMyZjU2ZmM3LTVmODEtNGUyMi1hOTViLTE1ZGE2NjUxM2JlZiJ9\">Drivers List</a>\n\nNYC TLC Licensed Street Hail Livery drivers that are currently active and in good standing and able to drive. This list is accurate to the date and time represented in the Last Date Updated and Last Time Updated fields. For inquiries about the contents of this dataset, please email licensinginquiries@tlc.nyc.gov.",
+      "source": "socrata",
+      "origin": "data.cityofnewyork.us",
+      "ref": "5tub-eh45",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "97c1308d1783bfed2e57c8aad339982c2a196965b5431bace7b08a34c65dca73",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'contents of' → 'https://app.powerbigov.us/view?r=eyJrIjoiMGIxY2IxMTEtMTBlOS00NGUxLTgyYzMtMTFkMGQ5MmZiMmJjIiwidCI6IjMyZjU2ZmM3LTVmODEtNGUyMi1hOTViLTE1ZGE2NjUxM2JlZiJ9\">Drivers')"
+    },
+    {
+      "text": "This dataset contains the compliance status and reported energy metrics of medium and large buildings (greater than 15,000 square feet) subject to BESO's energy benchmarking and assessment requirement. If the status for your property is incorrect, email BESO@BerkeleyCA.gov. For more information about the requirements for medium and large buildings, please visit: www.berkeleyca.gov/BESO",
+      "source": "socrata",
+      "origin": "data.cityofberkeley.info",
+      "ref": "5vy5-rwja",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "ff9f5917cfa6f5704b289d482c2267e9a86a605d034e61438b146980f62063c7",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('email' … 'email' → 'BESO@BerkeleyCA.gov')"
+    },
+    {
+      "text": "This spatial data represents the drainage infrastructure that exists at a depth between 1.5 m and 2.5 m below ground.  The colour assigned to this is data is Orange.\r\n\r\nThis spatial data was created as a result of a 2016 study, using 2014 data, done for the Edmonton area to determine the vulnerable drainage and sewage areas of Edmonton in regards to a 1 in 100 year rainfall event.\r\n\r\nDue to the constant changing of subsurface infrastructure (adding, upgrading, etc.) combined with the constant changing definition of a 1 in 100 year rainfall event (based on historic rainfall amounts), this raster file reflects the results of a study done in 2016 and should neither suggest previous year’s vulnerabilities nor future year’s vulnerabilities.\r\n\r\nFor a more regional Edmonton area breakdown of the Study’s results: \r\n\r\nhttps://www.edmonton.ca/city_government/documents/RoadsTraffic/City-wide_Flood_Mitigation_Study.pdf\r\n\r\nThere are three different colour to the vulnerability of the roadways and the corresponding ponding depth that would occur for that area during a large rainstorm.\r\n\r\nThose colours are:\r\n\r\nGreen (representing the depth from surface that sanitary flows can surcharge from less than 2.5 m)\r\nYellow (representing the depth from surface that sanitary flows can surcharge from 1.5 to 2.5 m)\r\nRed (representing the depth from surface that sanitary flows can surcharge from greater than 1.5 m)\r\n\r\nThis Raster file is best viewed overlaid with the 2016 Flood Mitigation Study - Drainage and Sanitation Surcharge Map; as the various coloured areas follow the subsurface infrastructure (and the corresponding roadways if you are also viewing the street map as a layer).\r\n\r\nDisclaimer: No Warranty with Flood Risk Maps.\r\nYour use of the flood risk maps is solely at your own risk, and you are fully responsible for any consequences arising from your use of the flood risk maps. The flood risk maps are provided on an “as is” and “as available” basis, and you agree to use them solely at your own risk. There are no warranties, expressed or implied in respect to the flood risk maps or your use of them, including without limitation, implied warranties and conditions of merchantability and fitness for any particular purpose.\r\n\r\nPlease note that the flood risk maps have been modified from their original source, and that all data visualization on maps are approximate and include only records that can be mapped.\r\n\r\nThis dataset is based on 2014 information and will not be updated further. The model is based on a theoretical, worst-case scenario storm that has never occurred in the Edmonton area.\r\n\r\nModel Accuracy:\r\n\r\nThe LiDar used was a 5 meter grid system.  LiDar has an accuracy of ? cm horizontally/vertically.  Bare Earth LiDar was used in for this model surface.  \r\nThis is a spline fit interpolations model.  This is a 1D-1D model with 2D interpolations.The accuracy of the information provided in these data sets is plus or minus 10 cm vertically, and 10 cm horizontally.   \r\n\r\nThe 100 year flood was based on the 2015 Edmonton 4 year Chicago storm event over 20 plus neighbourhoods.  The data is a collection of the worst case scenario of model runs.  \r\n\r\nThis is a common practice for Edmonton drainage models.  These models are high level concept and projects determined from this data set will undergo finer, more detailed modeling.\r\n\r\nThese maps are a visual representation and intended to be used when prioritization of the best engineering solutions that are scheduled to be brought forward to Utility Council to mitigate future flooding in the City.  The best engineering solutions are high level concept designs and require further modeling and design.  At the time of the PDF release, November 9, 2016 there was no funding for any projects to be completed or for further design.  Strategy will be brought forward to Utility Committee on June 7, 2017.  Council will be determining funding and rate of project completion.  \r\nThe Storm size used in these models are l",
+      "source": "socrata",
+      "origin": "data.edmonton.ca",
+      "ref": "66kp-sqm8",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "6027ce07d340652311d263499f13486f6b965e279b34907a175ff69093c807f8",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('forward' … 'records' → 'https://www.edmonton.ca/city_government/documents/RoadsTraffic/City-wide_Flood_Mitigation_Study.pdf')"
+    },
+    {
+      "text": "This dataset contains the up-to-date metadata on Work Zone feeds that meet the Work Zone Data Exchange (WZDx) specification or Connected Work Zone (CWZ) Standard and are registered with USDOT ITS DataHub. The current work zone data from each feed can be accessed through their respective API links. \n\nTo access the Work Zone Data Feed Registry’s list of current work zone data feeds, click the “Data” tab to view current data or the “Export” button to download as a CSV or access the API endpoint.\n\nSome links provide direct access, while others require a user to create their own API access key for authentication. Please see the API Key Instructions document linked in the About this Dataset > Attachments section to learn how to sign up for API keys for feeds.\n\n<b>Data Schemas</b>\nThe WZDx Feed Registry lists feeds following the WZDx Specification and CWZ Standard, published by ITE. JSON schemas for the WZDx Specification version 2.0 and later are available on the specification’s <a href=\"https://github.com/usdot-jpo-ode/wzdx/tree/develophttps:/github.com/usdot-jpo-ode/wzdx/tree/develop/schemas/schemas\">GitHub repository</a>. JSON schemas for the CWZ Standard are available on the standard’s <a href=\"https://github.com/ite-org/cwz/tree/main/schemas\">GitHub repository</a>.\n\n<b>Registry Updates</b>\nThe dataset changelog captures all changes to the Work Zone Data Feed Registry, including addition of new feeds, updates to existing feeds, or removal of old or unmaintained feeds.\n\nNew feeds are added periodically to the Feed Registry periodically. They appear as new lines in the “Data” table and are logged in the dataset changelog (starting February 2025). If you have a WZDx or CWZ feed that you would like to add to the Feed Registry, please email the dataset point of contact listed below.\n\nWhen organizations update their feeds to use a new specification version, to a new URL, or to require user authentication with an API key, the Feed Registry will create a new entry in the dataset with the feed’s new information and assign an end date to the current listing, signifying the end of that feed’s support. When the end date passes, the old feed information will be removed from the Feed Registry and the removal will be logged in the dataset changelog. \n\nIf a feed listed on the registry is no longer maintained by the dataset owner – typically evident by the feed being offline for an extended period of time or the data in the feed being significantly out of date –  the feed will be removed from the Feed Registry and the removal will be logged in the dataset changelog.\n\nReport any errors in the Feed Registry by emailing the dataset point of contact.\n\n<b>Work Zone Data Archive</b>\nThe ITS JPO has archived work zone data collections from 23 states covering various parts of the time period from 10/2019 to 08/2024 depending on when the feed was active. The data is split into two archives: raw data and processed data.  The raw data contains the collection of .json or .geojson files exactly as they were on the individual state’s WZDx feed at the time of collection. The processed data is organized by work zone, so that as information about the work zone changed through feed updates they would be collected in a single file for that work zone. To request access fill out the form <a href=\"https://its.dot.gov/data/data-request\">here</a>.",
+      "source": "socrata",
+      "origin": "datahub.transportation.gov",
+      "ref": "69qe-yiui",
+      "locator": "<dataset>",
+      "kind": "dataset",
+      "sha256": "5f5002d643ff1fd61ba9a0766d81b979bb47d93c7765c9cb961805a97a5d92c5",
+      "score": 2,
+      "signals": [
+        "data-exfiltration"
+      ],
+      "categories": [
+        "data-exfiltration"
+      ],
+      "hidden_unicode": false,
+      "matched_text": null,
+      "rule_fired": "exfiltration ('Export' … 'API Key' → 'https://github.com/usdot-jpo-ode/wzdx/tree/develophttps:/github.com/usdot-jpo-ode/wzdx/tree/develop/schemas/schemas\">GitHub')"
+    }
+  ]
+}
