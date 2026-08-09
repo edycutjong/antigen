@@ -452,7 +452,7 @@ behavior breaks — this is the engine, not decoration.
 
 | # | Tool | Kind | Why it is load-bearing in Antigen |
 |---|------|------|-----------------------------------|
-| 1 | `search` | READ | paginated enumeration of the whole catalog — the entry point of every sweep |
+| 1 | `search` | READ | paginated enumeration of the whole catalog — the entry point of every sweep. Paged at the server's real cap of **50**: the live GMS clamps `num_results` to 50 whatever you ask for (all 11 `search` calls in [`docs/live-tool-transcript.json`](docs/live-tool-transcript.json) request 500 and return `"count": 50`), so a loop that requests 500 and stops when a page comes back short terminates on iteration one and reports everything past entity 50 as clean |
 | 2 | `get_entities` | READ | batch description **+ column/schema** pull — the text the detector inspects (10 of 12 payloads live here) |
 | 3 | `grep_documents` | READ | regex hunt over KB document bodies — surfaces the 2 doc-planted payloads nothing else would find |
 | 4 | `get_lineage` | READ | downstream blast-radius (2 hops) — retraces the edges Documentation Propagation copies docs along: *"where did the platform spread this poison, and did an agent act on it there?"* |
@@ -460,7 +460,7 @@ behavior breaks — this is the engine, not decoration.
 | 6 | `add_tags` | **MUTATION** | `injection-quarantined` on poisoned entities; `agent-safe-certified` on the clean remainder; `injection-blast-radius:<urn>` on downstream consumers |
 | 7 | `add_structured_properties` | **MUTATION** | typed `antigen.contentSha256` (tamper-evidence) + `antigen.payloadSha256` (irreversible forensic hash) + `antigen.lastScanned` |
 | 8 | `save_document` | **MUTATION** | files a forensic incident (hashes + repo pointer, **no payload**) into `Antigen/Incidents`; overwrites the 2 poisoned KB docs **in place** with their defused form (addressed by **URN** — the only identity the live tool honours; omit it and DataHub mints a *new* document, leaving the poisoned original readable) |
-| 9 | `search_documents` | READ | enumerates KB document URNs — the live `grep_documents` requires an explicit `urns` list, so without this the document sweep has nothing to hunt over (`gateway.py::_document_urns`) |
+| 9 | `search_documents` | READ | enumerates KB document URNs — the live `grep_documents` requires an explicit `urns` list, so without this the document sweep has nothing to hunt over (`gateway.py::_document_urns`). Paged at the same 50-row cap; a kit that rejects `offset` falls back to one unpaged call and *says so* on stderr rather than under-sweeping quietly |
 
 The cure lands **in the graph itself** — tags, structured properties, forensic KB docs —
 so the security state is queryable through the same catalog every agent already uses. No

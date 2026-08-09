@@ -19,8 +19,20 @@ Every method maps 1:1 to a named DataHub tool from SDK_CAPABILITIES §1B/§2B.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
+
+#: Page size for every paging search call.
+#:
+#: The live GMS CLAMPS `num_results` to 50 regardless of what is asked for: all 11
+#: `search` calls captured in docs/live-tool-transcript.json request 500 and come back
+#: with `"count": 50`. The old loop requested 500 and stopped on `len(batch) < 500`,
+#: so that guard fired on iteration one unconditionally — above 50 entities Antigen
+#: enumerated the first page and reported the entire rest of the catalog clean. It was
+#: latent in the demo only because the seeded catalog tops out at ~30 entities.
+#: Page at the server's real cap and advance by what actually came back.
+_SEARCH_PAGE = 50
 
 # --------------------------------------------------------------------------- #
 # Data model — the slice of DataHub metadata Antigen reads and writes
@@ -151,6 +163,7 @@ class SdkGateway:
         self._client = client or DataHubClient.from_env()
         self._tags_seen: set[str] = set()
         self._graph_cache = None
+        self._degradations: list[str] = []
         tools = build_langchain_tools(self._client, include_mutations=True)
         self._tools = {t.name: t for t in tools}
         missing = self._required_tools() - set(self._tools)
@@ -173,22 +186,58 @@ class SdkGateway:
         tool = self._tools[name]
         return tool.invoke(kwargs)
 
+    def _warn(self, message: str) -> None:
+        """Record AND print a degraded read.
+
+        Every catch on the live read path used to `return []` in silence, so a failed
+        document enumeration or aspect read left the summary printing a confident
+        number over a sweep that had quietly stopped looking. A security control that
+        fails quietly is worse than one that fails loudly.
+        """
+        self._degradations.append(message)
+        print(f"WARNING: {message}", file=sys.stderr)
+
+    def degradations(self) -> list[str]:
+        """Degraded reads observed so far — surfaced by `ScanReport.summary()`."""
+        return list(self._degradations)
+
     # -- READ ------------------------------------------------------------- #
-    def search_all(self) -> list[str]:
+    def _paged_urns(self, tool: str) -> list[str]:
+        """Enumerate every URN a paging search tool yields.
+
+        Three termination conditions, and all three are load-bearing against the
+        real GMS:
+
+        * a page that adds nothing new — which covers both an empty page and a
+          server that ignored `offset` and is replaying page one forever;
+        * ``len(urns) >= total`` when the envelope carries a total.
+
+        `total` alone is NOT sufficient: one live call in
+        docs/live-tool-transcript.json reports ``total: 30`` while returning 26
+        results, so a total-only loop would spin. And `offset` advances by the
+        number of results RETURNED, never by the number requested — that mismatch
+        is exactly what the 500-vs-50 bug was.
+        """
         urns: list[str] = []
+        seen: set[str] = set()
         offset = 0
-        page = 500
         while True:
             # Real signature: query / offset / num_results (NOT start / count).
-            res = self._call("search", query="*", offset=offset, num_results=page)
+            res = self._call(tool, query="*", offset=offset, num_results=_SEARCH_PAGE)
             batch = _extract_urns(res)
-            if not batch:
+            fresh = [u for u in batch if u not in seen]
+            if not fresh:
                 break
-            urns.extend(batch)
-            if len(batch) < page:
+            seen.update(fresh)
+            urns.extend(fresh)
+            offset += len(batch)
+            total = _envelope_total(res)
+            if total is not None and len(urns) >= total:
                 break
-            offset += page
         return urns
+
+    def search_all(self) -> list[str]:
+        return self._paged_urns("search")
 
     def get_entities(self, urns: list[str]) -> list[Entity]:
         if not urns:
@@ -234,11 +283,28 @@ class SdkGateway:
                 col.description = f.description
 
     def _document_urns(self) -> list[str]:
-        """Enumerate KB document URNs — `grep_documents` requires an explicit urn list."""
+        """Enumerate KB document URNs — `grep_documents` requires an explicit urn list.
+
+        Paged for the same reason `search_all` is: unpaged, a knowledge base larger
+        than one server page was hunted over only as far as that page and everything
+        past it was reported clean.
+        """
         try:
-            raw = self._call("search_documents", query="*", num_results=500)
-        except Exception:
+            return self._paged_urns("search_documents")
+        except Exception as exc:   # noqa: BLE001 - the kit raises SDK/pydantic types
+            pass_through = exc
+        # An older kit whose `search_documents` does not accept `offset` must not lose
+        # the document sweep outright: fall back to the single unpaged call, and SAY
+        # that pagination is unavailable instead of under-sweeping in silence.
+        try:
+            raw = self._call("search_documents", query="*", num_results=_SEARCH_PAGE)
+        except Exception as exc:   # noqa: BLE001 - tool absent, or GMS unreachable
+            self._warn(f"search_documents failed ({exc!r}) — the KB-document sweep has "
+                       "no URNs to hunt over and scanned 0 documents")
             return []
+        self._warn(f"search_documents rejected paging ({pass_through!r}) — fell back to "
+                   f"one unpaged call; a knowledge base with more than {_SEARCH_PAGE} "
+                   "documents is only partially swept")
         return _extract_urns(raw)
 
     def grep_documents(self, pattern: str) -> list[Document]:
@@ -392,6 +458,13 @@ def _as_list(raw) -> list:
                     return nested
         return [raw]
     return [raw]
+
+
+def _envelope_total(raw) -> int | None:
+    """`total` from a paged search envelope, when the tool reports one."""
+    if isinstance(raw, dict) and isinstance(raw.get("total"), int):
+        return raw["total"]
+    return None
 
 
 def _tag_urn(tag: str) -> str:

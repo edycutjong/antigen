@@ -102,7 +102,99 @@ def _sdk_with_tools(tools):
     # Mirror __init__ state that bypassing the constructor would otherwise skip.
     g._tags_seen = set()
     g._graph_cache = None
+    g._degradations = []
     return g
+
+
+class CappingSearchTool:
+    """A search double that behaves like the REAL GMS, not like a generous fake.
+
+    The live server CLAMPS `num_results` to 50 no matter what is requested: every one
+    of the 11 `search` calls in docs/live-tool-transcript.json asks for 500 and comes
+    back with `"count": 50`. The pre-existing double honoured 500 — it was *more
+    generous than the server it stood in for* — which is exactly why a suite at 100%
+    line coverage never noticed that `search_all` broke out of its loop on iteration
+    one and reported every entity past the first page as clean.
+
+    Any future page-size regression has to get past this clamp.
+    """
+
+    CAP = 50
+
+    def __init__(self, total: int, name: str = "search"):
+        self.name = name
+        self.urns = [f"urn:e{i}" for i in range(total)]
+        self.calls: list[dict] = []
+
+    def invoke(self, kwargs):
+        self.calls.append(kwargs)
+        offset = kwargs["offset"]
+        size = min(kwargs["num_results"], self.CAP)          # ← the server-side clamp
+        page = self.urns[offset:offset + size]
+        return {"start": offset, "count": size, "total": len(self.urns),
+                "searchResults": [{"entity": {"urn": u}} for u in page]}
+
+
+def test_search_all_enumerates_the_whole_catalog_past_the_live_page_cap():
+    """Above 50 entities the old loop swept page one and called the rest clean."""
+    tool = CappingSearchTool(137)
+    g = _sdk_with_tools([tool])
+
+    assert g.search_all() == tool.urns, "every entity must be enumerated, not just p1"
+    assert len(tool.calls) == 3, "137 entities at a 50-row cap is three pages"
+    assert [c["offset"] for c in tool.calls] == [0, 50, 100], \
+        "offset must advance by results RETURNED, not by results requested"
+    assert all(c["num_results"] <= CappingSearchTool.CAP for c in tool.calls), \
+        "requesting more than the server will ever return is how the bug hid"
+
+
+def test_document_urns_are_paginated_the_same_way():
+    """A KB larger than one page was hunted over only as far as that page."""
+    tool = CappingSearchTool(63, name="search_documents")
+    g = _sdk_with_tools([tool, FakeTool("grep_documents", lambda kw: [])])
+    assert g._document_urns() == tool.urns
+    assert [c["offset"] for c in tool.calls] == [0, 50]
+
+
+def test_search_all_terminates_when_total_overstates_the_result_set():
+    """A live envelope reported `total: 30` while returning 26 rows. A loop that
+    trusts only `total` never terminates — termination must rest on the page too."""
+    pages = [
+        {"total": 30, "searchResults": [{"entity": {"urn": f"urn:{i}"}}
+                                        for i in range(26)]},
+        {"total": 30, "searchResults": []},
+    ]
+    g = _sdk_with_tools([FakeTool("search", lambda kw: pages[len(
+        g._tools["search"].calls) - 1])])
+    assert len(g.search_all()) == 26
+
+
+def test_search_all_stops_when_the_server_ignores_offset():
+    """Replaying page one forever is a hang, not a sweep."""
+    g = _sdk_with_tools([FakeTool("search", lambda kw: {
+        "total": 999, "searchResults": [{"entity": {"urn": "urn:same"}}]})])
+    assert g.search_all() == ["urn:same"]
+
+
+def test_search_all_tolerates_an_envelope_without_a_total():
+    g = _sdk_with_tools([CappingSearchTool(3)])
+    g._tools["search"].invoke = lambda kw: {
+        "searchResults": ([{"entity": {"urn": "urn:a"}}] if kw["offset"] == 0 else [])}
+    assert g.search_all() == ["urn:a"]
+
+
+def test_document_urns_fall_back_to_an_unpaged_call_and_say_so(capsys):
+    """An older kit whose `search_documents` rejects `offset` must not lose the
+    document sweep entirely — but it must not under-sweep in silence either."""
+    def unpaged_only(kw):
+        if "offset" in kw:
+            raise TypeError("search_documents() got an unexpected keyword 'offset'")
+        return {"searchResults": [{"entity": {"urn": "urn:d1"}}]}
+
+    g = _sdk_with_tools([FakeTool("search_documents", unpaged_only)])
+    assert g._document_urns() == ["urn:d1"]
+    assert "rejected paging" in capsys.readouterr().err
+    assert any("only partially swept" in d for d in g.degradations())
 
 
 def test_sdkgateway_read_and_mutation_methods():
@@ -116,6 +208,9 @@ def test_sdkgateway_read_and_mutation_methods():
     """
     def search_resp(kw):
         # Real signature is offset/num_results; results nest under searchResults.
+        # NOTE this stub deliberately returns MORE rows than requested, to prove the
+        # loop tolerates a server that over-delivers. The real GMS under-delivers —
+        # see CappingSearchTool, which pins that contract.
         assert "start" not in kw and "count" not in kw
         if kw["offset"] == 0:
             return {"total": 502, "searchResults":
@@ -397,11 +492,17 @@ def test_graph_returns_none_when_base_sdk_is_absent(monkeypatch):
     assert g._graph() is None
 
 
-def test_document_urns_tolerates_missing_search_documents():
-    """Older kits lack `search_documents`; grep must degrade, not explode."""
+def test_document_urns_tolerates_missing_search_documents(capsys):
+    """Older kits lack `search_documents`; grep must degrade LOUDLY, not explode.
+
+    It used to `return []` in silence, so the whole document sweep did nothing while
+    the scan summary still printed a confident document count.
+    """
     g = _sdk_with_tools([FakeTool("grep_documents", lambda kw: [])])
     assert g._document_urns() == []
     assert g.grep_documents("x") == []          # no urns → no grep call at all
+    assert "search_documents failed" in capsys.readouterr().err
+    assert any("scanned 0 documents" in d for d in g.degradations())
 
 
 def test_parse_document_reassembles_body_from_match_excerpts():
