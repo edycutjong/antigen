@@ -1,8 +1,11 @@
 """Antigen detector — a scored prompt-injection rule for catalog free-text.
 
-This is the intellectual core of Antigen, and it is deliberately *not* a machine-
-learning model and *not* a raw keyword grep. It is a small, auditable, deterministic
-scored rule that a judge can read aloud and defend under questioning.
+This detector is deliberately boring and replaceable — swap in a better classifier
+and nothing else in Antigen changes. The contribution is the remediation loop this
+file feeds (excise → tag → hash → blast radius → certify → rescan), not the detection
+itself. What it is: *not* a machine-learning model and *not* a raw keyword grep, but
+a small, auditable, deterministic scored rule that a judge can read aloud and defend
+under questioning.
 
 Why not a keyword grep
 ----------------------
