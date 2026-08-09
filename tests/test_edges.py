@@ -254,6 +254,8 @@ def test_blast_radius_summary_empty_and_nonempty():
 
 def test_certify_result_summary():
     assert "certified 0" in CertifyResult().summary()
+    assert "already certified at the same content hash" in \
+        CertifyResult(certified=0, unchanged=7).summary()
     gw = build_corpus_gateway()
     report = scan(gw)
     res = certify(gw, report.clean_entity_urns)

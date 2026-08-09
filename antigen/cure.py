@@ -35,22 +35,53 @@ import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from .detect import detect
 from .gateway import Entity, Gateway
-from .scan import QUARANTINE_TAG, Locus, ScanHit
+from .scan import INCIDENT_TITLE_PREFIX, QUARANTINE_TAG, Locus, ScanHit
 
 CONTENT_SHA_PROP = "antigen.contentSha256"
 PAYLOAD_SHA_PROP = "antigen.payloadSha256"
 LAST_SCANNED_PROP = "antigen.lastScanned"
 INCIDENTS_FOLDER = "Antigen/Incidents"
 
+#: Content substring every forensic incident record carries, used to resolve the
+#: existing incident ledger so a re-cure overwrites instead of duplicating.
+INCIDENT_GREP = r"Antigen incident"
+
 # The banner marker that separates the cleaned content from Antigen's inert notice.
 # `content-sha256` is computed over the text BEFORE this marker, so a later edit to
 # the real content trips rescan while the banner itself is excluded from the hash.
 BANNER_MARKER = "\n\n> ⚠ Antigen:"
 
-# The inert banner left in place of the removed payload. Contains no imperative.
+# The inert banner left in place of the removed payload. Contains no imperative — and,
+# deliberately, no detection CATEGORY LABEL either.
+#
+# It used to end `Detection signals: {rule}`, interpolating the safe labels straight
+# from the detector ("instruction-override, reveal-secret"). Those labels are English
+# phrases that the detector's own rules match: `reveal-secret` alone scores 2 on the
+# reveal-secret rule, which is the flag threshold. So Antigen's remediation notice
+# re-tripped Antigen's detector, and a cured field flagged again on the next sweep.
+#
+# Entities survived that by accident — `scan` skips anything tagged
+# `injection-quarantined`, and `cure`'s idempotency guard skips an already-stamped
+# entity. A KB DOCUMENT has neither shield: its title is unchanged by the cure, so
+# `is_own_incident` does not exempt it. The result was a cure/scan loop that never
+# converged, a `scan --fail-on-hit` cron that never went green again, and an incident
+# ledger growing one record per cycle whose `payload-sha256` was the digest of
+# Antigen's own banner.
+#
+# The labels now live ONLY in the forensic incident record, which `scan` already
+# exempts by title prefix. The banner points at it by name instead.
 BANNER = (BANNER_MARKER + " a prompt-injection payload was removed from this field on "
-          "{date}. Forensic evidence: {evidence}. Detection signals: {rule}.")
+          "{date}. Forensic evidence: {evidence}. Detection signals: recorded in the "
+          "Antigen incident record `{incident}` (the category labels are not repeated "
+          "here — they are detector triggers themselves).")
+
+#: Structural backstop for the same failure: if anything interpolated into the banner
+#: would still make the written text flag, fall back to this, which carries no
+#: free-text pointer at all.
+MINIMAL_BANNER = (BANNER_MARKER + " a prompt-injection payload was removed from this "
+                  "field on {date}. See the Antigen incident record `{incident}`.")
 
 EVIDENCE_POINTER = "repo examples/payloads/{pid}.txt (out-of-band; not on the graph)"
 
@@ -87,6 +118,47 @@ def canonical_content(entity: Entity) -> str:
 
 # Back-compat alias (older imports).
 hashed_content = canonical_content
+
+
+def inert_banner(cleaned: str, *, date: str, evidence: str, incident: str) -> str:
+    """Compose the remediation banner, guaranteed not to flag the text it is added to.
+
+    THE CONVERGENCE INVARIANT: Antigen must never write to the graph any text its own
+    detector flags. If it does, the next sweep re-flags the field it just cured, cures
+    it again, writes another incident record, and the loop never terminates — for KB
+    documents, which carry neither the `injection-quarantined` skip nor an
+    `antigen-incident-` title, that loop is unbounded.
+
+    The banner text is already label-free (see ``BANNER``), so the full form is what
+    normally ships. This function is the backstop that makes the invariant structural
+    rather than a property of one carefully-worded string: it scores the exact text
+    that would be written, with the real detector, and degrades to ``MINIMAL_BANNER``
+    if the evidence pointer or the incident id would trip it.
+
+    If ``cleaned`` flags on its own the banner is not the problem and is returned
+    unchanged — shortening a notice cannot fix content that is still poisoned, and
+    silently swapping it would hide that.
+    """
+    full = BANNER.format(date=date, evidence=evidence, incident=incident)
+    if detect(cleaned + full).flagged and not detect(cleaned).flagged:
+        return MINIMAL_BANNER.format(date=date, incident=incident)
+    return full
+
+
+def existing_incident_urns(gateway: Gateway) -> dict[str, str]:
+    """Title → URN for the forensic incident records already on the graph.
+
+    `save_document` WITHOUT a `urn` mints a brand-new document on a live GMS (the
+    offline double keys on `(parent, title)` and overwrites, which is exactly why
+    re-running the demo never surfaced this). So the incident save was not the
+    idempotent overwrite its comment claimed: on the live path a re-cure of the same
+    payload left a duplicate record behind, every run.
+
+    One `grep_documents` call per `cure` run — the same tool the sweep already uses —
+    resolves the ledger so each save can address its record by URN.
+    """
+    return {d.title: d.urn for d in gateway.grep_documents(INCIDENT_GREP)
+            if d.urn and d.title.startswith(INCIDENT_TITLE_PREFIX)}
 
 
 @dataclass
@@ -139,6 +211,8 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
     timestamp = clock() if clock else now
     result = CureResult()
     seen_this_run: set[str] = set()   # entities we have already begun curing this call
+    # Resolved lazily: only a run that actually cures something pays the extra read.
+    incident_ledger: dict[str, str] | None = None
 
     for hit in hits:
         ent = gateway.get_entity(hit.urn) if hit.locus is not Locus.DOCUMENT else None
@@ -177,12 +251,13 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
         incident_title = f"antigen-incident-{payload_id}"
         incident_urn = f"urn:li:document:{INCIDENTS_FOLDER}/{incident_title}"
 
-        banner = BANNER.format(
+        banner = inert_banner(
+            cleaned,
             date=timestamp,
             # Only corpus payloads have a checked-in raw file to point at.
             evidence=(EVIDENCE_POINTER.format(pid=payload_id) if fx is not None
                       else ADHOC_EVIDENCE_POINTER.format(sha=payload_sha[:12])),
-            rule=hit.detection.safe_summary,   # SAFE labels only, never payload text
+            incident=incident_title,
         )
         clean_with_banner = cleaned + banner
 
@@ -211,13 +286,18 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
                 LAST_SCANNED_PROP: timestamp,
             })
 
-        # (4) save_document — forensic incident (hashes + repo pointer, NO payload),
-        # itself overwritten in place on re-runs (idempotent, no duplicate incidents).
+        # (4) save_document — forensic incident (hashes + repo pointer, NO payload).
+        # Addressed by the EXISTING record's URN when one is already on the graph, so a
+        # re-cure overwrites it rather than minting a duplicate (title is not an
+        # identity key on a live GMS; see `existing_incident_urns`).
+        if incident_ledger is None:
+            incident_ledger = existing_incident_urns(gateway)
         gateway.save_document(
             title=incident_title,
             content=_forensic_report(hit, payload_id, content_sha, payload_sha,
                                      timestamp, mode, has_payload_file=fx is not None),
             parent=INCIDENTS_FOLDER,
+            urn=incident_ledger.get(incident_title),
         )
 
         result.actions.append(CureAction(

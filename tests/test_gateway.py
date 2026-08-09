@@ -429,6 +429,30 @@ def test_register_properties(monkeypatch):
     assert len(emitted) == 3
 
 
+def test_property_definitions_cover_every_entity_type_the_sweep_stamps():
+    """The definitions must cover what `search_all` actually enumerates.
+
+    `search_all` filters by nothing (`query="*"`), so `certify` and `cure` reach every
+    free-text-carrying type the catalog returns — the corpus alone certifies datasets
+    AND dashboards. Scoped to `dataset` only, the first poisoned dashboard would have
+    sent `add_structured_properties` at an uncovered entity type.
+    """
+    from antigen.certify import certify
+    from antigen.register_properties import ENTITY_TYPES
+    from antigen.scan import scan
+    from antigen.seed import build_corpus_gateway
+
+    gw = build_corpus_gateway()
+    report = scan(gw)
+    certify(gw, report.clean_entity_urns)
+    stamped_types = {u.split(":")[2] for u in report.clean_entity_urns}
+    assert "dashboard" in stamped_types, "precondition: the corpus stamps a dashboard"
+
+    covered = {t.rsplit(".", 1)[-1] for t in ENTITY_TYPES}
+    assert stamped_types <= covered, \
+        f"structured-property definitions do not cover {stamped_types - covered}"
+
+
 # --------------------------------------------------------------------------- #
 # Live-path branches: setup emits, document reassembly, nested lineage envelopes
 # --------------------------------------------------------------------------- #

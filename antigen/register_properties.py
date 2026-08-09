@@ -15,6 +15,29 @@ Three definitions, using valid dotted identifiers (never hyphens):
 
 from __future__ import annotations
 
+#: Entity types the definitions are scoped to.
+#:
+#: These were `dataset` ONLY, which did not match what Antigen actually sweeps.
+#: `SdkGateway.search_all` enumerates with a bare `query="*"` and no entity-type
+#: filter, so `cure` and `certify` reach every free-text-carrying type the catalog
+#: returns — the offline corpus alone certifies 26 datasets AND 2 dashboards, and a
+#: poisoned dashboard description would have sent `add_structured_properties` at a
+#: type the definition did not cover.
+#:
+#: The list is the set DataHub documents as carrying descriptions and supporting
+#: Metadata Tests — Dataset, Dashboard, Chart, Data Flow, Data Job, Container.
+#: Widening a definition costs nothing and cannot create a false positive; narrowing
+#: the enumeration instead would silently stop sweeping types that really do carry
+#: agent-readable text, which is the failure this project exists to prevent.
+ENTITY_TYPES = [
+    "urn:li:entityType:datahub.dataset",
+    "urn:li:entityType:datahub.dashboard",
+    "urn:li:entityType:datahub.chart",
+    "urn:li:entityType:datahub.dataFlow",
+    "urn:li:entityType:datahub.dataJob",
+    "urn:li:entityType:datahub.container",
+]
+
 PROPERTY_DEFINITIONS = [
     {"qualified_name": "antigen.contentSha256", "value_type": "string",
      "cardinality": "SINGLE",
@@ -56,7 +79,7 @@ def register_properties(client=None) -> list[str]:
             qualifiedName=d["qualified_name"],
             valueType="urn:li:dataType:datahub.string",
             cardinality=d["cardinality"],
-            entityTypes=["urn:li:entityType:datahub.dataset"],
+            entityTypes=list(ENTITY_TYPES),
             description=d["description"],
         )
         graph.emit_mcp(_mcp(prop_urn, definition))
