@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.0.10 (2026-08-09)
+
+### Bug Fixes
+
+- **assets**: Og image to spec — 1200x630, 175 KB, with a call to action
+  ([`cdbe01a`](https://github.com/edycutjong/antigen/commit/cdbe01ae8b013361094903ad936eadd1791ce55b))
+
+### Documentation
+
+- Test count 79 -> 80, and name the 5th READ tool
+  ([`ff2b096`](https://github.com/edycutjong/antigen/commit/ff2b09698d7a0d9d1d3c74a7c9ce86bb4654535a))
+
+
 ## v1.0.9 (2026-08-08)
 
 ### Bug Fixes
