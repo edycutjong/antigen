@@ -97,6 +97,34 @@ def _print_plan(plan, command: str) -> int:
     return 0
 
 
+def _warn_degraded(reasons: list[str]) -> bool:
+    """Print the fail-closed degradation banner; return True if the run was degraded.
+
+    Fail CLOSED. An empty or unreachable catalog reads identically to a clean one on
+    the wire, so any command that concludes "nothing to do" from an enumeration goes
+    green forever against a wrong `DATAHUB_GMS_URL`. `scan` carried this check alone,
+    which left it missing from `rescan` — the one command actually designed to live in
+    a metadata-CI job, where `--fail-on-hit` passing for the wrong reason is the whole
+    failure mode. Exit 2 is reserved for it, distinct from the 1 that means "the sweep
+    worked and found something".
+    """
+    if not reasons:
+        return False
+    for reason in reasons:
+        print(f"WARNING: {reason}", file=sys.stderr)
+    print("DEGRADED SWEEP — this is NOT an all-clear. Check DATAHUB_GMS_URL / "
+          "DATAHUB_GMS_TOKEN and the tool env flags, then re-run.", file=sys.stderr)
+    return True
+
+
+def _enumeration_reasons(gw, urns: list[str]) -> list[str]:
+    """Degradation reasons for a command that enumerates the catalog without `scan`."""
+    from .scan import EMPTY_CATALOG_REASON
+    reasons: list[str] = [] if urns else [EMPTY_CATALOG_REASON]
+    reasons += list(getattr(gw, "degradations", list)())
+    return reasons
+
+
 def cmd_scan(args) -> int:
     from .scan import scan
     gw, _ = _gateway(args)
@@ -118,15 +146,7 @@ def cmd_scan(args) -> int:
             loc = f" ::{h.field_path}" if h.field_path else ""
             zw = " [hidden-unicode]" if h.detection.hidden_unicode else ""
             print(f"  ⚑ {h.urn}{loc}  ({h.detection.safe_summary}){zw}  via {h.source_tool}")
-    if report.degraded:
-        # Fail CLOSED. An empty or unreachable catalog reads identically to a clean
-        # one on the wire, so `--fail-on-hit` in a metadata-CI job would go green
-        # forever against a wrong DATAHUB_GMS_URL. Exit 2 — distinct from the 1 that
-        # means "the sweep worked and found something".
-        for reason in report.degraded_reasons:
-            print(f"WARNING: {reason}", file=sys.stderr)
-        print("DEGRADED SWEEP — this is NOT an all-clear. Check DATAHUB_GMS_URL / "
-              "DATAHUB_GMS_TOKEN and the tool env flags, then re-run.", file=sys.stderr)
+    _warn_degraded(report.degraded_reasons)
     if args.fail_on_hit and report.hits:
         print(f"\nFAIL: {len(report.hits)} injection loci present (--fail-on-hit).",
               file=sys.stderr)
@@ -156,11 +176,14 @@ def cmd_cure(args) -> int:
         hits = [h for h in hits if (h.key in fixtures) is want_fixture]
     result = cure(target, hits, fixtures=fixtures, clock=_clock())
     if plan is not None:
-        return _print_plan(plan, "cure")
+        rc = _print_plan(plan, "cure")
+        return 2 if _warn_degraded(report.degraded_reasons) else rc
     print(result.summary())
     for a in result.actions:
         print(f"  ✔ {a.payload_id}  {a.urn}  [{a.mode}]  content={a.content_sha256[:12]}…")
-    return 0
+    # A cure is only as complete as the sweep that fed it: a degraded read means the
+    # loci NOT in this list were never looked at, so "cured N" must not read as done.
+    return 2 if _warn_degraded(report.degraded_reasons) else 0
 
 
 def cmd_blast_radius(args) -> int:
@@ -174,12 +197,14 @@ def cmd_blast_radius(args) -> int:
     br = map_blast_radius(target, sources)
     if plan is not None:
         print(br.summary())
-        return _print_plan(plan, "blast-radius")
+        rc = _print_plan(plan, "blast-radius")
+        return 2 if _warn_degraded(report.degraded_reasons) else rc
     print(br.summary())
     for src, downstream in br.per_source.items():
         if downstream:
             print(f"  {src} → {len(downstream)} downstream")
-    return 0
+    # Sources come from the sweep, so a degraded sweep means an under-counted radius.
+    return 2 if _warn_degraded(report.degraded_reasons) else 0
 
 
 def cmd_rescan(args) -> int:
@@ -193,7 +218,10 @@ def cmd_rescan(args) -> int:
     print(result.summary())
     for urn in result.drifted:
         print(f"  ⚠ drift: {urn}")
-    return 1 if (args.fail_on_hit and result.drifted) else 0
+    degraded = _warn_degraded(_enumeration_reasons(gw, all_urns))
+    if args.fail_on_hit and result.drifted:
+        return 2 if degraded else 1
+    return 2 if degraded else 0
 
 
 def cmd_certify(args) -> int:
@@ -204,9 +232,12 @@ def cmd_certify(args) -> int:
     report = scan(target)
     result = certify(target, report.clean_entity_urns, clock=_clock())
     if plan is not None:
-        return _print_plan(plan, "certify")
+        rc = _print_plan(plan, "certify")
+        return 2 if _warn_degraded(report.degraded_reasons) else rc
     print(result.summary())
-    return 0
+    # Certifying off a degraded sweep would stamp `agent-safe-certified` on entities
+    # whose neighbours were never read — the worst possible thing to get wrong.
+    return 2 if _warn_degraded(report.degraded_reasons) else 0
 
 
 def cmd_detect(args) -> int:

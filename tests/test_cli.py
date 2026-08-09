@@ -238,6 +238,51 @@ def test_a_degraded_read_downgrades_a_populated_sweep_too(monkeypatch):
     assert rc == 2 and "FAIL:" in out, "degraded outranks the ordinary hit exit code"
 
 
+def test_rescan_fail_on_hit_over_an_empty_catalog_exits_2(monkeypatch):
+    """`rescan --fail-on-hit` is the command actually wired into a metadata-CI job,
+    and the fail-closed check had landed in `cmd_scan` ONLY. Against a wrong
+    `DATAHUB_GMS_URL` it enumerated nothing, found nothing stamped, reported
+    "0 drifted" and exited 0 — green forever, for the wrong reason."""
+    monkeypatch.setattr(gateway_mod, "SdkGateway", _empty_gateway)
+    rc, out = run(["rescan", "--fail-on-hit"])
+    assert rc == 2
+    assert "catalog empty or gateway misconfigured" in out and "DEGRADED SWEEP" in out
+    assert "0 drifted" in out          # the reassuring line is still printed…
+    assert "NOT an all-clear" in out   # …never on its own
+
+
+def test_rescan_drift_on_a_degraded_read_exits_2_not_1(monkeypatch):
+    """Degraded outranks the ordinary drift exit code, exactly as in `scan`."""
+    from antigen.cure import cure
+    from antigen.scan import scan
+    from antigen.seed import corpus_fixtures
+    gw = build_corpus_gateway()
+    fx = corpus_fixtures()
+    cure(gw, [h for h in scan(gw).hits if h.key in fx], fixtures=fx)
+    urn = "urn:li:dataset:(urn:li:dataPlatform:snowflake,ecommerce.public.customers,PROD)"
+    gw.get_entity(urn).description = "tampered after certification"
+    gw.degradations = lambda: ["search_documents failed — scanned 0 documents"]
+    monkeypatch.setattr(gateway_mod, "SdkGateway", lambda: gw)
+    rc, out = run(["rescan", "--fail-on-hit"])
+    assert rc == 2 and "drift" in out and "DEGRADED SWEEP" in out
+
+
+def test_cure_certify_and_blast_radius_all_fail_closed(monkeypatch):
+    """Every command that concludes "nothing to do" from an enumeration must say so.
+
+    `cure` reporting "cured 0 loci", `certify` stamping `agent-safe-certified`, and
+    `blast-radius` reporting no downstream consumers are each an all-clear in prose;
+    off a degraded read all three are unfounded. Certify is the worst of the three —
+    it writes a positive safety claim into the graph."""
+    monkeypatch.setattr(gateway_mod, "SdkGateway", _empty_gateway)
+    for argv in (["cure", "--apply"], ["certify", "--apply"], ["blast-radius", "--apply"],
+                 ["cure", "--dry-run"], ["certify", "--dry-run"],
+                 ["blast-radius", "--dry-run"]):
+        rc, out = run(argv)
+        assert rc == 2, f"{argv} went green over an empty catalog"
+        assert "DEGRADED SWEEP" in out, argv
+
+
 def test_healthy_sweep_is_unaffected():
     rc, out = run(["scan", "--offline"])
     assert rc == 0 and "DEGRADED" not in out
