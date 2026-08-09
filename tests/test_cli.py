@@ -213,7 +213,12 @@ def test_fail_on_hit_over_an_empty_catalog_also_exits_2(monkeypatch):
     assert run(["scan", "--fail-on-hit"])[0] == 2
 
 
-def test_scan_json_carries_the_degraded_flag(monkeypatch):
+# NOTE: keep this name from being exactly `test_` + 35 chars. TruffleHog's Lob
+# detector matches `test_[A-Za-z0-9_]{35}` and its verifier returns "verified" for
+# arbitrary strings, so a 35-character test name fails Stage 2 secret scanning as a
+# false positive. Four pre-existing test names in this repo sit on that boundary and
+# will trip CI the next time their line is touched.
+def test_scan_json_carries_degraded_flag(monkeypatch):
     monkeypatch.setattr(gateway_mod, "SdkGateway", _empty_gateway)
     rc, out = run(["scan", "--json"])
     assert rc == 2 and '"degraded": true' in out
