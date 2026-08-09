@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.1.1 (2026-08-09)
+
+### Bug Fixes
+
+- **web**: Pitch deck test count 80 -> 114
+  ([`771eaa4`](https://github.com/edycutjong/antigen/commit/771eaa42e971174efd77c5f7fac118833b5037c7))
+
+
 ## v1.1.0 (2026-08-09)
 
 ### Bug Fixes
