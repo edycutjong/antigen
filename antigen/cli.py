@@ -89,6 +89,8 @@ def cmd_scan(args) -> int:
     if args.json:
         print(json.dumps({
             "summary": report.summary(),
+            "degraded": report.degraded,
+            "degraded_reasons": report.degraded_reasons,
             "hits": [{"urn": h.urn, "locus": h.locus.value,
                       "field_path": h.field_path, "source_tool": h.source_tool,
                       "signals": h.detection.signals,
@@ -101,11 +103,20 @@ def cmd_scan(args) -> int:
             loc = f" ::{h.field_path}" if h.field_path else ""
             zw = " [hidden-unicode]" if h.detection.hidden_unicode else ""
             print(f"  ⚑ {h.urn}{loc}  ({h.detection.safe_summary}){zw}  via {h.source_tool}")
+    if report.degraded:
+        # Fail CLOSED. An empty or unreachable catalog reads identically to a clean
+        # one on the wire, so `--fail-on-hit` in a metadata-CI job would go green
+        # forever against a wrong DATAHUB_GMS_URL. Exit 2 — distinct from the 1 that
+        # means "the sweep worked and found something".
+        for reason in report.degraded_reasons:
+            print(f"WARNING: {reason}", file=sys.stderr)
+        print("DEGRADED SWEEP — this is NOT an all-clear. Check DATAHUB_GMS_URL / "
+              "DATAHUB_GMS_TOKEN and the tool env flags, then re-run.", file=sys.stderr)
     if args.fail_on_hit and report.hits:
         print(f"\nFAIL: {len(report.hits)} injection loci present (--fail-on-hit).",
               file=sys.stderr)
-        return 1
-    return 0
+        return 2 if report.degraded else 1
+    return 2 if report.degraded else 0
 
 
 def cmd_cure(args) -> int:

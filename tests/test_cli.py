@@ -186,6 +186,60 @@ def test_rescan_drift_failonhit_live(monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
+# Fail-closed: a degraded sweep must never read as an all-clear
+# --------------------------------------------------------------------------- #
+
+def _empty_gateway():
+    from antigen._testkit import InMemoryGateway
+    return InMemoryGateway()
+
+
+def test_scan_of_an_empty_catalog_exits_2_not_0(monkeypatch):
+    """A dead or misconfigured GMS returns an empty catalog, which is byte-identical
+    on the wire to a clean one. Reported as clean, a metadata-CI job wired to
+    `--fail-on-hit` per the README goes green forever against a wrong GMS URL."""
+    monkeypatch.setattr(gateway_mod, "SdkGateway", _empty_gateway)
+    rc, out = run(["scan"])
+    assert rc == 2
+    assert "WARNING: 0 entities enumerated — catalog empty or gateway misconfigured" in out
+    assert "DEGRADED SWEEP" in out
+    assert "0 injection loci flagged" in out          # the count is still printed…
+    assert "DEGRADED:" in out                          # …but never on its own
+
+
+def test_fail_on_hit_over_an_empty_catalog_also_exits_2(monkeypatch):
+    """The exact CI wiring from the README. It used to exit 0."""
+    monkeypatch.setattr(gateway_mod, "SdkGateway", _empty_gateway)
+    assert run(["scan", "--fail-on-hit"])[0] == 2
+
+
+def test_scan_json_carries_the_degraded_flag(monkeypatch):
+    monkeypatch.setattr(gateway_mod, "SdkGateway", _empty_gateway)
+    rc, out = run(["scan", "--json"])
+    assert rc == 2 and '"degraded": true' in out
+    assert "catalog empty or gateway misconfigured" in out
+
+
+def test_a_degraded_read_downgrades_a_populated_sweep_too(monkeypatch):
+    """Not just the empty case: a gateway that reports a failed read is degraded even
+    with entities enumerated and hits found — and hits + degraded still exits 2."""
+    gw = build_corpus_gateway()
+    gw.degradations = lambda: ["search_documents failed — scanned 0 documents"]
+    monkeypatch.setattr(gateway_mod, "SdkGateway", lambda: gw)
+
+    rc, out = run(["scan"])
+    assert rc == 2 and "search_documents failed" in out
+    rc, out = run(["scan", "--fail-on-hit"])
+    assert rc == 2 and "FAIL:" in out, "degraded outranks the ordinary hit exit code"
+
+
+def test_healthy_sweep_is_unaffected():
+    rc, out = run(["scan", "--offline"])
+    assert rc == 0 and "DEGRADED" not in out
+    assert run(["scan", "--offline", "--fail-on-hit"])[0] == 1
+
+
+# --------------------------------------------------------------------------- #
 # __main__ entrypoint
 # --------------------------------------------------------------------------- #
 

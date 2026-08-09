@@ -137,7 +137,16 @@ are on the entity, and a graph-safe forensic banner records *what* was removed a
 
 - `antigen scan --fail-on-hit` drops into a metadata-CI job (or cron against the live
   catalog): a new injection from any ingestion source or human editor fails the build /
-  raises an incident **before an agent reads it**.
+  raises an incident **before an agent reads it**. That job also **fails closed** — a
+  sweep that enumerated nothing, or whose reads degraded, exits **2** with
+  `WARNING: 0 entities enumerated — catalog empty or gateway misconfigured` rather than
+  reporting `0 injection loci flagged` and exiting 0. An empty catalog is byte-identical
+  on the wire to a clean one, so without that guard a typo in `DATAHUB_GMS_URL` makes the
+  build green forever. This is the same silent-success failure mode Antigen's own
+  [findings against the tool surface](docs/RFC-output-sanitization.md) complain about
+  — wrong argument names returning empty results instead of erroring, which is how 7 of 8
+  tools ended up mis-called with a fully green test suite. It would have been hypocritical
+  to ship it in the scanner.
 - `antigen certify` stamps `antigen.contentSha256` on **every** clean entity (not just a
   tag), and `antigen rescan` re-hashes them — so a certified `agent-safe-certified` entity
   whose content later changes is auto-re-flagged. Drift protection covers the clean

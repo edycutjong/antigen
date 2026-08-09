@@ -6,6 +6,12 @@ Enumerates the whole catalog via `search`, batch-pulls description + column text
 
 Idempotency: entities already tagged `injection-quarantined` are skipped, so
 `antigen scan && antigen cure` run twice with no state reset is a no-op.
+
+Fail-closed: a sweep that enumerated nothing, or whose reads degraded, records why in
+`ScanReport.degraded_reasons` and is reported as DEGRADED rather than clean. A dead or
+misconfigured GMS returns an empty catalog that is indistinguishable on the wire from a
+clean one, and for a security control "found nothing" must never be the same answer as
+"looked and there was nothing".
 """
 
 from __future__ import annotations
@@ -77,6 +83,13 @@ class ScanHit:
         return (self.urn, self.field_path or "")
 
 
+#: What a sweep that enumerated nothing has to say for itself. A dead or
+#: misconfigured GMS returns an empty catalog, which is indistinguishable from a clean
+#: one on the wire — so it must never be reported as clean.
+EMPTY_CATALOG_REASON = ("0 entities enumerated — catalog empty or gateway "
+                        "misconfigured")
+
+
 @dataclass
 class ScanReport:
     hits: list[ScanHit]
@@ -84,6 +97,13 @@ class ScanReport:
     documents_scanned: int
     skipped_quarantined: int
     clean_entity_urns: list[str] = field(default_factory=list)
+    #: Reads that failed or returned nothing. Non-empty ⇒ this sweep is NOT an
+    #: all-clear, however few hits it found.
+    degraded_reasons: list[str] = field(default_factory=list)
+
+    @property
+    def degraded(self) -> bool:
+        return bool(self.degraded_reasons)
 
     def summary(self) -> str:
         by_tool: dict[str, int] = {}
@@ -100,12 +120,16 @@ class ScanReport:
         parts += [f"{n} via {t}" for t, n in sorted(by_tool.items())]
         if self.skipped_quarantined:
             parts.append(f"{self.skipped_quarantined} already-quarantined (skipped)")
+        if self.degraded_reasons:
+            # Never let a confident-looking count stand alone over a broken sweep.
+            parts.append("DEGRADED: " + "; ".join(self.degraded_reasons))
         return " | ".join(parts)
 
 
 def scan(gateway: Gateway, *, skip_quarantined: bool = True,
          grep_documents: bool = True) -> ScanReport:
     urns = gateway.search_all()
+    degraded: list[str] = [] if urns else [EMPTY_CATALOG_REASON]
     hits: list[ScanHit] = []
     clean: list[str] = []
     scanned = 0
@@ -149,6 +173,9 @@ def scan(gateway: Gateway, *, skip_quarantined: bool = True,
                                     "grep_documents", doc.content, dd,
                                     doc_title=doc.title, doc_parent=doc.parent))
 
+    # Collected AFTER the document pass so a failed `search_documents` is included.
+    degraded += list(getattr(gateway, "degradations", list)())
+
     return ScanReport(hits=hits, entities_scanned=scanned,
                       documents_scanned=docs_scanned, skipped_quarantined=skipped,
-                      clean_entity_urns=clean)
+                      clean_entity_urns=clean, degraded_reasons=degraded)
