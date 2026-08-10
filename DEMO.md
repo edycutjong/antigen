@@ -23,7 +23,7 @@ Reproduces:
 | Payload + base64/hex absent post-cure | `python tests/test_cure.py` | `test_cure_neutralizes_every_readable_surface PASS` |
 | Idempotent (`scan && cure` twice = no-op) | `python tests/test_cure.py` | `test_idempotent_second_run_is_noop PASS` |
 | Tamper-evidence catches drift | `python tests/test_cure.py` | `test_rescan_detects_drift PASS` |
-| Latency p50/p95/p99 | `python bench.py --runs 20` | scan+cure p50 ≈ 2 ms (offline) |
+| Latency p50/p95/p99 | `python bench.py --runs 20` | scan+cure p50 under 5 ms end-to-end (offline); ~2 ms for the scan alone |
 | The full hero arc | `python -m antigen demo --offline` | sweep → defuse → 0 remaining |
 | A live run writes nothing without `--apply` | `python -m antigen cure --dry-run` | `DRY RUN — … would write N mutations … Nothing was written.` |
 | **Containment** — the outcome for entity types DataHub refuses to let us fix | `python examples/containment_demo.py` | `1 CONTAINED not cured (dashboard — payload STILL LIVE)`, exit 3, and a re-run emitting `mutations emitted: 0` |
@@ -198,3 +198,48 @@ A trial the agent cannot complete is recorded as `ERRORED` and makes the phase
 `INCONCLUSIVE`, never a 0-hijack result. One such phase is in the transcript (the stock
 agent emitted a malformed filter query that the Agent Context Kit tool rejected); it is
 kept rather than deleted, and the phase was re-run cold.
+
+---
+
+## What this demo does *not* prove — the sweep's blind spot
+
+Every payload in this demo is planted where Antigen can see it. That is honest for a demo,
+but it would be dishonest to leave the impression that a clean `scan` means a clean catalog.
+**It does not**, and the gap is chosen by the attacker rather than by us.
+
+Antigen reads dataset descriptions through `get_entities`, which HTML-sanitises and
+truncates every description at **1,000 characters**
+(`datahub_agent_context.mcp_tools.helpers.DESCRIPTION_LENGTH_HARD_LIMIT`). The `search`
+tool returns the **same text untruncated**. So a payload placed past character ~997 of a
+dataset description reaches an agent and never reaches the detector.
+
+Run it against this very corpus — all 12 shipped payloads flag on raw text, but prefix
+**1,050 characters** of ordinary warehouse boilerplate and the entity-description payloads
+go silent:
+
+| | |
+|---|---:|
+| Shipped payloads flagged, raw | **12 / 12** |
+| Entity-description payloads flagged after a 1,050-char prefix | **0 / 8** |
+
+The same read path also strips HTML: a payload inside a `<p title="…">` attribute or an
+HTML comment scores **3–4 on raw text and 0** through `get_entities`. (Two honest limits: a
+tag with more than 100 characters between `<` and `>` is not stripped and still flags, and a
+**base64** data-URI is not a sanitisation bypass — the detector scores it 0 either way,
+because it does not decode base64.)
+
+**Scope — this is one locus, not the whole product.** Only the dataset/entity-description
+locus is affected. **Curated column descriptions** (read from `editableSchemaMetadata` via
+the base SDK) and **KB documents** (read via `grep_documents`) are **not truncated**, so the
+column and document loci in this demo — 2 and 2 of the 12 payloads — are unaffected.
+
+**And it is self-inflicted, not an SDK limitation.** `SdkGateway._paged_urns` already calls
+`search`, gets the untruncated description back, keeps only the URNs and discards the text —
+then `get_entities` re-reads and truncates. The fix is ours and small: read dataset
+descriptions from `datasetProperties` / `editableDatasetProperties`, the technique
+`_merge_editable_columns` already uses for columns. It is **not shipped** — the code is
+frozen for this evidence pass and that read path underpins every published figure here.
+
+Full measurement and reproduction:
+[`docs/false-positive-revert.md`](docs/false-positive-revert.md) ·
+[`docs/THREAT-MODEL.md`](docs/THREAT-MODEL.md#what-antigens-own-sweep-cannot-see)

@@ -1432,6 +1432,68 @@ strong { color: var(--text-hi); font-weight: 600; }
               of attack beats no control at all — the current state of every
               shipped catalog-agent stack.
             </p>
+            <p>
+              <strong>But yes — and we know of one that is cheap. See the next
+              answer; we would rather you heard it from us.</strong>
+            </p>
+          </div>
+        </details>
+
+        <details>
+          <summary>Does the sweep see everything an agent sees? (No — and this is the
+            most serious limitation on this page)</summary>
+          <div class="answer">
+            <p>
+              <strong>A clean <code>scan</code> is not proof of a clean catalog.</strong>
+              Antigen reads dataset descriptions through <code>get_entities</code>, which
+              HTML-sanitises and truncates every description at
+              <strong>1,000 characters</strong>
+              (<code>DESCRIPTION_LENGTH_HARD_LIMIT</code>). The <code>search</code> tool
+              returns the <em>same text untruncated</em>. So a payload placed past
+              character ~997 of a dataset description reaches an agent and never reaches
+              the detector.
+            </p>
+            <p>
+              <strong>The attacker picks the length, which is what makes it a bypass
+              rather than a quirk of long fields.</strong> On our own shipped attack
+              corpus: all <strong>12 of 12</strong> payloads flag on raw text, but
+              prefixing 1,050 characters of ordinary warehouse boilerplate takes the
+              entity-description payloads to <strong>0 of 8</strong>. The same read path
+              strips HTML, so a payload inside a <code>&lt;p title="…"&gt;</code>
+              attribute or an HTML comment scores 3–4 raw and <strong>0</strong> through
+              <code>get_entities</code>.
+            </p>
+            <p>
+              <strong>Scope it honestly — this is one locus, not the whole product.</strong>
+              Only the dataset/entity-description locus is affected. Curated
+              <strong>column</strong> descriptions (read from
+              <code>editableSchemaMetadata</code> via the base SDK) and
+              <strong>KB documents</strong> (read via <code>grep_documents</code>) are
+              <strong>not</strong> truncated. Two further limits, in our favour and stated
+              anyway: a tag with over 100 characters between <code>&lt;</code> and
+              <code>&gt;</code> is not stripped and still flags, and a <em>base64</em>
+              data-URI is not a sanitisation bypass at all — the detector scores it 0
+              either way, because it does not decode base64.
+            </p>
+            <p>
+              <strong>And it is self-inflicted, not an SDK limitation.</strong>
+              <code>SdkGateway._paged_urns</code> already calls <code>search</code>, gets
+              the untruncated description back, keeps only the URNs and discards the
+              text — then <code>get_entities</code> re-reads it and truncates. We had the
+              full text on call one. The fix is ours and small: read dataset descriptions
+              from <code>datasetProperties</code> / <code>editableDatasetProperties</code>,
+              the technique <code>_merge_editable_columns</code> already uses for columns.
+              It is <strong>not shipped</strong> — the code is frozen for this evidence
+              pass, and that read path underpins every detection figure published here.
+            </p>
+            <p>
+              Until then: the column and KB-document paths are unaffected,
+              <code>search</code>-based enumeration returns full text, and a payload long
+              enough to exploit this makes the description conspicuously long — length is
+              itself a review signal. Measured, with the reproduction, in
+              <code>docs/false-positive-revert.md</code> and
+              <code>docs/THREAT-MODEL.md</code>.
+            </p>
           </div>
         </details>
       </div>

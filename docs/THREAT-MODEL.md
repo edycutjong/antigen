@@ -10,7 +10,13 @@
 [DataHub's own automation is the amplifier](#datahubs-own-automation-is-the-amplifier) ·
 [Who can actually write catalog free text](#who-can-actually-write-catalog-free-text) ·
 [Why DataHub's own tooling doesn't close it](#why-datahubs-own-tooling-doesnt-close-it) ·
-[Why not an ingestion transformer](#why-not-an-ingestion-transformer)
+[Why not an ingestion transformer](#why-not-an-ingestion-transformer) ·
+[**What Antigen's own sweep cannot see**](#what-antigens-own-sweep-cannot-see)
+
+> **Read the last section before you rely on the sweep.** Antigen's detector does **not**
+> see everything an agent sees. At the dataset-description locus the read path truncates at
+> 1,000 characters and strips HTML, so an attacker who picks the length or the wrapper gets
+> a payload past the sweep and into an agent's context. Scope and measurements below.
 
 ---
 
@@ -439,3 +445,90 @@ that spreads a payload furthest. Antigen's claim has always been the narrow one 
 **nobody repairs the store of record** — and the transformer question is the sharpest
 available test of it: the best in-flight sanitiser in the world still leaves every
 already-poisoned field exactly where it is.
+
+---
+
+## What Antigen's own sweep cannot see
+
+Every claim above is about the threat. This section is about **the limits of the control**,
+and it belongs in the threat model because an attacker who reads it gets a working evasion.
+Publishing it is the deliberate choice: an adopter who does not know this will over-trust a
+clean sweep.
+
+Both mechanisms live in the **read path**, before the detector scores anything, and both
+affect the **dataset/entity-description locus only**.
+
+### 1. The 1,000-character length bypass
+
+Antigen reads dataset descriptions through `get_entities`, which HTML-sanitises and
+truncates every description at **1,000 characters**
+(`datahub_agent_context.mcp_tools.helpers.DESCRIPTION_LENGTH_HARD_LIMIT`, applied at
+`mcp_tools/entities.py:94` and `:208`). The `search` tool returns the **same description
+untruncated**. So a payload placed past character ~997 reaches any agent that calls
+`search` and is invisible to the sweep.
+
+**The attacker chooses the length, which is what makes this a bypass rather than a
+long-field artifact.** Measured against Antigen's own shipped attack corpus:
+
+| | |
+|---|---:|
+| Shipped payloads that flag on raw text | **12 / 12** |
+| Entity-description payloads that flag after a 1,050-char boilerplate prefix | **0 / 8** |
+
+The same effect is visible in the false-positive corpus: of the 24 flagged strings, only
+**10** still flag through the live read path, and **0 of the 14** longer than 1,000
+characters do.
+
+**This is self-inflicted, not an SDK limitation — and that matters for who owns the fix.**
+`SdkGateway._paged_urns` already calls `search`, receives the full untruncated description,
+keeps only the URNs, and discards the text; `get_entities` then re-reads the same entity and
+truncates it. The untruncated text was in hand on call one. The fix is to read dataset
+descriptions from the `datasetProperties` / `editableDatasetProperties` aspects — the
+technique `SdkGateway._merge_editable_columns` already uses for columns. **It is not
+shipped**: the code is frozen for this evidence pass, and that read path is what every
+published detection figure depends on.
+
+### 2. HTML tags and data-URI embeds are stripped before scoring
+
+The same sanitiser deletes anything matching `<[^<>]{0,100}>` and reduces
+`![alt](data:…)` to its alt text. A payload carried in an HTML **attribute** or **comment**
+therefore never reaches the detector, while `search` hands it to an agent verbatim.
+
+| Placement | Detector on raw text | Through `get_entities` |
+|---|---:|---:|
+| Bare payload (control) | score 4 — flags | score 4 — flags |
+| Payload in one `<p title="…">`, under the 100-char bound | score 3 — flags | **score 0 — silent** |
+| Payload split across several short tags | score 4 — flags | **score 0 — silent** |
+| Payload in an HTML comment | score 3 — flags | **score 0 — silent** |
+| Plaintext data-URI embed | score 4 — flags | **score 0 — silent** |
+| Payload in a tag **over** 100 chars between `<` and `>` | score 4 — flags | score 4 — flags |
+| **Base64** data-URI embed | **score 0 — does not flag** | score 0 |
+
+Two honest scopings. A tag longer than the regex's 100-character bound is **not** stripped
+and still flags. And a **base64** data-URI is **not** a sanitisation bypass at all — the
+detector scores it 0 whether or not the embed survives, because it does not decode base64.
+That is a pre-existing recall gap in the rule, not something the read path creates.
+
+### What is not affected
+
+| Locus | Read path | Truncated / stripped? |
+|---|---|---|
+| **Dataset / entity description** | `get_entities` | **Yes — the blind spot** |
+| Ingested column descriptions | `get_entities` (`schemaMetadata`) | Yes — same limit |
+| **Curated column descriptions** | `editableSchemaMetadata` via base SDK | **No — read in full** |
+| **KB documents** | `grep_documents` | **No — own 8,000-char pagination** |
+
+Curated column text and KB documents are read whole, which is why the column and document
+loci in the demo corpus are unaffected by either mechanism.
+
+### What an adopter should do about it today
+
+- **Do not read a clean `scan` as proof the catalog is clean.** Report coverage, not absence.
+- The **column** and **KB-document** paths are unaffected — those findings stand.
+- `search`-based enumeration returns full text, so long dataset descriptions can be reviewed
+  outside Antigen until the read path is fixed.
+- A payload long enough to exploit mechanism 1 also makes the description conspicuously
+  long. Length is itself a review signal.
+
+Measured, with the reproduction, in
+[`false-positive-revert.md`](./false-positive-revert.md).

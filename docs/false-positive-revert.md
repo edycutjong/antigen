@@ -206,9 +206,56 @@ Two consequences, and they point in opposite directions:
    and are **not** truncated, which is why the 3,448-character string could be used
    at the column locus at all.
 
+### It is a bypass, not just a blind spot — the attacker picks the length
+
+Framing this as something that "happens to long descriptions" understates it. The
+length is an attacker-chosen parameter, and one kilobyte of filler is not a cost.
+Measured over this project's own 12 shipped attack payloads:
+
+| | |
+|---|---:|
+| Shipped payloads flagged, raw | **12 / 12** |
+| Entity-description payloads flagged after a 1,050-char boilerplate prefix | **0 / 8** |
+
+The honest denominator is **8**, not 12: only the entity-description locus reads
+through the truncating path. The 2 curated-column payloads
+(`editableSchemaMetadata`) and the 2 KB-document payloads (`grep_documents`, with
+its own 8,000-character pagination) are unaffected.
+
+### The read path also strips HTML and data-URI embeds
+
+Same sanitiser, same position — before the detector scores anything.
+`sanitize_html_content` deletes anything matching `<[^<>]{0,100}>` and
+`sanitize_markdown_content` reduces `![alt](data:…)` to its alt text:
+
+| Placement | Raw detector | Through `get_entities` |
+|---|---:|---:|
+| Bare payload (control) | score 4 | score 4 |
+| Payload in one `<p title="…">` under the 100-char bound | score 3 | **0** |
+| Payload split across several short tags | score 4 | **0** |
+| Payload in an HTML comment | score 3 | **0** |
+| Plaintext data-URI embed | score 4 | **0** |
+| Payload in a tag **over** 100 chars between `<` and `>` | score 4 | 4 |
+| **Base64** data-URI embed | **0** | 0 |
+
+Two scopings that keep this honest. A tag longer than the regex's 100-character
+bound is **not** stripped and still flags. And a **base64** data-URI is **not** a
+sanitisation bypass — the detector scores it 0 either way, because it does not
+decode base64. That is a pre-existing recall gap in the rule, not one the read
+path creates.
+
+### This is self-inflicted, not an SDK limitation
+
+Worth stating plainly, because it decides who owns the fix. `SdkGateway._paged_urns`
+**already calls `search`**, which returns the full untruncated description — and
+then keeps only the URNs and throws the text away. `get_entities` afterwards
+re-reads the same entity and truncates it to 1,000 characters. The untruncated text
+was in hand on call one; the architecture discarded it. The SDK did not blind the
+detector.
+
 This is a real gap in Antigen and it is not fixed here — the code is frozen for
-this evidence pass. The fix is to read dataset descriptions from the
-`datasetProperties` / `editableDatasetProperties` aspects rather than relying on
+this evidence pass. The fix is ours and it is small: read dataset descriptions from
+the `datasetProperties` / `editableDatasetProperties` aspects rather than relying on
 `get_entities` for the text, which is the same technique `_merge_editable_columns`
 already uses for columns.
 

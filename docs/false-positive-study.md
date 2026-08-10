@@ -148,9 +148,15 @@ English-like subset        : 25,565 scanned, 24 flagged (0.0939 %)
 | ≥ 2,000 | 193 | 9 | **4.663 %** |
 
 Median description length in the corpus is 57 characters; the median *flagged* description is
-1,429. The detector requires two independent signals to co-occur **anywhere in the same
-field** — it does not require them to be near each other — so every additional paragraph is
-another chance to supply the missing half. Short column docs are effectively immune. Long,
+1,429. The reason length drives the rate is that the constituents of a **composite** signal
+only have to co-occur **anywhere in the same field** — the rule does not require them to be
+near each other — so every additional paragraph is another chance to supply a missing
+constituent. That is the mechanism behind all 24: **23 scored on the exfiltration triple
+alone** (transfer verb + sensitive object + external destination), which is a three-part
+conjunction scattered across one long field. Note this is *not* a claim that every flag
+needs two signals — instruction-override, persona jailbreak and reveal-a-secret each score
+2 and flag on their own; only tool-poisoning is gated on a second cue. Short column docs are
+effectively immune. Long,
 hand-curated, high-value descriptions — a data dictionary entry for the `customers` table,
 the sort of field a steward spent an afternoon on — flag at roughly **1 in 21**.
 
