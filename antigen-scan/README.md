@@ -26,7 +26,7 @@ Or ask naturally: "check our column descriptions for jailbreaks", "is this catal
 
 - **Every mutating command is dry-run by default against a live catalog.** `--apply` is required to write, and `cure` calls 4 write-back tools per finding — which the plan prints as 6 individual writes, since the three structured properties are counted separately — and `certify` calls 2 per _clean_ entity.
 - **A degraded sweep is not an all-clear.** An unreachable or misconfigured GMS returns an empty catalog that looks identical to a clean one, so the scan fails closed with exit code 2.
-- **Where no fixture records the field's original text, remediation replaces the whole description.** Antigen never persists a recoverable payload, so the prior text is recoverable only from DataHub's own aspect version history.
+- **Where no fixture records the field's original text, remediation replaces the whole description.** Antigen never persists a recoverable payload, so the prior text is recoverable only from DataHub's own aspect version history — and recovery is **not one action**. Verified live: version `1` is the *oldest*, not the previous, so a naive one-call revert restores the wrong text silently; the floor is two calls, and reverting a column rewrites `editableSchemaMetadata` and can clobber a colleague's later edit to a different column.
 
 ## Requires
 
