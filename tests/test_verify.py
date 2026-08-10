@@ -5,6 +5,7 @@ Run: `python tests/test_verify.py`  or  `python -m pytest tests/test_verify.py -
 
 from __future__ import annotations
 
+import contextlib
 import os
 import sys
 
@@ -46,13 +47,49 @@ def test_near_miss_still_zero_fp():
 # injections in catalog metadata". An infrastructure failure establishes nothing and
 # must be exit 2. That was fixed in `cli.main` and missed in these three.
 
+
+@contextlib.contextmanager
+def _sdk_absent():
+    """Impose "the live extras are not installed" instead of inheriting it.
+
+    Both tests below say `without_the_sdk` in their names but used to prove it only
+    by being run on a machine that happened to lack `acryl-datahub`. Once a reader
+    follows the README's live-setup section the premise silently inverts and the
+    calls go THROUGH: `verify.main(["--live", ...])` builds a real `SdkGateway`, and
+    `seed_catalog.main([])` writes thirteen datasets into whatever catalog
+    `$DATAHUB_GMS_URL` names and then waits up to 120 s for them to index. Both still
+    returned 2 — so the assertions stayed green — but only because something further
+    down happened to raise, which is luck, not a test. With no GMS listening they
+    also spent 28 s each retrying, which is most of the suite's runtime in that
+    configuration.
+
+    Patched by hand rather than with `monkeypatch`, for the reason given on
+    `test_verify_still_exits_1_on_a_real_finding`: `./run.sh` executes this module
+    directly, where pytest fixtures do not exist.
+    """
+    import builtins
+
+    real_import = builtins.__import__
+
+    def blocked(name, *a, **k):
+        if name.split(".")[0] in ("datahub", "datahub_agent_context"):
+            raise ImportError("live extras not installed")
+        return real_import(name, *a, **k)
+
+    builtins.__import__ = blocked
+    try:
+        yield
+    finally:
+        builtins.__import__ = real_import
+
+
 def test_verify_live_without_the_sdk_exits_2_not_1():
     """`verify.py --live` with no DataHub extras used to exit 1 with a traceback."""
     import io
     from contextlib import redirect_stderr
 
     err = io.StringIO()
-    with redirect_stderr(err):
+    with redirect_stderr(err), _sdk_absent():
         rc = verify.main(["--live", "--no-hijack", "--quiet"])
     assert rc == 2, "a missing live dependency is not a finding"
     assert "COULD NOT RUN" in err.getvalue()
@@ -101,7 +138,7 @@ def test_seed_catalog_without_the_sdk_exits_2_not_1():
     import seed_catalog
 
     out, err = io.StringIO(), io.StringIO()
-    with redirect_stdout(out), redirect_stderr(err):
+    with redirect_stdout(out), redirect_stderr(err), _sdk_absent():
         rc = seed_catalog.main([])
     assert rc == 2 and "REFUSED" in err.getvalue()
 

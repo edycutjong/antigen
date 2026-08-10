@@ -634,8 +634,9 @@ def _sdk(tools):
     return _sdk_with_tools(tools)
 
 
-def test_a_per_urn_error_is_not_parsed_into_an_entity():
-    from test_gateway import FakeTool
+def test_a_per_urn_error_is_not_parsed_into_an_entity(monkeypatch):
+    from test_gateway import FakeTool, offline
+    offline(monkeypatch)   # else `[live]` extras make the overlay read a real GMS
     good = {"urn": "urn:li:dataset:(ok)", "properties": {"description": "clean"}}
     g = _sdk([FakeTool("get_entities",
                        lambda kw: [_KIT_NOT_FOUND, good, _KIT_FETCH_FAILED])])

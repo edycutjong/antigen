@@ -1,9 +1,14 @@
 """Gateway coverage — response parsers, the live SdkGateway, and register_properties.
 
-The real DataHub SDK isn't installed offline, so the SDK/LangChain imports are faked
-via `sys.modules` injection and the tool objects are `FakeTool`s. This exercises the
-production argument-marshalling and response-parsing code (the code that would run
-against a live GMS) without a network or Docker. Run under pytest.
+The SDK/LangChain imports are faked via `sys.modules` injection and the tool objects
+are `FakeTool`s. This exercises the production argument-marshalling and response-parsing
+code (the code that would run against a live GMS) without a network or Docker.
+
+That hermeticity is asserted, not assumed: it used to rest on the base SDK being
+absent, so installing the `[live]` extras — which the README's own live-setup section
+tells a reader to do — quietly turned three of these unit tests into live HTTP clients.
+Any double that can reach `Gateway._graph()` must be pinned with `offline()`. Run
+under pytest.
 """
 
 from __future__ import annotations
@@ -105,6 +110,33 @@ def _sdk_with_tools(tools):
     g._degradations = []
     g._degraded_kinds = set()
     return g
+
+
+def offline(monkeypatch):
+    """Pin a gateway double to tool-only mode — no base SDK, no graph, no network.
+
+    `_graph_cache = None` means "not built YET", not "offline". Without the `[live]`
+    extras the distinction is invisible, because `_graph()` then fails its import and
+    returns None anyway — which is the only reason these unit tests ever looked
+    hermetic. WITH the extras installed the import succeeds, so every double that
+    reaches `_graph()` silently built a REAL `DataHubGraph` against
+    `$DATAHUB_GMS_URL` (default `http://localhost:8080`) and issued live HTTP reads
+    from a test whose tools are all fakes.
+
+    That is not a cosmetic leak. It made the suite's result a property of the
+    reader's machine: with a GMS answering, `test_sdkgateway_read_and_mutation_methods`
+    spent 56 s retrying `get_aspect` into a 500; with no GMS — the ordinary case for
+    someone who installed the extras and skipped `datahub docker quickstart` —
+    `test_a_per_urn_error_is_not_parsed_into_an_entity` FAILED outright on a second,
+    connection-refused degradation it never asked for. And because `_graph()` never
+    returned None, the `graph is None` guard in `_merge_editable_columns` went
+    unexecuted and `make cov` stopped at 99.94% against a 100% gate.
+
+    Patching `_graph` itself, rather than pre-seeding the cache, is what makes the
+    offline path deterministic in BOTH dependency configurations instead of only in
+    the bare one CI happens to install.
+    """
+    monkeypatch.setattr(SdkGateway, "_graph", lambda self: None)
 
 
 class CappingSearchTool:
@@ -234,7 +266,7 @@ def test_document_urns_fall_back_to_an_unpaged_call_and_say_so(capsys):
     assert any("only partially swept" in d for d in g.degradations())
 
 
-def test_sdkgateway_read_and_mutation_methods():
+def test_sdkgateway_read_and_mutation_methods(monkeypatch):
     """Pins the REAL Agent Context Kit contract, captured from a live GMS.
 
     Every request kwarg and response shape below was recorded against
@@ -284,6 +316,7 @@ def test_sdkgateway_read_and_mutation_methods():
         FakeTool("save_document", lambda kw: {"success": True}),
     ]
     g = _sdk_with_tools(tools)
+    offline(monkeypatch)   # tools are fakes; the graph must be one too — see offline()
 
     assert len(g.search_all()) == 502                  # 500 + 2, pagination worked
     assert g.get_entities([]) == []                    # early return
@@ -363,12 +396,20 @@ def test_sdkgateway_merges_editable_column_descriptions(monkeypatch):
     assert ent.columns["c3"].description == "added"    # editable-only column appears
 
 
-def test_sdkgateway_column_merge_degrades_without_base_sdk():
-    """No base SDK → tool-only behaviour, not an exception."""
+def test_sdkgateway_column_merge_degrades_without_base_sdk(monkeypatch):
+    """No base SDK → tool-only behaviour, not an exception.
+
+    This is the ONLY test of the `graph is None` guard in `_merge_editable_columns`,
+    and it used to state its premise by assigning `_graph_cache = None` — which does
+    not mean "no base SDK", it means "cache cold". With the `[live]` extras installed
+    it therefore stopped testing its own name: `_graph()` built a real graph, the
+    guard never ran, and coverage fell to 99.94%. `offline()` states the premise
+    directly, so the branch is exercised with or without the extras.
+    """
+    offline(monkeypatch)
     g = _sdk_with_tools([FakeTool("get_entities", lambda kw: [
         {"urn": "urn:1", "schemaMetadata": {"fields": [
             {"fieldPath": "c1", "description": "only"}]}}])])
-    g._graph_cache = None                              # _graph() returns None offline
     assert g.get_entities(["urn:1"])[0].columns["c1"].description == "only"
 
 
@@ -691,22 +732,42 @@ def test_graph_builds_and_caches_client_from_env(monkeypatch):
     assert g._graph() is first          # cached, not rebuilt
 
 
-def test_register_properties_main_exits_2_when_the_sdk_is_absent():
+def test_register_properties_main_exits_2_when_the_sdk_is_absent(monkeypatch):
     """THE EXIT TAXONOMY, at this entry point too.
 
     A missing live extra used to escape as a raw traceback, which Python exits 1 for
     — and 1 is what the shipped adopter CI template reads as "Antigen found prompt
     injections in catalog metadata". A setup step that could not reach DataHub has
     established nothing about any catalog, and that is exit 2 everywhere else.
+
+    The absence is now IMPOSED, not inherited from the machine. `main()` is the one
+    entry point here that WRITES: with the `[live]` extras installed this test used to
+    call the real `register_properties()`, which emitted all three structured-property
+    definitions into whatever catalog `$DATAHUB_GMS_URL` happened to name — and then
+    failed on `rc == 0` for its trouble. Inside the full suite it went green anyway,
+    but only by accident: an earlier test had permanently rebound
+    `StructuredPropertyDefinitionClass` on the REAL `datahub.metadata.schema_classes`
+    (see `_ensure_pkg`, whose `setattr` is not undone), so the emit raised and handed
+    this test the 2 it wanted. A unit test must not be able to write to a live
+    catalog, and must not depend on another test's leftovers to decide it didn't.
     """
+    import builtins
     import io
     from contextlib import redirect_stderr
 
     from antigen.register_properties import main
 
+    real_import = builtins.__import__
+
+    def blocked(name, *a, **k):
+        if name == "datahub" or name.startswith("datahub."):
+            raise ImportError("live extras not installed")
+        return real_import(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", blocked)
     err = io.StringIO()
     with redirect_stderr(err):
-        rc = main()          # the real datahub SDK is not installed offline
+        rc = main()
     assert rc == 2, "infrastructure failure is exit 2, never 1"
     assert "REFUSED" in err.getvalue()
     assert "requirements.txt" in err.getvalue()

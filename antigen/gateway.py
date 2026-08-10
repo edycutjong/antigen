@@ -376,16 +376,25 @@ class SdkGateway:
             from datahub.metadata.schema_classes import (  # type: ignore
                 EditableSchemaMetadataClass,
             )
-        except ImportError:  # pragma: no cover - depends on whether extras are installed
+        except ImportError:  # pragma: no cover - reachability is environment-dependent
             # The base SDK is an optional live-only dependency; its absence is the
             # documented tool-only mode, not a degraded catalog read. Stay quiet.
             #
-            # Excluded from coverage because its reachability is a property of the
-            # ENVIRONMENT, not of the tests: without the `[live]` extras this branch
-            # always runs, with them it never can. Un-excluded, `make cov` passed on
-            # a bare checkout and failed at 99.93% for anyone who had followed the
-            # README's own live-setup instructions first — a gate that punishes the
-            # reader for doing the tutorial.
+            # CORRECTION. This pragma used to claim it had fixed the case where a
+            # reader who followed the README's live-setup section then found `make cov`
+            # red. It had not, and the claim outlived its own counter-example by two
+            # releases: with `[live]` installed the gate still failed, at 99.94%, on
+            # the `if graph is None: return` guard a dozen lines above. That guard is
+            # not environment-dependent at all — it was simply mis-tested. Its one
+            # test stated "no base SDK" by zeroing the graph CACHE, which only
+            # coincides with "no base SDK" when the extras are missing; with them
+            # installed the same line built a real DataHubGraph and read a live GMS.
+            # The fix is in the test (`tests/test_gateway.py::offline`), not here.
+            #
+            # This pragma is belt-and-braces: the branch is in fact exercised in both
+            # configurations, because `test_merge_editable_columns_is_quiet_when_the_
+            # aspect_classes_are_absent` blocks the import at `builtins.__import__`.
+            # It stays only so the tool-only path cannot be held hostage to that.
             return
         try:
             aspect = graph.get_aspect(entity_urn=ent.urn,
