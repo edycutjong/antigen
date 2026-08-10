@@ -1,0 +1,298 @@
+{
+  "started": "2026-08-10T01:59:05Z",
+  "finished": "2026-08-10T01:59:25Z",
+  "summary": {
+    "gms": "http://localhost:8080",
+    "gms_version": "v1.7.0",
+    "started": "2026-08-10T01:59:05Z",
+    "urn": "urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)",
+    "false_positives": {
+      "dataset_locus": {
+        "origin": "highways.hidot.hawaii.gov",
+        "ref": "2tw7-ygpr",
+        "chars": 557,
+        "sha256": "cdc68278bda75023e0b24b11e877fbea78ad318078b1f0a5e38bda1378fca1c4",
+        "rule_fired": "exfiltration ('email' \u2026 'email' \u2192 'https://files.hawaii.gov/dbedt/op/gis/data/blkgrp20.pdf')"
+      },
+      "column_locus": {
+        "origin": "opendata.maryland.gov",
+        "ref": "3xda-h6fq",
+        "chars": 3448,
+        "sha256": "0724d11f47d9bfff1f93d2f4e0e2a06853faf2802a53529b96db5f6f81dd92b2",
+        "rule_fired": "exfiltration ('Email' \u2026 'Email' \u2192 'GIS@mdot.state.md.us')"
+      }
+    },
+    "live_read_truncation": {
+      "hard_limit_chars": 1000,
+      "study_flags": 24,
+      "flags_surviving_live_read": 10,
+      "descriptions_over_limit": 14,
+      "over_limit_surviving": 0
+    },
+    "cure": {
+      "exit_code": 0,
+      "dataset_chars_before": 557,
+      "dataset_chars_after": 486,
+      "column_chars_before": 3448,
+      "column_chars_after": 486,
+      "update_description_loci": 2
+    },
+    "revert_dataset": {
+      "naive_version_1_correct": false,
+      "naive_http_calls": 1,
+      "version_probe": {
+        "previous_version": 2,
+        "http_calls": 4,
+        "reads": 3,
+        "writes": 1,
+        "byte_identical": true
+      },
+      "timeline": {
+        "usable": true,
+        "http_calls": 2,
+        "byte_identical": true
+      },
+      "history_versions_after": 6
+    },
+    "revert_column": {
+      "version_used": 2,
+      "http_calls": 5,
+      "column_byte_identical": true,
+      "sibling_column_clobbered": true,
+      "sibling_expected": "Feature identifier assigned by the source GIS. Stable across annual republication; safe to join on.",
+      "sibling_actual": "Feature identifier assigned by the source GIS."
+    },
+    "residue": {
+      "still_quarantine_tagged": true,
+      "tags": [
+        "injection-quarantined"
+      ],
+      "antigen_properties": [
+        "antigen.contentSha256",
+        "antigen.lastScanned",
+        "antigen.payloadSha256"
+      ],
+      "content_sha_prop_present": true,
+      "payload_sha_prop_present": true,
+      "incident_documents": [
+        "urn:li:document:shared-872e9f9b-9772-49e0-8ea8-c23c15be3838",
+        "urn:li:document:shared-c50fe83a-b587-4526-bf0a-423e62e7f24d"
+      ],
+      "reflagged_by_scan_after_revert": false
+    },
+    "ui_path": {
+      "introspected": true,
+      "mutations": 169,
+      "revert_like_mutations": [
+        "rollbackIngestion",
+        "linkAssetVersion",
+        "unlinkAssetVersion"
+      ],
+      "timeline_query_present": true,
+      "frontend_checked": false
+    },
+    "finished": "2026-08-10T01:59:25Z"
+  },
+  "events": [
+    {
+      "t": "2026-08-10T01:59:05Z",
+      "step": "preflight",
+      "gms": "http://localhost:8080",
+      "gms_version": "v1.7.0"
+    },
+    {
+      "t": "2026-08-10T01:59:05Z",
+      "step": "drill_urn",
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)"
+    },
+    {
+      "t": "2026-08-10T01:59:05Z",
+      "step": "clean_slate",
+      "note": "hard-deleted the drill URN if a previous run left one"
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "delete_propagated",
+      "note": "previous drill entity gone from `search`"
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "false_positive_dataset",
+      "origin": "highways.hidot.hawaii.gov",
+      "ref": "2tw7-ygpr",
+      "chars": 557,
+      "sha256": "cdc68278bda75023",
+      "flagged": true,
+      "score": 2,
+      "rule": "exfiltration ('email' \u2026 'email' \u2192 'https://files.hawaii.gov/dbedt/op/gis/data/blkgrp20.pdf')"
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "false_positive_column",
+      "origin": "opendata.maryland.gov",
+      "ref": "3xda-h6fq",
+      "chars": 3448,
+      "sha256": "0724d11f47d9bfff",
+      "flagged": true,
+      "score": 2,
+      "rule": "exfiltration ('Email' \u2026 'Email' \u2192 'GIS@mdot.state.md.us')"
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "description_hard_limit",
+      "chars": 1000,
+      "source": "datahub_agent_context.mcp_tools.helpers",
+      "applies_to": "get_entities (dataset + ingested column descriptions)",
+      "does_not_apply_to": "editableSchemaMetadata (curated column descriptions, read via the base SDK aspect)"
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "false_positives_visible_through_live_read",
+      "measured_in_study": 24,
+      "still_flag_live": 10,
+      "over_limit": 14,
+      "over_limit_still_flagging": 0
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "seeded_entity",
+      "aspects": "datasetProperties + schemaMetadata",
+      "columns": "objectid, layer_notes"
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "steward_edit_1_dataset_draft",
+      "chars": 98,
+      "sha256": "471fb79aa5536ebc"
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "steward_edit_2_dataset_curated",
+      "chars": 557,
+      "sha256": "cdc68278bda75023",
+      "note": "THIS is what must come back"
+    },
+    {
+      "t": "2026-08-10T01:59:06Z",
+      "step": "steward_edit_3_columns",
+      "sibling_chars": 46,
+      "flagged_column_chars": 3448,
+      "sha256": "0724d11f47d9bfff"
+    },
+    {
+      "t": "2026-08-10T01:59:09Z",
+      "step": "search_indexed",
+      "note": "drill entity readable AND flagged through the live read path (both loci)"
+    },
+    {
+      "t": "2026-08-10T01:59:12Z",
+      "step": "cure_plan_verified",
+      "update_description_loci": 2,
+      "only": "urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)"
+    },
+    {
+      "t": "2026-08-10T01:59:15Z",
+      "step": "cure_applied",
+      "exit_code": 0
+    },
+    {
+      "t": "2026-08-10T01:59:15Z",
+      "step": "fields_after_cure",
+      "dataset_chars": 486,
+      "dataset_sha256": "6ee3d870dc49e965",
+      "column_chars": 486,
+      "curated_dataset_text_gone": true,
+      "curated_column_text_gone": true
+    },
+    {
+      "t": "2026-08-10T01:59:15Z",
+      "step": "revert_naive_version_1",
+      "http_calls": 1,
+      "got_chars": 98,
+      "got_sha256": "471fb79aa5536ebc",
+      "restores_curated_text": false
+    },
+    {
+      "t": "2026-08-10T01:59:15Z",
+      "step": "revert_version_probe",
+      "previous_version": 2,
+      "http_calls": 4,
+      "reads": 3,
+      "writes": 1,
+      "byte_identical": true,
+      "restored_chars": 557
+    },
+    {
+      "t": "2026-08-10T01:59:15Z",
+      "step": "revert_timeline_api",
+      "http_calls": 2,
+      "reads": 1,
+      "writes": 1,
+      "byte_identical": true,
+      "restored_chars": 557
+    },
+    {
+      "t": "2026-08-10T01:59:16Z",
+      "step": "history_after_reverts",
+      "versions_retained": 6,
+      "note": "every revert is itself a forward write; nothing was removed"
+    },
+    {
+      "t": "2026-08-10T01:59:16Z",
+      "step": "colleague_edit_after_cure",
+      "column": "objectid",
+      "chars": 99,
+      "sha256": "fb5e329e948f9681"
+    },
+    {
+      "t": "2026-08-10T01:59:16Z",
+      "step": "revert_column_version_probe",
+      "version_used": 2,
+      "http_calls": 5,
+      "reads": 4,
+      "writes": 1,
+      "column_byte_identical": true,
+      "restored_chars": 3448,
+      "sibling_column_clobbered": true
+    },
+    {
+      "t": "2026-08-10T01:59:22Z",
+      "step": "residue_after_text_revert",
+      "still_quarantine_tagged": true,
+      "tags": [
+        "injection-quarantined"
+      ],
+      "antigen_properties": [
+        "antigen.contentSha256",
+        "antigen.lastScanned",
+        "antigen.payloadSha256"
+      ],
+      "incident_documents": 2
+    },
+    {
+      "t": "2026-08-10T01:59:24Z",
+      "step": "scan_after_revert",
+      "entity_reflagged": false,
+      "exit_code": 0,
+      "note": "`scan` skips entities already tagged injection-quarantined"
+    },
+    {
+      "t": "2026-08-10T01:59:24Z",
+      "step": "graphql_schema",
+      "mutations": 169,
+      "queries": 106,
+      "revert_like_mutations": [
+        "rollbackIngestion",
+        "linkAssetVersion",
+        "unlinkAssetVersion"
+      ],
+      "timeline_query_present": true
+    },
+    {
+      "t": "2026-08-10T01:59:25Z",
+      "step": "cleanup",
+      "hard_deleted": 3,
+      "note": "drill entity + the incident documents this run created"
+    }
+  ]
+}

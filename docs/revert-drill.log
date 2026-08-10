@@ -1,0 +1,208 @@
+================================================================================
+Antigen — false-positive revert drill (console transcript, verbatim)
+================================================================================
+The unedited console output of `python scripts/revert_drill.py`, run end to end
+against a real DataHub GMS. The structured record of THIS SAME run — every step,
+every counted HTTP call — is docs/revert-drill-transcript.json.
+
+  GMS                      http://localhost:8080  (v1.7.0, quickstart)
+  acryl-datahub            1.6.0.6
+  datahub-agent-context    1.6.0.17
+  auth                     metadata-service auth DISABLED (quickstart) -> DATAHUB_GMS_TOKEN empty
+  captured                 2026-08-10T01:59:05Z
+  command                  python scripts/revert_drill.py
+
+This is the third consecutive run. Between runs, `./run.sh live` re-seeded the demo
+corpus and still passed (Part A PASS, 12/12 payloads removed, held-out 3/3). All
+three runs produced identical counts — which is what hard-deleting the drill URN
+first is for.
+
+The repo path is replaced with <repo>. Nothing else is edited.
+
+What this run establishes, and what it does not, is written up in
+docs/false-positive-revert.md.
+================================================================================
+
+
+==============================================================================
+Antigen — false-positive revert drill (LIVE DataHub GMS)
+==============================================================================
+[2026-08-10T01:59:05Z] preflight
+    gms=http://localhost:8080  gms_version=v1.7.0
+[2026-08-10T01:59:05Z] drill_urn
+    urn=urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)
+[2026-08-10T01:59:05Z] clean_slate
+    note=hard-deleted the drill URN if a previous run left one
+[2026-08-10T01:59:06Z] delete_propagated
+    note=previous drill entity gone from `search`
+[2026-08-10T01:59:06Z] false_positive_dataset
+    origin=highways.hidot.hawaii.gov  ref=2tw7-ygpr  chars=557  sha256=cdc68278bda75023  flagged=True  score=2  rule=exfiltration ('email' … 'email' → 'https://files.hawaii.gov/dbedt/op/gis/data/blkgrp20.pdf')
+[2026-08-10T01:59:06Z] false_positive_column
+    origin=opendata.maryland.gov  ref=3xda-h6fq  chars=3448  sha256=0724d11f47d9bfff  flagged=True  score=2  rule=exfiltration ('Email' … 'Email' → 'GIS@mdot.state.md.us')
+
+==============================================================================
+LIVE READ PATH — how much of a description the detector actually sees
+==============================================================================
+[2026-08-10T01:59:06Z] description_hard_limit
+    chars=1000  source=datahub_agent_context.mcp_tools.helpers  applies_to=get_entities (dataset + ingested column descriptions)  does_not_apply_to=editableSchemaMetadata (curated column descriptions, read via the base SDK aspect)
+[2026-08-10T01:59:06Z] false_positives_visible_through_live_read
+    measured_in_study=24  still_flag_live=10  over_limit=14  over_limit_still_flagging=0
+  10 of the 24 measured false positives still flag once the live read path has had them.
+  Of the 14 that are longer than 1000 characters, 0 still flag.
+[2026-08-10T01:59:06Z] seeded_entity
+    aspects=datasetProperties + schemaMetadata  columns=objectid, layer_notes
+[2026-08-10T01:59:06Z] steward_edit_1_dataset_draft
+    chars=98  sha256=471fb79aa5536ebc
+[2026-08-10T01:59:06Z] steward_edit_2_dataset_curated
+    chars=557  sha256=cdc68278bda75023  note=THIS is what must come back
+[2026-08-10T01:59:06Z] steward_edit_3_columns
+    sibling_chars=46  flagged_column_chars=3448  sha256=0724d11f47d9bfff
+[2026-08-10T01:59:09Z] search_indexed
+    note=drill entity readable AND flagged through the live read path (both loci)
+
+==============================================================================
+CURE — the shipped path, against the live GMS
+==============================================================================
+DRY RUN — `antigen cure` would write 12 mutations (6× add_structured_properties, 2× add_tags, 2× save_document, 2× update_description). Nothing was written.
+  update_description  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)
+      before: This dataset shows 2020 Census Block Group Boundaries, with population, for the State of Hawaii…
+      after:  [field quarantined by Antigen pending human review] > ⚠ Antigen: a prompt-injection payload was…
+  add_tags  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)
+      before: (empty)
+      after:  injection-quarantined
+  add_structured_properties  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD) ::antigen.contentSha256
+      before: (unset)
+      after:  a1cf20697787d25cacdc9f3376d8d0ac1860a7ebf2a8f53aaf389787af881b4a
+  add_structured_properties  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD) ::antigen.payloadSha256
+      before: (unset)
+      after:  82244417f956ac7c599f191593f7e441a4fafa20a4158fd52e154f1dc4c8ed92
+  add_structured_properties  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD) ::antigen.lastScanned
+      before: (unset)
+      after:  2026-08-10T01:59:12Z
+  save_document  (new document under Antigen/Incidents) ::antigen-incident-adhoc-82244417f956
+      before: (no such document yet)
+      after:  # Antigen incident — adhoc-82244417f956 - entity: `urn:li:dataset:(urn:li:dataPlatform:socrata,…
+      links:  related_assets=['urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)']
+  update_description  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD) ::layer_notes
+      before: Maryland Roadway Centerline data consists of linear geometric features which represent the stre…
+      after:  [field quarantined by Antigen pending human review] > ⚠ Antigen: a prompt-injection payload was…
+  add_tags  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)
+      before: (empty)
+      after:  injection-quarantined
+  add_structured_properties  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD) ::antigen.contentSha256
+      before: (unset)
+      after:  a1cf20697787d25cacdc9f3376d8d0ac1860a7ebf2a8f53aaf389787af881b4a
+  add_structured_properties  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD) ::antigen.payloadSha256
+      before: (unset)
+      after:  6abc2376e054cf4c0d76656e98fa94353df3c851f184d91f5f4be66c22461d3b
+  add_structured_properties  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD) ::antigen.lastScanned
+      before: (unset)
+      after:  2026-08-10T01:59:12Z
+  save_document  (new document under Antigen/Incidents) ::antigen-incident-adhoc-6abc2376e054
+      before: (no such document yet)
+      after:  # Antigen incident — adhoc-6abc2376e054 - entity: `urn:li:dataset:(urn:li:dataPlatform:socrata,…
+      links:  related_assets=['urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)']
+
+Re-run with --apply to execute this plan: antigen cure --apply
+(Tamper-evidence hashes are computed from post-write state, so a live run stamps values this preview cannot show. The mutation set is exact.)
+(12 rows = 8 tool calls; one add_structured_properties call writes several values. --max-mutations counts CALLS, so --max-mutations 8 is the exact cap for this plan.)
+[2026-08-10T01:59:12Z] cure_plan_verified
+    update_description_loci=2  only=urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)
+
+cured 2 loci (0 excised, 2 field-quarantined) | 4 already handled (idempotent no-op)
+  ✔ adhoc-82244417f956  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)  [quarantine-field]  content=574d0bc136e5…
+  ✔ adhoc-6abc2376e054  urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)  [quarantine-field]  content=b3813c5ae71b…
+[2026-08-10T01:59:15Z] cure_applied
+    exit_code=0
+[2026-08-10T01:59:15Z] fields_after_cure
+    dataset_chars=486  dataset_sha256=6ee3d870dc49e965  column_chars=486  curated_dataset_text_gone=True  curated_column_text_gone=True
+
+  557 characters of curated dataset documentation and 3448 characters of curated column documentation are GONE from the live fields.
+  Antigen stored no copy of either. Everything below is DataHub's history, not Antigen's.
+
+==============================================================================
+REVERT #1 — the dataset description (aspect: editableDatasetProperties)
+==============================================================================
+
+  (a) the literal reading: fetch version 1 and write it back
+[2026-08-10T01:59:15Z] revert_naive_version_1
+    http_calls=1  got_chars=98  got_sha256=471fb79aa5536ebc  restores_curated_text=False
+      GET   200  http://localhost:8080/aspects/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?aspect=editableDat
+      version=1 is NOT the curated text; it is the steward's earlier draft. A one-call revert here destroys the description as thoroughly as the cure did, and looks like it worked.
+
+  (b) the version probe: walk versions until 404, then write back
+[2026-08-10T01:59:15Z] revert_version_probe
+    previous_version=2  http_calls=4  reads=3  writes=1  byte_identical=True  restored_chars=557
+      GET   200  http://localhost:8080/aspects/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?aspect=editableDat
+      GET   200  http://localhost:8080/aspects/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?aspect=editableDat
+      GET   404  http://localhost:8080/aspects/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?aspect=editableDat
+      POST  200  http://localhost:8080/aspects?action=ingestProposal
+      restored sha256 cdc68278bda75023… — byte-identical, 557 characters back.
+
+  (c) the timeline API: one GET for the previous text, then write back
+[2026-08-10T01:59:15Z] revert_timeline_api
+    http_calls=2  reads=1  writes=1  byte_identical=True  restored_chars=557
+      get   200  http://localhost:8080/openapi/v2/timeline/v1/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?cat
+      POST  200  http://localhost:8080/aspects?action=ingestProposal
+[2026-08-10T01:59:16Z] history_after_reverts
+    versions_retained=6  note=every revert is itself a forward write; nothing was removed
+
+==============================================================================
+REVERT #2 — a column description (aspect: editableSchemaMetadata)
+==============================================================================
+  This aspect carries EVERY column's curated description, not one field.
+  Scenario: the cure lands, a colleague improves a different column the next day,
+  then the operator reverts the cured column from history.
+
+[2026-08-10T01:59:16Z] colleague_edit_after_cure
+    column=objectid  chars=99  sha256=fb5e329e948f9681
+[2026-08-10T01:59:16Z] revert_column_version_probe
+    version_used=2  http_calls=5  reads=4  writes=1  column_byte_identical=True  restored_chars=3448  sibling_column_clobbered=True
+      GET   200  http://localhost:8080/aspects/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?aspect=editableSch
+      GET   200  http://localhost:8080/aspects/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?aspect=editableSch
+      GET   200  http://localhost:8080/aspects/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?aspect=editableSch
+      GET   404  http://localhost:8080/aspects/urn:li:dataset:(urn:li:dataPlatform:socrata,antigen_revert_drill.hidot.census_block_groups_2020,PROD)?aspect=editableSch
+      POST  200  http://localhost:8080/aspects?action=ingestProposal
+      target column restored byte-identical: True (3448 characters)
+      sibling column `objectid` was rolled back too — the colleague's later edit is GONE.
+        wanted: Feature identifier assigned by the source GIS. Stable across annual re…
+        got:    Feature identifier assigned by the source GIS.…
+      This is the part 'one action per field' does not describe: the unit of history is the ASPECT, and for columns the aspect is the whole schema.
+
+==============================================================================
+RESIDUE — what restoring the text does NOT undo
+==============================================================================
+[2026-08-10T01:59:22Z] residue_after_text_revert
+    still_quarantine_tagged=True  tags=['injection-quarantined']  antigen_properties=['antigen.contentSha256', 'antigen.lastScanned', 'antigen.payloadSha256']  incident_documents=2
+[2026-08-10T01:59:24Z] scan_after_revert
+    entity_reflagged=False  exit_code=0  note=`scan` skips entities already tagged injection-quarantined
+  The restored false positive is NOT re-flagged: the quarantine tag the cure left behind suppresses it. Convenient here, and a hole if the field were re-poisoned — which is what `rescan` exists for.
+
+==============================================================================
+UI PATH — what the DataHub GraphQL API offers an operator
+==============================================================================
+[2026-08-10T01:59:24Z] graphql_schema
+    mutations=169  queries=106  revert_like_mutations=['rollbackIngestion', 'linkAssetVersion', 'unlinkAssetVersion']  timeline_query_present=True
+  `getTimeline` is a READ. None of the mutations above puts an old aspect value back:
+  `rollbackIngestion` rolls back an ingestion RUN by runId, not a hand edit; the two
+  `AssetVersion` mutations link/unlink version SETS of entities, not aspect versions.
+  An operator working in the UI has no revert control for a description. The recovery
+  path is the SDK/API transcript above, or copy-and-paste out of the timeline view.
+[2026-08-10T01:59:25Z] cleanup
+    hard_deleted=3  note=drill entity + the incident documents this run created
+
+==============================================================================
+ACTION COUNT — what 'one action' actually cost
+==============================================================================
+  dataset description, version probe   4 HTTP calls (3 reads to locate version 2, 1 write)
+  dataset description, timeline API    2 HTTP calls (byte-identical: True)
+  naive `version=1` in one call        WRONG TEXT
+  column description                   5 HTTP calls; sibling column clobbered: True
+  quarantine tag still set             True
+  antigen.* properties still set       3
+  incident documents the cure wrote    2 — the text revert removes none of them
+  revert-like GraphQL mutations        ['rollbackIngestion', 'linkAssetVersion', 'unlinkAssetVersion']
+
+  Restoring the TEXT is real, and it works. 'One action' is not what this transcript shows.
+
+transcript -> <repo>/docs/revert-drill-transcript.json

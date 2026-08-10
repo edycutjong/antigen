@@ -166,8 +166,12 @@ banner now ends *"Detection signals: recorded in the Antigen incident record
   whose content later changes is auto-re-flagged. Drift protection covers the clean
   remainder, not only the quarantined loci, so certification can't silently rot. The cure
   is **fail-safe**: no entity is ever deleted,
-  and the pre-cure text is retained in DataHub's native aspect version history, so a false
-  positive is a one-action revert — never data loss, never an agent outage.
+  and the pre-cure text is retained in DataHub's native aspect version history — verified
+  live, byte-identical, at both the dataset and column locus. It is **not** the "one-action
+  revert" this line used to promise: the floor is two API calls, the obvious procedure is
+  four, and the tag, properties and incident document survive it. Measured end to end
+  against a live GMS in [`docs/false-positive-revert.md`](docs/false-positive-revert.md).
+  Never data loss, never an agent outage — but budget a procedure, not a click.
 - `get_lineage` blast-radius retraces the exact edges DataHub's own default-on
   [Documentation Propagation](https://docs.datahub.com/docs/automations/docs-propagation)
   automation copies column docs along (see [*DataHub's own automation is the amplifier*](docs/THREAT-MODEL.md#datahubs-own-automation-is-the-amplifier)
@@ -1352,8 +1356,19 @@ Production-grade for a hackathon, adapted to a Python CLI/library (no web fronte
   recall exactly — text the rule scores below threshold survives the cut, by design.
   **So "defuses each poisoned description in place" is fixture-exact on the corpus,
   sentence-granular and guarded off it, and never the unattended default.**
-- **The cure is forward-only**; rollback uses DataHub's native aspect version history
-  (one action), not an automated undo.
+- **The cure is forward-only**, and rollback is **not** the "one action" this line used to
+  claim. It uses DataHub's native aspect version history, and that was verified only
+  against `InMemoryGateway` until it was run for real. Against a live GMS v1.7.0 the floor
+  is **two API calls** (one read to find the pre-cure text, one write to put it back) and
+  the obvious procedure costs **four**, because DataHub numbers aspect versions with
+  **0 = latest and 1 = OLDEST** — so on a field with any edit history the one-call
+  `version=1` revert silently restores a superseded draft. For **column** descriptions it
+  is not per-field either: `editableSchemaMetadata` carries every column, so restoring a
+  previous version rolls back sibling columns edited since the cure. And the text revert
+  leaves the `injection-quarantined` tag, three `antigen.*` structured properties and the
+  incident document in place. Full transcript with real URNs, HTTP call counts and
+  byte-identical restore: [`docs/false-positive-revert.md`](docs/false-positive-revert.md)
+  (re-run it with `python scripts/revert_drill.py`).
 - **Antigen must never write text its own detector flags — and for one release, it did.**
   The remediation banner used to interpolate the detection category labels verbatim
   (*"Detection signals: instruction-override, reveal-secret"*), and those labels are
@@ -1437,8 +1452,32 @@ and being straight about that matters more than a clean demo:
    `export` earlier in the same field. Practical consequence: **run `scan` over your whole
    catalog, but review long dataset-level descriptions before curing them**, since those
    are both the likeliest to flag and the most expensive to whole-field quarantine.
-4. **Rollback is DataHub's aspect version history**, one action per field. There is no
-   automated undo.
+   **Caveat found while proving the rollback claim, and it cuts both ways:** those numbers
+   are the detector on **raw** text, and Antigen does not read dataset descriptions raw.
+   `get_entities` sanitises and truncates every description at **1,000 characters**
+   (`datahub_agent_context.mcp_tools.helpers.DESCRIPTION_LENGTH_HARD_LIMIT`), so only
+   **10 of the 24** measured false positives still flag through the live read path — and
+   **0 of the 14** that are longer than 1,000 characters. Your long-description review
+   queue is therefore *smaller* than the table implies, and the same truncation is a
+   **recall hole**: `search` returns those descriptions untruncated (verified live), so a
+   payload placed past character 1,000 of a dataset description reaches an agent and is
+   invisible to the sweep. Curated **column** descriptions are read from
+   `editableSchemaMetadata` via the base SDK and are not truncated. Measured, with the
+   reproduction, in [`docs/false-positive-revert.md`](docs/false-positive-revert.md).
+4. **Rollback is DataHub's aspect version history — two API calls at best, not one
+   action, and not per field.** There is no automated undo, and this claim used to say
+   "one action per field", which a live drill disproved:
+   [`docs/false-positive-revert.md`](docs/false-positive-revert.md) (`python
+   scripts/revert_drill.py`, transcript in [`docs/revert-drill.log`](docs/revert-drill.log)).
+   Against a live GMS v1.7.0, restoring one cured dataset description was **4 HTTP calls**
+   via the version probe (3 reads to discover the previous version number, 1 write) or
+   **2** via the timeline API; both restored the text byte-identically. The one-call
+   reading is a trap — version **1 is the OLDEST**, not the previous, so it restores a
+   superseded draft with a 200 OK. Column reverts clobber sibling columns, because the
+   aspect is the whole schema. And the revert leaves the quarantine tag, the three
+   `antigen.*` properties and the incident document behind — after which `scan` will not
+   re-flag the restored field, because it skips quarantined entities. Budget a *procedure*,
+   not a click.
 5. **Cap every unattended `--apply` run with `--max-mutations N`.** It counts **tool
    calls**: `cure` spends 4 per entity/column locus and 2 per KB-document locus, `certify`
    2 per clean entity — and the dry-run plan's footer converts its own row count into the

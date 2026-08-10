@@ -71,8 +71,11 @@ exactly these surfaces. The cure neutralizes the payload on **all** of them:
 Because no agent-readable surface returns the payload — as plaintext **or** as any
 recoverable base64/hex/urlsafe encoding — there is nothing for the LLM to obey or decode.
 `verify.py` Part A asserts exactly this, which is why it is LLM-independent. DataHub's
-native aspect version history does retain the pre-cure text (that is what powers one-action
-false-positive revert), but it is not reachable through any stock READ tool.
+native aspect version history does retain the pre-cure text — confirmed byte-identical
+against a live GMS v1.7.0 — but recovering it is a **two-to-five-call procedure, not the
+"one-action revert" this line used to claim**; see
+[`false-positive-revert.md`](./false-positive-revert.md). It is not reachable through any
+stock READ tool.
 
 ## Timing (why the <30s claim is scoped honestly)
 
