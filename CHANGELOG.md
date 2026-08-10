@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.3.3 (2026-08-10)
+
+### Bug Fixes
+
+- **cure**: Make span excision actually fire on real catalog text (1/24 -> 23/24)
+  ([`0a73b45`](https://github.com/edycutjong/antigen/commit/0a73b45072f22e9208fd98f77b98cf1e8a7b30d6))
+
+### Documentation
+
+- **web**: Tell the story of the defect our own study caught
+  ([`837d647`](https://github.com/edycutjong/antigen/commit/837d647efed73392df8abe2aa485123d864bf531))
+
+
 ## v1.3.2 (2026-08-09)
 
 ### Bug Fixes
