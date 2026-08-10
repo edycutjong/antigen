@@ -655,7 +655,7 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">0/12<
         </div>
       </div>
       <aside class="speaker-notes"><b>Key capabilities</b>
-        The detector is auditable in five minutes and runs in CI with zero dependencies. The subtle win is the zero-width pre-pass — most people assume NFKC removes those characters; it doesn't. On false positives, take the measured number, not our gauntlet: 24 flags in 38,031 public catalog descriptions we did not write, all 24 adjudicated false positives, detector unmodified. The number that should change your behaviour is conditional — 0.003% under 200 characters, 4.663% over 2,000 — so it is the long curated descriptions at risk, and the honest caveat is that public-portal text is a proxy: a real enterprise catalog is plausibly worse, not better. That is the case for the cure being dry-run by default, and for the revert being one action.
+        The detector is auditable in five minutes and runs in CI with zero dependencies. The subtle win is the zero-width pre-pass — most people assume NFKC removes those characters; it doesn't. On false positives, take the measured number, not our gauntlet: 24 flags in 38,031 public catalog descriptions we did not write, all 24 adjudicated false positives. The number that should change your behaviour is conditional — 0.003% under 200 characters, 4.663% over 2,000 — so it is the long curated descriptions at risk, and the honest caveat is that public-portal text is a proxy: a real enterprise catalog is plausibly worse, not better. Then the part I would lead with if asked what the study is worth: we pointed excise-span at those same 24 real descriptions and it excised one of them, quarantining the other 23 and destroying forty-two thousand characters of real documentation. Structural cause — the span locator got a hand-picked four-rule tuple, and 23 of the 24 flag on data-exfiltration alone, which was not in it. Our demo corpus hid it completely. Every scoring rule now contributes its own match, and it is 23 of 24 excised with 33,411 characters preserved. One still quarantines, and we say so. The study paid for itself by breaking our own cure before a user found it.
       </aside>
     </section>
 
@@ -694,17 +694,17 @@ Part B — same stock agent, same 12 questions, cold:  <span class="green">0/12<
             <p style="font-size:22px;color:var(--text-mid);margin-bottom:18px;">Reproduce it all with one command — Python stdlib only, no Docker, no keys:</p>
             <div class="ship-list">
               <span class="chip green">./run.sh</span>
-              <span class="chip">223 tests passing</span>
+              <span class="chip">250 tests · 100% coverage</span>
               <span class="chip">9 DataHub tools wired</span>
               <span class="chip amber">Apache-2.0</span>
-              <span class="chip">4 artifacts filed upstream</span>
+              <span class="chip">4 upstream artifacts · 1 core-repo bug fix</span>
               <span class="chip">bench.py p50/p95/p99</span>
             </div>
           </div>
         </div>
       </div>
       <aside class="speaker-notes"><b>Traction</b>
-        This isn't a slideware demo. Clone the repo, run one command, and every number on this slide re-derives on your laptop in seconds — with no LLM in the proof path. Four artifacts are filed upstream, one of them against datahub core itself — PR 19034, correcting three agent tool-contract docstrings the LLM actually consumes. The other three: the output-sanitization RFC as mcp-server-datahub issue 201, the same docstring corrections as PR 202, and the antigen-scan skill as datahub-skills PR 124. All four are open and unmerged, no human has reviewed any of them, and I'm not claiming otherwise.
+        This isn't a slideware demo. Clone the repo, run one command, and every number on this slide re-derives on your laptop in seconds — with no LLM in the proof path. Four artifacts are filed upstream, and one is worth stopping on: PR 19034 against datahub core itself. It started as a docstring correction — update_description advertised four entity types the server rejects — and auditing that contract turned up a silent data-loss bug in DataHub's own production code. The helper that reads a description back carried fragments for 14 entity types, four of them for types the mutation rejects, so real coverage was 10 of 17; on any uncovered type, append read an empty string and silently degraded to replace, destroying the existing description with no error. The PR fixes six of the seven with a regression test that fails without it. I left document out on purpose: it stores a list of attributed DocumentationAssociations that the flat helper cannot express, and I would rather concede that than paper over it. Three commits, plus ninety-six lines, all required checks passing, zero failures. The other three artifacts: the output-sanitization RFC as mcp-server-datahub issue 201, the same docstring corrections as PR 202, and the antigen-scan skill as datahub-skills PR 124. Be straight about status — all four are open and unmerged, and no human has reviewed any of them. The only review on 19034 is a bot's: it raised two findings, both valid, both fixed, and its re-review found nothing further.
       </aside>
     </section>
 

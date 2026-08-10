@@ -685,19 +685,19 @@ strong { color: var(--text-hi); font-weight: 600; }
         </p>
       </div>
 
-      <div class="terminal reveal" role="img" aria-label="Terminal output of run.sh: sweep finds 15 injection loci including 2 hidden in zero-width Unicode, defuse cures 12, blast radius covers 3 downstream assets, 28 clean entities are certified, and a re-scan flags 0 remaining loci.">
+      <div class="terminal reveal" role="img" aria-label="Terminal output of run.sh: sweep finds 15 injection loci including 2 hidden in zero-width Unicode, defuse cures 12, blast radius covers 3 downstream assets, 31 clean entities are certified, and a re-scan flags 0 remaining loci.">
         <div class="terminal-bar" aria-hidden="true">
           <i></i><i></i><i></i><span class="title">antigen — ./run.sh</span>
         </div>
         <pre aria-hidden="true"><span class="cmd">./run.sh</span>
-<span class="dim">tests 31/31 (run.sh subset) · near-miss 15/15 clean</span>
-<span class="ok">graph-state PASS (~5 ms) · held-out 3/3</span>
-<span class="dim">── SWEEP ───</span> 41 entities + 2 docs scanned  <span class="dim">(offline run)</span>
+<span class="dim">tests 50/50 (run.sh subset) · near-miss 18/18 clean</span>
+<span class="ok">graph-state PASS (~7 ms) · held-out 3/3</span>
+<span class="dim">── SWEEP ───</span> 44 entities + 2 docs scanned  <span class="dim">(offline run)</span>
   <span class="bad">15 loci flagged</span> · <span class="warn">2 in zero-width Unicode</span>
   <span class="dim">13 get_entities · 2 grep_documents</span>
 <span class="dim">── DEFUSE ──</span> <span class="ok">12 loci cured</span> · fixture-backed excision
 <span class="dim">── RADIUS ──</span> <span class="warn">3 downstream assets tagged</span>
-<span class="dim">── CERTIFY ─</span> <span class="ok">28 clean entities certified</span> + hash
+<span class="dim">── CERTIFY ─</span> <span class="ok">31 clean entities certified</span> + hash
 <span class="dim">── PROVE ───</span> re-scan: <span class="ok">0 loci</span> · <span class="ok">0 drifted</span> <span class="cursor"></span></pre>
       </div>
     </div>
@@ -896,9 +896,9 @@ strong { color: var(--text-hi); font-weight: 600; }
           <p><code>verify.py</code>'s graph-state gate has no LLM in the path: reset → scan → cure → assert. About 5&nbsp;ms offline.</p>
         </div>
         <div class="stat">
-          <span class="num">223</span>
-          <span class="label">tests passing</span>
-          <p>Including <code>test_nfkc_alone_would_miss_zero_width</code> — the test that proves the Unicode pre-pass does the work.</p>
+          <span class="num">250</span>
+          <span class="label">tests passing · 100% coverage</span>
+          <p>100% line coverage on 1,565 statements, enforced in CI. Including <code>test_nfkc_alone_would_miss_zero_width</code> — the test that proves the Unicode pre-pass does the work.</p>
         </div>
       </div>
 
@@ -920,6 +920,28 @@ strong { color: var(--text-hi); font-weight: 600; }
         truncates descriptions at 4,000 characters, which can only have lowered
         the measured rate. All 24 flagged strings are published verbatim with
         verdicts; reproduce with <code>python scripts/fp_corpus.py all</code>.
+      </p>
+
+      <p class="method-note reveal">
+        <strong>The study caught a real defect in our own cure — that is what it
+        is for.</strong> Pointing <code>--excise-span</code> at those same 24
+        real flagged descriptions, the shipped code excised
+        <strong>1 of 24</strong> and whole-field-quarantined the other 23,
+        destroying <strong>42,164 characters</strong> of real documentation.
+        The cause was structural: <code>_locate_span</code> was handed a
+        hand-picked four-match tuple, and <strong>23 of the 24 flag on
+        <code>data-exfiltration</code> alone</strong> — a rule not in it — so
+        the span came back empty and the cut was never attempted. Our own demo
+        corpus concealed it perfectly, because 11 of its 15 loci happen to trip
+        the four rules that were in the tuple. Every scoring branch now
+        contributes its own match, enforced by a test that walks the whole rule
+        set, and the measured result is <strong>23 of 24 excised, 33,411
+        characters of documentation preserved</strong> that the shipped code
+        destroyed. <strong>The residual 1 is not rounded away</strong>: its
+        earliest exfiltration constituent is an innocent early mention of a
+        column named <code>email</code>, so the first cut takes a legitimate
+        sentence, the survivor still scores, and after 4 passes it declines and
+        quarantines — the safe direction, and what the fallback is for.
       </p>
 
       <p class="method-note reveal">
@@ -1189,18 +1211,34 @@ strong { color: var(--text-hi); font-weight: 600; }
       </div>
 
       <p class="method-note reveal">
-        <strong>Filed upstream</strong> — all four are open and unmerged, none
-        has been reviewed by a human, and nothing here is claimed as accepted:
-        <a href="https://github.com/datahub-project/datahub/pull/19034" rel="noopener">datahub#19034</a>,
-        a docs PR against the core repo correcting three agent tool-contract
-        docstrings — <code>update_description</code> advertised four entity
-        types the server rejects and omitted seven it accepts;
-        <code>add_tags</code> and <code>add_structured_properties</code> never
-        stated their pre-existence prerequisites (+23/−3, 3 files);
+        <strong>Filed upstream</strong> — four artifacts, all open and unmerged,
+        <strong>none reviewed by a human</strong>, nothing claimed as accepted.
+        The substantial one is
+        <a href="https://github.com/datahub-project/datahub/pull/19034" rel="noopener">datahub#19034</a>
+        against the core repo. It began as a docstring correction
+        (<code>update_description</code> advertised four entity types the server
+        rejects and omitted seven it accepts) and the audit then surfaced a
+        <strong>silent data-loss bug in DataHub's own production code</strong>:
+        <code>_get_existing_description</code> carried GraphQL inline fragments
+        for 14 entity types — four of them for types the mutation rejects, so
+        real coverage was <strong>10 of 17</strong> — and on an uncovered type
+        <code>operation="append"</code> read an empty string and silently
+        degraded to <em>replace</em>, destroying the existing description with
+        no error. Fixed for six of the seven, with a regression test that fails
+        without the fix; <code>document</code> is deliberately left out because
+        it stores a list of attributed <code>DocumentationAssociation</code>s
+        the flat helper cannot express. 3 commits, +96/−3 across 4 files, all
+        required checks passing with zero failures. The only review on it is
+        automated — <code>cubic-dev-ai[bot]</code> raised two findings, both
+        valid and both fixed, and its re-review found nothing further.
+      </p>
+
+      <p class="method-note reveal">
+        The other three:
         <a href="https://github.com/acryldata/mcp-server-datahub/issues/201" rel="noopener">mcp-server-datahub#201</a>,
         an RFC for an opt-in output-sanitization hint;
         <a href="https://github.com/acryldata/mcp-server-datahub/pull/202" rel="noopener">#202</a>,
-        the same corrections against the MCP server's tool docs
+        the same docstring corrections against the MCP server's tool docs
         (+24/−6, 4 files); and
         <a href="https://github.com/datahub-project/datahub-skills/pull/124" rel="noopener">datahub-skills#124</a>,
         the <code>antigen-scan</code> skill for the official registry
@@ -1315,7 +1353,11 @@ strong { color: var(--text-hi); font-weight: 600; }
               and document tools enabled. <code>seed_catalog.py</code> builds a
               13-dataset <code>ecommerce</code> catalog with real lineage,
               <code>seed_corpus.py</code> poisons it, and the sweep reads
-              15&nbsp;entities&nbsp;+&nbsp;2&nbsp;KB documents. Run
+              15&nbsp;entities&nbsp;+&nbsp;2&nbsp;KB documents. (That entity
+              count is <em>not</em> stable and isn't meant to be — it is whatever
+              <code>search</code> had indexed at that moment; live runs recorded
+              15, 17 and 78, and the offline corpus in the terminal above is 44.
+              The <strong>loci</strong> count is the stable one.) Run
               <code>seed_catalog.py --scale 60</code> and the same sweep reads
               78&nbsp;entities across two <code>search</code> pages
               (<code>offset=0</code>, then <code>offset=50</code>) and flags the
