@@ -15,7 +15,7 @@ Reproduces:
 
 | Claim | Command | Expected |
 |-------|---------|----------|
-| Graph-state gate passes | `python verify.py` | `graph-state PASS (~5 ms) \| held-out 3/3` |
+| Graph-state gate passes | `python verify.py` | `graph-state PASS (~8 ms) \| held-out 3/3` |
 | 12/12 payloads detected | `python tests/test_detect.py` | `test_all_12_payloads_flagged PASS` |
 | 3/3 held-out (never tuned on) | `python tests/test_detect.py` | `test_all_3_held_out_detected PASS` |
 | 0 false positives (18 near-miss) | `python seed_near_miss.py` | `18/18 clean \| 0 false positives` |

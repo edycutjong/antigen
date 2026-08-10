@@ -552,7 +552,13 @@ def test_span_excision_over_the_real_world_false_positive_corpus():
     from antigen.detect import detect
 
     excised, quarantined, destroyed = 0, 0, 0
-    for text, _, _ in _study_flagged_strings():
+    # `recovered` is the ONLY definition the README is allowed to call "documentation the
+    # old code destroyed that now survives": surviving characters of the fields the old
+    # `_locate_span` could not cut. Those are exactly the `data-exfiltration` items — the
+    # one `tool-poisoning` item always had a span, was always excised, and was therefore
+    # never destroyed, so counting its survivor here would inflate the claim by 368.
+    recovered = 0
+    for text, signals, _ in _study_flagged_strings():
         d = detect(text)
         assert d.flagged, "the study only publishes flagged strings"
         cut = span_excision(text, d.matched_span)
@@ -561,11 +567,18 @@ def test_span_excision_over_the_real_world_false_positive_corpus():
             destroyed += len(text)
         else:
             excised += 1
+            if signals == "data-exfiltration":
+                recovered += len(cut[0])
             # The convergence invariant holds on real text too, not just the corpus.
             assert detect(cut[0]).score == 0
 
     assert (excised, quarantined) == (23, 1), (excised, quarantined)
     assert destroyed == 3_999, destroyed
+    # The recovery figure quoted in README.md and web/index.html, pinned to the same
+    # measurement so prose and code cannot drift. Counted, never inferred by subtraction:
+    # `total - destroyed - sum(len(removed))` overstates it, because `_cut_once` also
+    # collapses whitespace at the seam.
+    assert recovered == 32_996, recovered
     # The headline an adopter budgets against, pinned so it cannot silently regress.
     assert excised / 24 > 0.95
 

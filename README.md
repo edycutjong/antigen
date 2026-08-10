@@ -41,7 +41,7 @@ git clone https://github.com/edycutjong/antigen.git && cd antigen
 ./run.sh        # Python 3.10+ stdlib only — no Docker, no keys, no install
 ```
 
-Expected tail: `graph-state PASS (~5 ms) | held-out 3/3 | hijack demo skipped` — the
+Expected tail: `graph-state PASS (~8 ms) | held-out 3/3 | hijack demo skipped` — the
 LLM-independent proof gate, green. The live-GMS path is in
 [Getting Started](#-getting-started).
 
@@ -281,13 +281,28 @@ hits.
 >
 > ```
 > flagged blocks: 24  ->  span-excised 23,  whole-field quarantined  1
-> characters destroyed: 3,999      documentation preserved that was previously destroyed: 33,411
+> characters destroyed: 3,999      documentation the old code destroyed that now survives: 32,996
 > ```
 >
-> **The remaining 1 is not rounded away.** It is a description where the earliest
-> constituent of the exfiltration rule is an innocent early mention (a column called
-> `email`), so the first cut removes a legitimate sentence, the survivor still flags, and
-> after 4 cuts it declines and quarantines. That is the safe direction, and it is what the
+> **That 32,996 is counted, not inferred from a difference.** It is the surviving text of
+> the **22** fields the old code quarantined whole and the new code excises. It deliberately
+> excludes the 368 surviving characters of the 23rd excision — the one field the old code
+> already excised, which was therefore never destroyed and cannot be claimed as recovered.
+> (Total surviving text across all 24 is 33,364, of 42,763 in; the 22-field figure is the
+> one that answers *"how much of what we destroyed comes back"*.) It is also **pinned by the
+> same test as the 23/1 split and the 3,999** — `assert recovered == 32_996` — so this
+> sentence cannot drift away from the code. Deriving it by subtraction instead
+> (`total − destroyed − Σlen(removed)`) overstates it: `_cut_once` also collapses whitespace
+> at the seam, so the pieces do not sum to the survivor.
+>
+> **The remaining 1 is not rounded away.** It is item **[12]** of the study — a Connecticut
+> State Library divorce-index finding aid published as a dataset description on
+> `internal-data.ct.gov`, 3,999 characters of genealogical prose. The earliest constituent of
+> the exfiltration rule in it is the innocent word **`records`** at offset 1655 (*"the
+> majority of the 1,080 **records** in this index…"*), paired with a `libguides.ctstatelibrary.org`
+> URL further down. So the first cut removes a legitimate sentence, the survivor flags again
+> on the *next* innocent `records` — a word that recurs throughout a record index — and after
+> 4 cuts it declines and quarantines. That is the safe direction, and it is what the
 > fallback is for. The permanent cross-check lives in
 > `tests/test_containment.py::test_span_excision_over_the_real_world_false_positive_corpus`,
 > which parses the study document itself and verifies each string against the sha256 the
@@ -995,9 +1010,11 @@ Reset → `scan` → `cure` → rescan the stamped entities, then assert per loc
 payload — **and any base64 / hex / urlsafe encoding of it** — is absent from every
 agent-readable surface, that every poisoned entity carries `injection-quarantined` +
 `antigen.contentSha256` + `.payloadSha256`, and that both doc payloads are gone from
-`grep_documents`. Deterministic, no LLM in the path, **< 30 s** (≈ 5 ms offline; **4.6–7.1 s**
-live across the recorded runs — 4,637 ms in [`docs/live-run.log`](docs/live-run.log), 5,416 ms
-in the archived 2026-08-08 log, 7,055 ms on the slowest run observed).
+`grep_documents`. Deterministic, no LLM in the path, **< 30 s** (**7–8 ms** offline — measured
+on 8 of 8 consecutive runs, and timed at runtime rather than hard-coded, so your machine
+prints its own; **4.6–7.1 s** live across the recorded runs — 4,637 ms in
+[`docs/live-run.log`](docs/live-run.log), 5,416 ms in the archived 2026-08-08 log, 7,055 ms
+on the slowest run observed).
 
 **Part B — reported hijack demo (NEVER gates).** With the pinned demo model, run the
 victim agent before the cure (`<pre>/12`, measured from real output) and cold after
@@ -1221,7 +1238,7 @@ Production-grade for a hackathon, adapted to a Python CLI/library (no web fronte
 - **Widening the pre-filter is safe in a way widening the detector is not**, and that is
   why one was done and the other was not: it can only cause more documents to be
   *fetched*, and every one still has to clear the unchanged scored rule in `detect`. The
-  cost is bandwidth, never precision. Verified rather than asserted — the 15-item
+  cost is bandwidth, never precision. Verified rather than asserted — the 18-item
   near-miss gauntlet was re-run after the change (`18/18 clean | 0 false positives`), and
   the widened pattern flags **zero** near-miss items the narrow one did not.
 - **The false positives we predicted are real; the class we named was the wrong one.** This
@@ -1418,7 +1435,7 @@ make cov      # all 250 tests + the 100% line-coverage gate (needs pytest)
 Expected tail of `./run.sh`:
 
 ```
-graph-state PASS (~5 ms) | held-out 3/3 | hijack demo skipped
+graph-state PASS (~8 ms) | held-out 3/3 | hijack demo skipped
 ...
 ── 1. SWEEP ──  scanned 44 entities + 2 documents | 15 injection loci flagged | 2 hidden in zero-width Unicode | 13 via get_entities | 2 via grep_documents
 ── 2. DEFUSE ── cured 12 loci (12 excised, 0 field-quarantined)

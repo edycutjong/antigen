@@ -90,7 +90,7 @@ Design constraints:
    agent-action-object) with a **`Cf`-category strip pre-pass** for zero-width evasion —
    *not* an LLM call, so it adds no latency, cost, or new failure mode. Reference
    implementation: `antigen/detect.py` in the Antigen submission (stdlib only, ~250 lines,
-   0 false positives on a 15-item adversarial-adjacent set, 3/3 on held-out public
+   0 false positives on an 18-item adversarial-adjacent set, 3/3 on held-out public
    injection strings it was never tuned on).
 3. **Covers the surfaces agents actually read:** `get_entities` (descriptions + columns),
    `grep_documents` / `search_documents` (KB bodies), and structured-property values.

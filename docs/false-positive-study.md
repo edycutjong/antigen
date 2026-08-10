@@ -15,7 +15,7 @@ for that file for the whole study).
 ## Why this exists
 
 Until this study, every negative example in this repository was written by the person who
-wrote the detector: 15 `NearMiss` entries in `antigen/nearmiss.py` and 15 `BENIGN` strings
+wrote the detector: 18 `NearMiss` entries in `antigen/nearmiss.py` and 15 `BENIGN` strings
 in `tests/test_robustness.py`. Both sets are still useful — they are an adversarial gauntlet,
 deliberately built from the detector's own vocabulary — but *"0 false positives on 15 strings
 I wrote"* is not a false-positive rate, and the 78-entity scale run does not help either,

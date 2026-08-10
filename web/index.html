@@ -691,7 +691,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         </div>
         <pre aria-hidden="true"><span class="cmd">./run.sh</span>
 <span class="dim">tests 50/50 (run.sh subset) · near-miss 18/18 clean</span>
-<span class="ok">graph-state PASS (~7 ms) · held-out 3/3</span>
+<span class="ok">graph-state PASS (~8 ms) · held-out 3/3</span>
 <span class="dim">── SWEEP ───</span> 44 entities + 2 docs scanned  <span class="dim">(offline run)</span>
   <span class="bad">15 loci flagged</span> · <span class="warn">2 in zero-width Unicode</span>
   <span class="dim">13 get_entities · 2 grep_documents</span>
@@ -893,7 +893,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="stat">
           <span class="num">&lt;30s</span>
           <span class="label">deterministic proof</span>
-          <p><code>verify.py</code>'s graph-state gate has no LLM in the path: reset → scan → cure → assert. About 5&nbsp;ms offline.</p>
+          <p><code>verify.py</code>'s graph-state gate has no LLM in the path: reset → scan → cure → assert. 7–8&nbsp;ms offline, timed at runtime.</p>
         </div>
         <div class="stat">
           <span class="num">250</span>
@@ -935,13 +935,19 @@ strong { color: var(--text-hi); font-weight: 600; }
         corpus concealed it perfectly, because 11 of its 15 loci happen to trip
         the four rules that were in the tuple. Every scoring branch now
         contributes its own match, enforced by a test that walks the whole rule
-        set, and the measured result is <strong>23 of 24 excised, 33,411
-        characters of documentation preserved</strong> that the shipped code
-        destroyed. <strong>The residual 1 is not rounded away</strong>: its
-        earliest exfiltration constituent is an innocent early mention of a
-        column named <code>email</code>, so the first cut takes a legitimate
-        sentence, the survivor still scores, and after 4 passes it declines and
-        quarantines — the safe direction, and what the fallback is for.
+        set, and the measured result is <strong>23 of 24 excised</strong>, with
+        <strong>32,996 characters</strong> that the shipped code destroyed now
+        surviving. That figure is counted, not subtracted: it is the surviving
+        text of the 22 fields the old code quarantined whole, and it excludes
+        the 368 characters of the 23rd — the one field the old code already
+        excised, which was never destroyed. <strong>The residual 1 is not
+        rounded away</strong>: it is a Connecticut State Library finding aid on
+        a state open-data portal, and its earliest exfiltration constituent is
+        the innocent word <code>records</code>, which recurs throughout a record
+        index — so the first cut takes a legitimate sentence, the survivor
+        scores again on the next <code>records</code>, and after 4 passes it
+        declines and quarantines — the safe direction, and what the fallback is
+        for.
       </p>
 
       <p class="method-note reveal">
@@ -1294,7 +1300,7 @@ strong { color: var(--text-hi); font-weight: 600; }
               measured: a <strong>0.063% flag rate</strong> over 38,031 public
               catalog descriptions it did not write, all 24 flags adjudicated
               false positives — while still generalizing 3/3 to held-out public
-              payloads. It also clears a 15-item near-miss gauntlet built from
+              payloads. It also clears an 18-item near-miss gauntlet built from
               the detector's own vocabulary, but that gauntlet is an adversarial
               probe we wrote, not a false-positive rate; the 38k corpus is the
               number an adopter can budget against.
