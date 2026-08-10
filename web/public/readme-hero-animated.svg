@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img"
-     aria-label="Antigen — a prompt-injection immune system for the DataHub metadata graph. A poisoned catalog entity is detected, quarantined, defused and certified; the stock agent that was hijacked before the cure answers 0/12 hijacked after.">
+     aria-label="Antigen — a prompt-injection immune system for the DataHub metadata graph. A poisoned catalog entity is detected, quarantined, defused and certified; a stock catalog agent's compliance signature falls from 2/12 to 0/12 after the cure.">
   <!-- Master timeline: 8s. Every SMIL animate uses dur="8s" repeatCount="indefinite";
        CSS keyframes run on the same 8s (auroras deliberately slower: 16/19s alternate).
        Wordmark = outlined Space Grotesk 700 paths (opentype.js pipeline) — no webfonts.
@@ -142,7 +142,7 @@
 
   <!-- pulsing hero-metric line -->
   <text class="h-mono h-metric" x="64" y="268" font-size="14.5" font-weight="600" fill="#FFB020"
-        letter-spacing="0.5">HIJACKED → 0/12 · 12/12 DEFUSED · &lt;30s PROOF</text>
+        letter-spacing="0.5">12/12 DEFUSED · SIGNATURE 2→0/12 · &lt;30s PROOF</text>
 
   <!-- tech-stack line -->
   <text class="h-mono" x="64" y="293" font-size="12" fill="#47635A"

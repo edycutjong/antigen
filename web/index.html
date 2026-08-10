@@ -644,7 +644,7 @@ strong { color: var(--text-hi); font-weight: 600; }
       <a href="#ci">In CI</a>
       <a href="#faq">FAQ</a>
     </nav>
-    <a class="ver-tag" href="https://github.com/edycutjong/antigen/releases/latest" rel="noopener" aria-label="Latest release on GitHub">v1.2.0 ↗</a>
+    <a class="ver-tag" href="https://github.com/edycutjong/antigen/releases/latest" rel="noopener" aria-label="Latest release on GitHub">v1.3.3 ↗</a>
     <a class="btn btn-ghost btn-sm header-cta" href="https://github.com/edycutjong/antigen" rel="noopener">GitHub ↗</a>
   </div>
 </header>
@@ -685,13 +685,14 @@ strong { color: var(--text-hi); font-weight: 600; }
         </p>
       </div>
 
-      <div class="terminal reveal" role="img" aria-label="Terminal output of run.sh: sweep finds 15 injection loci including 2 hidden in zero-width Unicode, defuse cures 12, blast radius covers 3 downstream assets, 31 clean entities are certified, and a re-scan flags 0 remaining loci.">
+      <div class="terminal reveal" role="img" aria-label="A condensed recap of the ./run.sh output, reformatted to fit: 50 of 50 tests in the run.sh subset pass, the near-miss gauntlet is 18 of 18 clean, the graph-state gate passes in 7 milliseconds with 3 of 3 held-out injections detected, the hijack demo is skipped offline, the sweep finds 15 injection loci including 2 hidden in zero-width Unicode, defuse cures 12, blast radius covers 3 downstream assets, 31 clean entities are certified, and a re-scan flags 0 remaining loci.">
         <div class="terminal-bar" aria-hidden="true">
-          <i></i><i></i><i></i><span class="title">antigen — ./run.sh</span>
+          <i></i><i></i><i></i><span class="title">antigen — ./run.sh (recap)</span>
         </div>
         <pre aria-hidden="true"><span class="cmd">./run.sh</span>
 <span class="dim">tests 50/50 (run.sh subset) · near-miss 18/18 clean</span>
-<span class="ok">graph-state PASS (~8 ms) · held-out 3/3</span>
+<span class="ok">graph-state PASS (7 ms) · held-out 3/3</span>
+<span class="dim">hijack demo skipped (no SDK/LLM) — Part A is the gate</span>
 <span class="dim">── SWEEP ───</span> 44 entities + 2 docs scanned  <span class="dim">(offline run)</span>
   <span class="bad">15 loci flagged</span> · <span class="warn">2 in zero-width Unicode</span>
   <span class="dim">13 get_entities · 2 grep_documents</span>
@@ -748,9 +749,10 @@ strong { color: var(--text-hi); font-weight: 600; }
             a note, a compromised CI job, a malicious insider. Either way nobody
             code-reviews a table description. Three weeks later, the company's
             new "Ask the Catalog" assistant reads it while answering a routine
-            question — and obeys the buried command. DataHub's own Agent Context
-            Kit ships the exact vulnerable pattern as its
-            <strong>reference integration</strong>:
+            question — and obeys the buried command. DataHub's own
+            <a href="https://docs.datahub.com/docs/dev-guides/agent-context/agent-context" rel="noopener">Agent Context Kit</a>
+            (<code>datahub-agent-context</code>) ships the exact vulnerable
+            pattern as its <strong>reference LangChain integration</strong>:
           </p>
           <div class="code-callout">
             <code>tools = build_langchain_tools(client)  <span style="color:var(--text-mid)"># the reference pattern</span></code>
@@ -858,14 +860,20 @@ strong { color: var(--text-hi); font-weight: 600; }
     <div class="wrap">
       <div class="section-head reveal">
         <p class="eyebrow">The killer numbers</p>
-        <h2 id="numbers-title">Every number reproduces from one command.</h2>
+        <h2 id="numbers-title">One command re-derives the numbers.<br />The exceptions are named.</h2>
         <p class="lede">
           No screenshots-as-proof. <code>./run.sh</code> re-derives every claim
-          below on any laptop — Python standard library only, no Docker, no keys.
-          The one exception is the false-positive study, which harvests from the
-          public internet: detection over the corpus is stdlib and offline, but
-          the harvest needs network and a GitHub token, so that corpus is pinned
-          by digest and per-item hashes instead.
+          below on any laptop — Python standard library only, no Docker, no keys
+          — with <strong>three stated exceptions</strong>. It runs a 50-test
+          stdlib subset, so the <strong>250-test / 100%-coverage</strong> figure
+          needs a separate <code>pytest --cov</code> run. It prints
+          <code>hijack demo skipped</code>, because the <strong>agent A/B</strong>
+          needs a live GMS and an LLM — the post-cure <strong>0/12</strong> rests
+          instead on the graph-state gate, which it <em>does</em> re-derive. And
+          the <strong>false-positive study</strong> harvests from the public
+          internet: detection over that corpus is stdlib and offline, but the
+          harvest needs network and a GitHub token, so the corpus is pinned by
+          digest and per-item hashes instead.
         </p>
       </div>
 
@@ -873,7 +881,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="stat">
           <span class="num">0/12</span>
           <span class="label">hijacks after the cure</span>
-          <p>The same stock agent, asked the same 12 questions cold after the cure, trips the compliance signature on none — by construction, not by model luck: there is no payload left on any readable surface to obey or even quote.</p>
+          <p>The same stock agent, asked the same 12 questions cold after the cure, trips the compliance signature on none — by construction, not by model luck: there is no payload left on any readable surface to obey or even quote. Recorded in <code>docs/hijack-ab-transcript.json</code>; the offline <code>./run.sh</code> skips the live A/B and says so.</p>
         </div>
         <div class="stat">
           <span class="num">12/12&thinsp;+&thinsp;3/3</span>
@@ -898,7 +906,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="stat">
           <span class="num">250</span>
           <span class="label">tests passing · 100% coverage</span>
-          <p>100% line coverage on 1,565 statements, enforced in CI. Including <code>test_nfkc_alone_would_miss_zero_width</code> — the test that proves the Unicode pre-pass does the work.</p>
+          <p>100% line coverage on 1,565 statements, enforced in CI. Including <code>test_nfkc_alone_would_miss_zero_width</code> — the test that proves the Unicode pre-pass does the work. Re-derive with <code>pytest --cov</code>; <code>./run.sh</code> runs a 50-test stdlib subset of it.</p>
         </div>
       </div>
 
@@ -1051,9 +1059,10 @@ strong { color: var(--text-hi); font-weight: 600; }
         <p class="eyebrow">Why the detector is defensible</p>
         <h2 id="detector-title">Not an ML model. Not a keyword grep.<br />A scored rule you can audit.</h2>
         <p class="lede">
-          The detector is a small, standard-library scored rule. It flags a field
-          only on the <strong>co-occurrence</strong> of two independent signals —
-          which is why ordinary data-engineering prose almost never trips it:
+          The detector is a small, standard-library <strong>scored</strong> rule:
+          every signal it recognises adds points, and a field flags at
+          <strong>score&nbsp;≥&nbsp;2</strong>. Ordinary data-engineering prose
+          scores 0 or 1 and stays clean — measured, not asserted:
           <strong>24 flags in 38,031</strong> real public catalog descriptions
           it did not write, every one of them adjudicated a false positive.
         </p>
@@ -1061,32 +1070,43 @@ strong { color: var(--text-hi); font-weight: 600; }
 
       <div class="detector-grid">
         <div class="rule-card reveal">
-          <h3>The co-occurrence rule</h3>
-          <div class="rule-formula" role="img" aria-label="Flag only when signal A and signal B co-occur: A is a reader-directed imperative or instruction-override cue, B is an agent-action object such as exfiltrate, override, or reveal a secret.">
-<span class="a">A</span>&nbsp;<span class="dim">reader-directed imperative /</span>
-&nbsp;&nbsp;<span class="dim">instruction-override cue</span>
-<span class="op">AND</span>
-<span class="b">B</span>&nbsp;<span class="dim">agent-action object — exfiltrate,</span>
-&nbsp;&nbsp;<span class="dim">override instructions, poison a</span>
-&nbsp;&nbsp;<span class="dim">tool call, reveal a secret</span>
-<span class="op">→ FLAG</span> <span class="dim">(scored, per surface)</span>
+          <h3>The scoring rule</h3>
+          <div class="rule-formula" role="img" aria-label="The scoring rule: a field flags at a score of 2 or more, per surface. Four signals are worth 2 points on their own and therefore flag alone: an instruction-override cue, a persona jailbreak, a reveal-a-secret imperative, and the exfiltration triple of a transfer verb plus a sensitive object plus an external destination. A tool-call imperative is also worth 2, but only when a second cue is present: second-person address, a whenever-then-call frame, or an override, persona or preamble hit. Two weaker signals are worth 1 point each and must combine with something else to reach the threshold: an injection preamble such as new instructions colon, and a transfer verb plus a sensitive object with no destination.">
+<span class="op">score ≥ 2 → FLAG</span> <span class="dim">(per surface)</span><br /><br />
+<span class="a">+2</span>&nbsp;<span class="dim">instruction-override cue</span><br />
+<span class="a">+2</span>&nbsp;<span class="dim">persona jailbreak</span><br />
+<span class="a">+2</span>&nbsp;<span class="dim">reveal-a-secret imperative</span><br />
+<span class="a">+2</span>&nbsp;<span class="dim">transfer verb + sensitive object + external destination</span><br />
+<span class="a">+2</span>&nbsp;<span class="dim">tool-call imperative — <span class="b">only</span> with a second cue ("you/your", "whenever&nbsp;… call", or an override / persona / preamble hit)</span><br /><br />
+<span class="b">+1</span>&nbsp;<span class="dim">injection preamble ("new instructions:")</span><br />
+<span class="b">+1</span>&nbsp;<span class="dim">transfer verb + sensitive object, no destination</span>
           </div>
           <p style="font-size:.9rem;">
-            Legitimate prose trips at most one signal, so it stays clean.
-            A <strong>negation guard</strong> keeps defensive text clean too:
+            So four signals do flag alone — each is a whole injection by itself,
+            and the exfiltration one is a three-part conjunction before it scores
+            at all. The two <span class="b">+1</span> signals are the ambiguous
+            ones, and they have to find a partner. A <strong>negation
+            guard</strong> keeps defensive text clean on top of that. All four
+            of these score <strong>0</strong>:
           </p>
           <ul class="nearmiss">
-            <li><code>"ignore null values"</code> — imperative, no agent-action object</li>
-            <li><code>"drop_flag column"</code> — action word, not reader-directed</li>
-            <li><code>"execute the nightly job"</code> — ordinary ops prose</li>
+            <li><code>"ignore null values"</code> — the override cue's object must be the model's <em>own</em> instructions</li>
+            <li><code>"drop_flag column"</code> — no signal in the bank matches it at all</li>
+            <li><code>"execute the nightly job"</code> — the tool-call rule wants a named tool, function or command</li>
             <li><code>"you must not expose API keys"</code> — negation guard</li>
           </ul>
           <p style="font-size:.84rem;color:var(--text-mid);margin:14px 0 0;">
-            The honest limit, measured: the two signals only have to co-occur
-            <em>somewhere in the same field</em>, with no proximity requirement,
-            so every extra paragraph is another chance to supply the missing
-            half. Flag rate runs <strong>0.003%</strong> under 200 characters
-            and <strong>4.663%</strong> over 2,000 — the long, hand-curated
+            The honest limit, measured: <strong>score ≥ 2 is a threshold, not a
+            proof of intent</strong>, and the parts of a composite signal only
+            have to co-occur <em>somewhere in the same field</em>, with no
+            proximity requirement. Every extra paragraph is another chance to
+            supply a missing constituent — which is exactly how the 24 false
+            positives happened, <strong>23 of them on the exfiltration triple</strong>:
+            an ordinary transfer verb, a sensitive-sounding object like
+            <code>records</code>, and — in 21 of the 24 — a "questions? email us"
+            contact line, scattered across one long field.
+            Flag rate runs <strong>0.003%</strong> under 200 characters and
+            <strong>4.663%</strong> over 2,000 — the long, hand-curated
             descriptions are the ones at risk, and they are the expensive ones.
           </p>
         </div>
@@ -1155,8 +1175,8 @@ strong { color: var(--text-hi); font-weight: 600; }
             native aspect version history. By default an out-of-corpus hit
             replaces the whole field (<code>--excise-span</code> cuts the
             enclosing sentence instead — over-removing on purpose), so a false
-            positive can cost documentation until a one-action revert —
-            fail-safe, not guaranteed lossless.
+            positive can cost documentation until the prior aspect version is
+            read back and re-emitted — fail-safe, not guaranteed lossless.
           </p>
         </div>
       </div>
@@ -1168,11 +1188,20 @@ strong { color: var(--text-hi); font-weight: 600; }
     <div class="wrap">
       <div class="section-head reveal">
         <p class="eyebrow">Prior art &amp; upstream</p>
-        <h2 id="prior-art-title">Nothing shipped reads catalog text for intent.</h2>
+        <h2 id="prior-art-title">Plenty reads catalog text.<br />Nothing reads it for intent.</h2>
         <p class="lede">
           The honest version of the novelty claim, with the objections named
-          first. DataHub ships plenty that touches descriptions — none of it
-          asks whether the description is an instruction.
+          first. The sharpest one is DataHub's own:
+          <a href="https://docs.datahub.com/docs/features/feature-guides/ask-datahub" rel="noopener">Ask&nbsp;DataHub</a>
+          (Cloud) answers questions "grounded in both your metadata graph and
+          your organizational knowledge — like runbooks, policies, and FAQs
+          stored in Context Graph", and its own docs list what the assistant
+          considers first: <em>"asset names, descriptions, and documentation."</em>
+          That is catalog text pulled straight into an LLM's context as
+          <strong>trusted grounding</strong>. It is consumed, never inspected:
+          that page describes no sanitization step and no trust boundary, and
+          no shipped DataHub feature asks whether a description is an
+          instruction.
         </p>
       </div>
 
@@ -1180,9 +1209,12 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="control-card green">
           <h3><span class="dot"></span>Metadata Tests can match. They can't act.</h3>
           <p>
-            A Cloud-only <code>Matches Regex</code> condition <em>can</em>
-            pattern-match description text — so we don't claim otherwise. But
-            its actions are label-only (tags, terms, owners, domain): it can
+            Grant the strongest version: the docs list a Cloud-only
+            <code>Matches Regex</code> operator and build example conditions on
+            <code>description</code>, so assume it <em>can</em> pattern-match
+            description text (DataHub publishes the property×operator matrix as
+            an image, so we're conceding that pairing rather than citing it). It
+            still doesn't help, because its actions are label-only (tags, terms, owners, domain): it can
             mark a poisoned asset, never excise a span or hash a field. It
             excludes Document entities, so the two KB payloads are invisible to
             it, and scheduled evaluation runs "typically every 24 hours."
@@ -1193,12 +1225,18 @@ strong { color: var(--text-hi); font-weight: 600; }
         <div class="control-card green">
           <h3><span class="dot"></span>Propagation moves metadata without reading it.</h3>
           <p>
-            Tag Propagation and Documentation Propagation both ship, both are
-            lineage-driven, and docs propagation is enabled by default in Open
-            Source DataHub. They copy text downstream without ever inspecting
-            it — which is precisely what turns one poisoned column into N.
-            Antigen's blast radius is <strong>not an invention</strong>: it is
-            DataHub's own propagation semantics pointed at a security label.
+            Both ship in open source and both are lineage-driven.
+            <strong>Documentation Propagation</strong> is
+            <em>"enabled by default in Open Source DataHub"</em> and fans column
+            descriptions out over downstream and sibling lineage. Tag
+            Propagation is the bundled
+            <a href="https://docs.datahub.com/docs/datahub-actions/src/datahub_actions/plugin/action/tag" rel="noopener"><code>tag_propagation</code> Action</a>
+            in the OSS Actions framework — configured, not default, and
+            downstream-only. Neither inspects what it moves. Docs propagation is
+            the one that turns a single poisoned column into N readable copies;
+            tag propagation is the precedent for the other half — Antigen's blast
+            radius is <strong>not an invention</strong>, it is DataHub's own
+            propagation semantics pointed at a security label.
           </p>
         </div>
         <div class="control-card green">
@@ -1225,6 +1263,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         (<code>update_description</code> advertised four entity types the server
         rejects and omitted seven it accepts) and the audit then surfaced a
         <strong>silent data-loss bug in DataHub's own production code</strong>:
+        at the PR's base commit (<code>45d15420</code>)
         <code>_get_existing_description</code> carried GraphQL inline fragments
         for 14 entity types — four of them for types the mutation rejects, so
         real coverage was <strong>10 of 17</strong> — and on an uncovered type
@@ -1236,7 +1275,8 @@ strong { color: var(--text-hi); font-weight: 600; }
         the flat helper cannot express. 3 commits, +96/−3 across 4 files, all
         required checks passing with zero failures. The only review on it is
         automated — <code>cubic-dev-ai[bot]</code> raised two findings, both
-        valid and both fixed, and its re-review found nothing further.
+        valid and both fixed. It has not looked again since, and we don't claim
+        it did.
       </p>
 
       <p class="method-note reveal">
@@ -1270,7 +1310,7 @@ strong { color: var(--text-hi); font-weight: 600; }
               honest and explicit. What isn't contrived is the victim: a
               <strong>stock</strong> LangChain agent built with the unmodified
               <code>build_langchain_tools(client)</code> pattern that DataHub's
-              own Agent Context Kit ships as its reference integration, hijacked
+              own Agent Context Kit ships as its reference LangChain integration, hijacked
               live before the cure. And the 3 held-out injections come from
               <strong>public</strong> prompt-injection corpora that the rule was
               never tuned on.
@@ -1295,8 +1335,8 @@ strong { color: var(--text-hi); font-weight: 600; }
           <div class="answer">
             <p>
               A classifier can't be audited by a judge in five minutes and
-              can't run in CI with zero dependencies. The scored co-occurrence
-              rule is stdlib-only, deterministic, explainable per-hit, and
+              can't run in CI with zero dependencies. The scored rule
+              is stdlib-only, deterministic, explainable per-hit, and
               measured: a <strong>0.063% flag rate</strong> over 38,031 public
               catalog descriptions it did not write, all 24 flags adjudicated
               false positives — while still generalizing 3/3 to held-out public
@@ -1340,8 +1380,10 @@ strong { color: var(--text-hi); font-weight: 600; }
             </p>
             <p>
               Nothing is deleted and no entity is removed — the pre-cure text
-              stays in DataHub's native aspect version history, so the revert is
-              one action per affected field. It is also exactly why
+              stays in DataHub's native aspect version history, so every affected
+              field is recoverable by reading the prior version back and
+              re-emitting it — recoverable, not a one-click undo. It is also
+              exactly why
               <code>cure</code> is <strong>dry-run by default</strong> on any
               live target, why <code>--apply</code> is a separate decision, why
               <code>--max-mutations N</code> refuses the N+1st write instead of
@@ -1478,7 +1520,7 @@ strong { color: var(--text-hi); font-weight: 600; }
         </nav>
       </div>
       <div class="footer-bottom">
-        <span>Apache-2.0 · no telemetry · this page makes zero network requests</span>
+        <span>Apache-2.0 · no telemetry · no third-party fonts, scripts or styles — the only off-site request is the YouTube&nbsp;embed</span>
         <span>antigen.edycu.dev</span>
       </div>
     </div>

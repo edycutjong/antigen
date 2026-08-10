@@ -11,14 +11,28 @@ Why not a keyword grep
 ----------------------
 A grep for "ignore" or "drop" or "execute" false-positives on legitimate data-
 engineering prose ("ignore null values", "drop_flag column", "execute the nightly
-job"). Antigen instead requires *co-occurrence* of two independent signals:
+job"). Antigen instead scores the text and flags at ``score >= FLAG_THRESHOLD``
+(2). What earns points:
 
-    (A) an imperative directed at the reader / an instruction-override cue, AND
-    (B) an agent-action object — override own instructions, exfiltrate data to an
-        external endpoint, poison a tool call, or reveal a secret.
+    +2, and therefore flags on its own:
+        instruction-override, persona-jailbreak, reveal-secret, and
+        sensitive-transfer *with* an external destination (exfiltration).
+    +2, but gated on a second cue:
+        tool-poisoning, which additionally requires a reader-directed imperative,
+        a tool-call context, an override, a persona jailbreak or a preamble.
+    +1, and therefore needs a partner to reach the threshold:
+        an injection preamble ("new instruction:", "system: override"), and
+        sensitive-transfer with no destination named.
 
-Legitimate prose trips at most one of these, so it does not flag. A real injection
-trips both by construction (that is what makes it an injection).
+So this is a *threshold*, not a proof of intent, and the earlier claim that two
+independent signals must co-occur was wrong: four of the six branches flag alone.
+That is deliberate — an instruction-override or an exfiltration triple is not
+something legitimate catalog prose does — but it is also exactly why the
+false-positive study finds what it finds: 23 of its 24 flags are the exfiltration
+triple (move verb + sensitive object + destination) assembling itself across one
+long field, with no proximity constraint tying the three together. See
+``docs/false-positive-study.md``; the honest framing of the trade is in the
+README's "Honest limitations".
 
 Why a Unicode pre-pass BEFORE NFKC
 ----------------------------------
