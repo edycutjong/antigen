@@ -122,8 +122,16 @@ class Gateway(Protocol):
                       parent: str = "Antigen/Incidents",
                       urn: str | None = None,
                       related_assets: list[str] | None = None,
-                      related_documents: list[str] | None = None) -> None:
-        """`save_document` — write/overwrite a KB document.
+                      related_documents: list[str] | None = None) -> str | None:
+        """`save_document` — write/overwrite a KB document. Returns the REAL URN.
+
+        The return value is the URN the SERVER assigned (`save_document`'s response
+        dict carries `{"success", "urn", "message", "author"}`). Antigen used to
+        synthesise `urn:li:document:Antigen/Incidents/<title>` from the folder and
+        title instead, and print that as the forensic record's address — but a live
+        DataHub mints `urn:li:document:shared-<uuid>`, so every incident pointer
+        Antigen printed was a well-formed URN that resolved to nothing. It is the
+        only operator handle containment has, and it 404'd.
 
         Pass `urn` to overwrite an EXISTING document in place; without it a live
         DataHub mints a brand-new document. Title is NOT an identity key on a live
@@ -299,10 +307,53 @@ class SdkGateway:
         return self._paged_urns("search")
 
     def get_entities(self, urns: list[str]) -> list[Entity]:
+        """Batch entity read, with per-URN failures EXCLUDED and reported.
+
+        THE FAILURE SHAPE THIS EXISTS FOR. `get_entities` does not raise and does not
+        return a short list when an entity cannot be read. It returns a FULL-LENGTH
+        list with an error object in the failed slot::
+
+            # datahub_agent_context/mcp_tools/entities.py:63, :122
+            results.append({"error": f"Entity {urn} not found", "urn": urn})
+            results.append({"error": str(e), "urn": urn})
+
+        and its own docstring says so: *"List of dicts, one per URN. Each entry
+        contains entity details or an `error` key if the entity was not found or
+        could not be retrieved."*
+
+        Parsed naively, that error object becomes an `Entity` with the right URN and
+        an EMPTY description — which `scan` reads as a clean entity and `certify`
+        then tags **`agent-safe-certified`**. Antigen would write a positive safety
+        assertion, into the customer's catalog, about an entity it never read. That is
+        strictly worse than a missed detection: a missed payload leaves the operator
+        where they started, a false certification actively tells them a poisoned asset
+        is safe.
+
+        `scan.UNDER_FETCH_REASON` did not catch it either, and could not have: that
+        guard compares `len(entities)` against `len(urns)`, and the list is full
+        length precisely because the failures are inside it. It was written against a
+        failure shape this SDK does not produce. Excluding the failed slots here is
+        what finally makes that guard fire — the returned list really is short now —
+        and the explicit `_warn` below names the first URN and the server's own reason
+        so the operator gets more than an arithmetic mismatch.
+        """
         if not urns:
             return []
         raw = self._call("get_entities", urns=urns)
-        entities = [_parse_entity(item) for item in _as_list(raw)]
+        entities: list[Entity] = []
+        failed: list[str] = []
+        for item in _as_list(raw):
+            error = _item_error(item)
+            if error is not None:
+                failed.append(f"{_get(item, 'urn', default='<no urn>')} ({error})")
+                continue
+            entities.append(_parse_entity(item))
+        if failed:
+            self._warn(
+                f"get_entities could not read {len(failed)} of {len(urns)} requested "
+                f"entities — first: {failed[0]}. They are NOT scanned, NOT reported "
+                "clean, and NOT eligible for certification",
+                key="get_entities_item_error")
         for ent in entities:
             self._merge_editable_columns(ent)
         return entities
@@ -325,9 +376,16 @@ class SdkGateway:
             from datahub.metadata.schema_classes import (  # type: ignore
                 EditableSchemaMetadataClass,
             )
-        except ImportError:
+        except ImportError:  # pragma: no cover - depends on whether extras are installed
             # The base SDK is an optional live-only dependency; its absence is the
             # documented tool-only mode, not a degraded catalog read. Stay quiet.
+            #
+            # Excluded from coverage because its reachability is a property of the
+            # ENVIRONMENT, not of the tests: without the `[live]` extras this branch
+            # always runs, with them it never can. Un-excluded, `make cov` passed on
+            # a bare checkout and failed at 99.93% for anyone who had followed the
+            # README's own live-setup instructions first — a gate that punishes the
+            # reader for doing the tutorial.
             return
         try:
             aspect = graph.get_aspect(entity_urn=ent.urn,
@@ -407,7 +465,27 @@ class SdkGateway:
         if not urns:
             return []
         raw = self._call("grep_documents", urns=urns, pattern=pattern)
-        return [_parse_document(item) for item in _as_list(raw)]
+        # The same fail-quietly shape one level up: a bad pattern returns a WHOLE-
+        # RESPONSE error alongside an empty `results` list
+        # (`mcp_tools/documents.py:625-630`), and `results` is one of `_LIST_KEYS`, so
+        # `_as_list` would hand back `[]` and the sweep would report "0 documents
+        # scanned" next to a clean verdict. A refused grep is not an all-clear.
+        top_level_error = _item_error(raw)
+        if top_level_error is not None:
+            self._warn(f"grep_documents refused the sweep pattern ({top_level_error}) "
+                       "— 0 documents were searched and this is NOT a document "
+                       "all-clear")
+            return []
+        documents: list[Document] = []
+        for item in _as_list(raw):
+            error = _item_error(item)
+            if error is not None:
+                self._warn(f"grep_documents could not read a document ({error}) — it "
+                           "was NOT searched and is NOT reported clean",
+                           key="grep_documents_item_error")
+                continue
+            documents.append(_parse_document(item))
+        return documents
 
     def get_lineage(self, urn: str, direction: str = "downstream",
                     hops: int = 2) -> list[str]:
@@ -463,7 +541,7 @@ class SdkGateway:
                     DatahubClientConfig,
                     DataHubGraph,
                 )
-            except ImportError:
+            except ImportError:  # pragma: no cover - see `_merge_editable_columns`
                 return None
             self._graph_cache = DataHubGraph(DatahubClientConfig(
                 server=os.environ.get("DATAHUB_GMS_URL", "http://localhost:8080"),
@@ -495,7 +573,7 @@ class SdkGateway:
                       parent: str = "Antigen/Incidents",
                       urn: str | None = None,
                       related_assets: list[str] | None = None,
-                      related_documents: list[str] | None = None) -> None:
+                      related_documents: list[str] | None = None) -> str | None:
         # The tool has no `parent`; the folder is carried as a topic so the incident
         # set stays grouped and greppable. Identity is the URN, NOT the title: a live
         # save without `urn` mints a new document, which would leave the poisoned
@@ -512,7 +590,9 @@ class SdkGateway:
             kwargs["related_assets"] = list(related_assets)
         if related_documents:
             kwargs["related_documents"] = list(related_documents)
-        self._call("save_document", **kwargs)
+        result = self._call("save_document", **kwargs)
+        # `{"success": False, "urn": None, ...}` on failure — never fabricate one.
+        return _get(result, "urn", default=None) or None
 
     def get_entity(self, urn: str) -> Entity | None:
         ents = self.get_entities([urn])
@@ -561,6 +641,29 @@ def _as_list(raw) -> list:
                     return nested
         return [raw]
     return [raw]
+
+
+def _item_error(item) -> str | None:
+    """The Agent Context Kit's error message for one response item, or None.
+
+    The Kit signals failure IN BAND rather than by raising or by shortening a list:
+    a per-URN failure in `get_entities` is `{"error": "...", "urn": "..."}` occupying
+    that URN's slot (`mcp_tools/entities.py:63,122`), and a refused `grep_documents`
+    pattern is a whole-response `{"error": "...", "results": []}`
+    (`mcp_tools/documents.py:625-630`).
+
+    Deliberately a presence check on the `error` key rather than a match on the
+    message text: the two call sites produce `str(e)` from arbitrary transport
+    exceptions, so the wording is not something to pattern-match on. It fails in the
+    SAFE direction — anything carrying an `error` key is excluded from the sweep and
+    reported, never parsed into an entity that could be reported clean and certified.
+    """
+    if not isinstance(item, dict):
+        return None
+    error = item.get("error")
+    if error in (None, "", [], {}):
+        return None
+    return str(error)
 
 
 def _envelope_total(raw) -> int | None:

@@ -162,7 +162,8 @@ _OVERRIDE_RE = re.compile(
     r"(?:previous|prior|earlier|above|preceding|foregoing|prior)?\s*"
     r"(?:instruction|instructions|direction|directions|directive|directives|"
     r"prompt|prompts|system\s+prompt|rule|rules|guardrail|guardrails|"
-    r"guideline|guidelines|content\s+polic|restriction|restrictions|constraint|constraints)\b",
+    r"guideline|guidelines|content\s+polic(?:y|ies)|content\s+moderation|"
+    r"restriction|restrictions|constraint|constraints)\b",
     re.IGNORECASE,
 )
 
@@ -170,8 +171,8 @@ _OVERRIDE_RE = re.compile(
 _PERSONA_RE = re.compile(
     r"\b(?:you\s+are\s+now|from\s+now\s+on\s+you\s+are|act\s+as|pretend\s+to\s+be|"
     r"you\s+are\s+(?:no\s+longer|an?\s+unrestricted))\b[^.\n]{0,40}?"
-    r"(?:dan|do\s+anything\s+now|jailbroken|unrestricted|developer\s+mode|"
-    r"no\s+restrictions|without\s+(?:any\s+)?(?:restrictions|filter|guardrails))",
+    r"\b(?:dan|do\s+anything\s+now|jailbroken|unrestricted|developer\s+mode|"
+    r"no\s+restrictions|without\s+(?:any\s+)?(?:restrictions|filter|guardrails))\b",
     re.IGNORECASE,
 )
 
@@ -216,8 +217,16 @@ _TOOL_POISON_CTX_RE = re.compile(
 _REVEAL_RE = re.compile(
     r"\b(?:reveal|print|show|output|display|disclose|repeat|dump|expose|tell\s+me)\b"
     r"[^.\n]{0,40}?\b(?:system\s+prompt|your\s+(?:prompt|instructions|"
-    r"system\s+prompt|configuration)|api[\s_-]?key|api[\s_-]?keys|password|"
-    r"credential|credentials|secret|secrets|token|hidden\s+(?:instructions|rules))\b",
+    r"system\s+prompt|configuration)|api[\s_-]?keys?|passwords?|"
+    r"credentials?|secrets?|"
+    # `tokens?` bare flags "Total output tokens generated" — an LLM-cost column,
+    # now ubiquitous in warehouses, and a homonym of the auth token this rule
+    # means. Measured over the 38,031-description false-positive study: the bare
+    # plural added exactly one false positive and zero true positives. So the
+    # plural must be credential-qualified, while the bare singular stays exactly
+    # as it always was — no recall is given up relative to the shipped detector.
+    r"(?:access|auth|bearer|refresh|session|api)[\s_-]?tokens?|token|"
+    r"hidden\s+(?:instructions|rules))\b",
     re.IGNORECASE,
 )
 
@@ -329,12 +338,34 @@ def detect(text: str | None) -> Detection:
     signals: list[str] = []       # safe labels — persisted to the graph
     reader_directed = bool(_READER_DIRECTED_RE.search(norm))
 
+    #: Match objects for every rule that CONTRIBUTED SCORE, accumulated as we go and
+    #: handed to `_locate_span` below. This is a list built by the scoring branches
+    #: themselves rather than a hand-picked tuple assembled afterwards, and that is
+    #: the whole point: the previous version passed a fixed
+    #: `[m_override, m_persona, m_reveal, m_tool]`, so any hit that flagged on a rule
+    #: outside those four got `matched_span is None` and `--excise-span` declined
+    #: without ever attempting a cut.
+    #:
+    #: That was not an edge case. Measured against this project's own
+    #: `docs/false-positive-study.md`, **23 of the 24 real flagged descriptions score 2
+    #: on `data-exfiltration` alone** — a rule whose matches were not in that tuple —
+    #: so span excision fired on 1 of 24 and whole-field quarantine destroyed ~42 k
+    #: characters of hand-written documentation. The demo corpus hid it completely,
+    #: because 11 of its 15 loci happen to trip override/persona/tool/reveal.
+    #:
+    #: Invariant, and it is now structural: **a rule that can add score must append
+    #: its match here.** Every scoring branch below does. `tests/test_containment.py::
+    #: test_every_scoring_rule_can_yield_a_span` re-derives that over the whole rule
+    #: set rather than trusting this comment.
+    span_matches: list[re.Match] = []
+
     # --- injection preamble ("new instruction:", "system: override") ------
     m_preamble = _INJECTION_PREAMBLE_RE.search(norm)
     if m_preamble:
         score += 1
         reasons.append(f"injection-preamble ({m_preamble.group(0).strip()!r})")
         signals.append("injection-preamble")
+        span_matches.append(m_preamble)
 
     # --- (A) instruction override -----------------------------------------
     m_override = _OVERRIDE_RE.search(norm)
@@ -343,6 +374,7 @@ def detect(text: str | None) -> Detection:
         categories.append(Category.OVERRIDE)
         reasons.append(f"instruction-override ({m_override.group(0)!r})")
         signals.append(Category.OVERRIDE.value)
+        span_matches.append(m_override)
 
     m_persona = _PERSONA_RE.search(norm)
     if m_persona:
@@ -351,6 +383,7 @@ def detect(text: str | None) -> Detection:
             categories.append(Category.OVERRIDE)
         reasons.append(f"persona-jailbreak ({m_persona.group(0)!r})")
         signals.append("persona-jailbreak")
+        span_matches.append(m_persona)
 
     # --- (B) exfiltration: transfer + sensitive object + destination -------
     m_transfer = _TRANSFER_RE.search(norm)
@@ -367,6 +400,11 @@ def detect(text: str | None) -> Detection:
                 f"{m_sensitive.group(0).strip()!r} → {m_dest.group(0)!r})"
             )
             signals.append(Category.EXFIL.value)
+            # The transfer VERB anchors the cut, not the destination: the verb heads
+            # the imperative clause ("Send all API keys to https://…"), while a URL
+            # can sit anywhere and is often the innocent half. `m_sensitive` joins it
+            # so the earliest constituent of the pair wins.
+            span_matches += [m_transfer, m_sensitive]
         else:
             score += 1
             reasons.append(
@@ -374,6 +412,7 @@ def detect(text: str | None) -> Detection:
                 f"({m_transfer.group(0)!r} {m_sensitive.group(0).strip()!r})"
             )
             signals.append("sensitive-data-transfer")
+            span_matches += [m_transfer, m_sensitive]
 
     # --- (C) tool poisoning ------------------------------------------------
     m_tool = _TOOL_POISON_RE.search(norm)
@@ -384,6 +423,7 @@ def detect(text: str | None) -> Detection:
         categories.append(Category.TOOL_POISON)
         reasons.append(f"tool-poisoning ({m_tool.group(0)!r})")
         signals.append(Category.TOOL_POISON.value)
+        span_matches.append(m_tool)
 
     # --- (D) reveal secret -------------------------------------------------
     m_reveal = _REVEAL_RE.search(norm)
@@ -392,11 +432,12 @@ def detect(text: str | None) -> Detection:
         categories.append(Category.REVEAL_SECRET)
         reasons.append(f"reveal-secret ({m_reveal.group(0)!r})")
         signals.append(Category.REVEAL_SECRET.value)
+        span_matches.append(m_reveal)
 
     flagged = score >= FLAG_THRESHOLD
 
     # Best-effort span in ORIGINAL text: locate the earliest matched fragment.
-    span = _locate_span(text, prepass, norm, [m_override, m_persona, m_reveal, m_tool])
+    span = _locate_span(text, prepass, norm, span_matches)
     matched_text = text[span[0]:span[1]] if span else None
 
     rule_fired = "; ".join(reasons) if reasons else "no-signal"
@@ -416,7 +457,7 @@ def detect(text: str | None) -> Detection:
 
 
 def _locate_span(original: str, prepass: UnicodePrepass, norm: str,
-                 matches: list[re.Match | None]) -> tuple[int, int] | None:
+                 matches: list[re.Match]) -> tuple[int, int] | None:
     """Best-effort map of the earliest injection match back to original coords.
 
     The cure uses the fixture's recorded original text for exact excision on the

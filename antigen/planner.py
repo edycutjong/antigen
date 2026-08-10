@@ -188,7 +188,7 @@ class PlanningGateway:
                       parent: str = "Antigen/Incidents",
                       urn: str | None = None,
                       related_assets: list[str] | None = None,
-                      related_documents: list[str] | None = None) -> None:
+                      related_documents: list[str] | None = None) -> str | None:
         # The links are part of the write, so the approver sees them: a `save_document`
         # that also creates an edge back to the poisoned asset changes what appears on
         # that asset's page, which is not visible anywhere in a before/after diff.
@@ -199,6 +199,9 @@ class PlanningGateway:
             "save_document", urn or f"(new document under {parent})", title,
             "(overwrite existing document)" if urn else "(no such document yet)",
             content, note="  ".join(links)))
+        # Nothing was written, so there is no URN to report. Returning the synthetic
+        # one a live run would NOT use is exactly the fabrication this removed.
+        return None
 
 
 class MutationBudgetExceeded(RuntimeError):
@@ -287,11 +290,11 @@ class BudgetedGateway:
                       parent: str = "Antigen/Incidents",
                       urn: str | None = None,
                       related_assets: list[str] | None = None,
-                      related_documents: list[str] | None = None) -> None:
+                      related_documents: list[str] | None = None) -> str | None:
         self._spend("save_document", urn or f"(new document `{title}`)")
-        self._inner.save_document(title, content, parent=parent, urn=urn,
-                                  related_assets=related_assets,
-                                  related_documents=related_documents)
+        return self._inner.save_document(title, content, parent=parent, urn=urn,
+                                         related_assets=related_assets,
+                                         related_documents=related_documents)
 
 
 def format_plan(planned: list[PlannedMutation], *, command: str) -> str:

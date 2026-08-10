@@ -70,9 +70,29 @@ jobs:
         id: scan
         # `set +e` so the step can inspect the exit code instead of dying on it.
         # stdout is the JSON report; stderr carries the DEGRADED warnings.
+        #
+        # `--fail-on-new-hit`, NOT `--fail-on-hit`, and the difference matters for a
+        # job that runs every night. Some entity types cannot be defused at all —
+        # DataHub's `updateDescription` resolver rejects chart / dashboard / dataFlow
+        # / dataJob / corpuser — so `cure` CONTAINS those loci: detected, tagged
+        # `injection-contained`, filed as a forensic record, and left with the payload
+        # live in the field until a human clears it in the DataHub UI or at the
+        # ingestion source. That state is permanent from CI's point of view.
+        #
+        # Under `--fail-on-hit` a single poisoned Looker dashboard therefore turns
+        # this job red FOREVER, with no supported way to acknowledge it — and a
+        # nightly job that is always red is a job everyone stops reading, which is
+        # strictly worse than no job. `--fail-on-new-hit` fails on anything new or
+        # re-poisoned and goes green once every remaining finding is contained and
+        # acknowledged. Contained loci are still printed, still counted in the
+        # summary, and still in the JSON report below (`contained_hits`), so they are
+        # acknowledged, never hidden.
+        #
+        # If your policy is that ANY live payload must block, swap in --fail-on-hit
+        # and accept that containment means a permanently failing job.
         run: |
           set +e
-          python -m antigen scan --fail-on-hit --json > antigen-report.json
+          python -m antigen scan --fail-on-new-hit --json > antigen-report.json
           echo "exit_code=$?" >> "$GITHUB_OUTPUT"
           set -e
 

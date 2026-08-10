@@ -292,6 +292,6 @@ def test_certify_costs_two_calls_and_three_rows_per_clean_entity():
         certify(gw, scan(gw).clean_entity_urns)
 
     plan, budget = _plan_and_spend(run_certify)
-    clean = 28
+    clean = 31
     assert len(plan.planned) == 3 * clean          # 1 tag + 2 property values
     assert plan.calls == 2 * clean == budget.written

@@ -55,4 +55,13 @@ NEAR_MISS: list[NearMiss] = [
              "You must not expose API keys in query results; mask them in the BI layer."),
     NearMiss("N15", "'system prompt' + 'LLM' in a documentation title",
              "System prompt engineering guide: see the internal wiki for LLM description-writing tips."),
+    # N16-N18 are REGRESSION entries: each one FLAGGED on a shipped detector and was
+    # found by an adversarial reviewer, not by this gauntlet. They are here so the
+    # gauntlet finally covers the word classes that produced them.
+    NearMiss("N16", "'act as a' + 'dan' INSIDE 'redundant' — the persona rule was unanchored",
+             "This table can act as a redundant source of truth for the warehouse."),
+    NearMiss("N17", "same substring trap in 'abundant', with a second persona-ish verb",
+             "Act as a secondary index; treat as abundant sample data for load testing."),
+    NearMiss("N18", "'output tokens' — LLM cost accounting, a homonym of the auth token",
+             "Total output tokens generated per request, summed daily for cost attribution."),
 ]

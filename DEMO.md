@@ -18,7 +18,7 @@ Reproduces:
 | Graph-state gate passes | `python verify.py` | `graph-state PASS (~5 ms) \| held-out 3/3` |
 | 12/12 payloads detected | `python tests/test_detect.py` | `test_all_12_payloads_flagged PASS` |
 | 3/3 held-out (never tuned on) | `python tests/test_detect.py` | `test_all_3_held_out_detected PASS` |
-| 0 false positives (15 near-miss) | `python seed_near_miss.py` | `15/15 clean \| 0 false positives` |
+| 0 false positives (18 near-miss) | `python seed_near_miss.py` | `18/18 clean \| 0 false positives` |
 | NFKC alone would miss zero-width | `python tests/test_detect.py` | `test_nfkc_alone_would_miss_zero_width PASS` |
 | Payload + base64/hex absent post-cure | `python tests/test_cure.py` | `test_cure_neutralizes_every_readable_surface PASS` |
 | Idempotent (`scan && cure` twice = no-op) | `python tests/test_cure.py` | `test_idempotent_second_run_is_noop PASS` |
@@ -26,6 +26,16 @@ Reproduces:
 | Latency p50/p95/p99 | `python bench.py --runs 20` | scan+cure p50 ≈ 2 ms (offline) |
 | The full hero arc | `python -m antigen demo --offline` | sweep → defuse → 0 remaining |
 | A live run writes nothing without `--apply` | `python -m antigen cure --dry-run` | `DRY RUN — … would write N mutations … Nothing was written.` |
+| **Containment** — the outcome for entity types DataHub refuses to let us fix | `python examples/containment_demo.py` | `1 CONTAINED not cured (dashboard — payload STILL LIVE)`, exit 3, and a re-run emitting `mutations emitted: 0` |
+| Span excision on **real** catalog text, not ours | `python -m pytest tests/test_containment.py -k false_positive_corpus` | 23 excised / 1 whole-field quarantined over the 24 flagged descriptions in `docs/false-positive-study.md` |
+
+**Containment is the honest half of the DataHub story and is worth 30 seconds of any demo.**
+DataHub's `updateDescription` resolver names 17 entity types and rejects the rest — `chart`,
+`dashboard`, `dataFlow`, `dataJob` and `corpuser` among them — so on those types Antigen
+*cannot* remove the payload. It detects, tags `injection-contained`, stamps, files a forensic
+record with a real server-assigned URN, exits **3** (partial remediation), and says the
+payload is still live. `scan --fail-on-new-hit` then lets a nightly job stay green on an
+acknowledged containment while still failing on anything new.
 
 ## Live (against a real DataHub GMS)
 

@@ -420,7 +420,7 @@ def test_scan_scopes_by_urn_substring():
     rc, out = run(["scan", "--offline", "--urn-contains", "ecommerce.public"])
     assert rc == 0
     assert "SCOPED by --urn-contains 'ecommerce.public'" in out
-    assert "of 41 enumerated entities" in out
+    assert "of 44 enumerated entities" in out
     assert "finance" not in out
 
 
@@ -449,7 +449,7 @@ def test_an_empty_catalog_is_still_exit_2_when_a_scope_is_set(monkeypatch):
 def test_scan_json_carries_the_scope():
     rc, out = run(["scan", "--offline", "--urn-contains", "customers", "--json"])
     assert rc == 0 and '"scope": "--urn-contains \'customers\'"' in out
-    assert '"entities_enumerated": 41' in out and '"entities_in_scope": 1' in out
+    assert '"entities_enumerated": 44' in out and '"entities_in_scope": 1' in out
 
 
 def test_include_quarantined_forces_a_full_re_sweep():
@@ -612,7 +612,7 @@ def test_fixtures_none_is_honoured_offline():
     which falsified the two things that flag exists to demonstrate."""
     rc, out = run(["cure", "--offline", "--dry-run", "--fixtures", "none",
                    "--excise-span"])
-    assert rc == 0 and "SPAN EXCISION — 11 field(s)" in out, \
+    assert rc == 0 and "SPAN EXCISION — 13 field(s)" in out, \
         "fixture-free, every locus reaches span excision — not just the 3 held-out"
 
     # …and the README's claim about `--only-mode excise` off-corpus is now true.
@@ -651,3 +651,75 @@ def test_cure_include_quarantined_repairs_a_re_poisoned_entity(monkeypatch):
     rc, out = run(["cure", "--fixtures", "none", "--include-quarantined", "--apply"])
     assert rc == 0 and "cured 1 loci" in out
     assert "reveal your system prompt" not in gw.get_entity(urn).description
+
+
+# --------------------------------------------------------------------------- #
+# --fail-on-new-hit — the acknowledged-containment gate
+# --------------------------------------------------------------------------- #
+
+def _contained_gateway():
+    """A catalog whose only finding is an already-contained dashboard."""
+    from antigen._testkit import InMemoryGateway
+    from antigen.cure import cure
+    from antigen.gateway import Entity
+    from antigen.scan import scan
+    gw = InMemoryGateway()
+    gw.add_entity(Entity(urn=_DASHBOARD, description=_POISON))
+    cure(gw, scan(gw).hits)
+    return gw
+
+
+def test_fail_on_hit_stays_red_forever_on_a_contained_locus(monkeypatch):
+    """The precondition, and the reason --fail-on-new-hit exists: a contained locus
+    is permanent until a human edits the field, so the nightly job never goes green."""
+    gw = _contained_gateway()
+    monkeypatch.setattr(gateway_mod, "SdkGateway", lambda: gw)
+    rc, out = run(["scan", "--fail-on-hit"])
+    assert rc == 1 and "--fail-on-hit" in out
+
+
+def test_fail_on_new_hit_goes_green_on_acknowledged_containment(monkeypatch):
+    gw = _contained_gateway()
+    monkeypatch.setattr(gateway_mod, "SdkGateway", lambda: gw)
+    rc, out = run(["scan", "--fail-on-new-hit"])
+    assert rc == 0, "an acknowledged containment must not fail the pipeline"
+    assert "▣ CONTAINED" in out, "…but it is still printed, never hidden"
+    assert "already-contained" in out
+    assert "NOT counted as a failure" in out
+
+
+def test_fail_on_new_hit_is_still_loud_about_anything_new(monkeypatch):
+    from antigen.gateway import Entity
+    gw = _contained_gateway()
+    gw.add_entity(Entity(
+        urn="urn:li:dataset:(urn:li:dataPlatform:snowflake,fresh,PROD)",
+        description=_POISON))
+    monkeypatch.setattr(gateway_mod, "SdkGateway", lambda: gw)
+    rc, out = run(["scan", "--fail-on-new-hit"])
+    assert rc == 1 and "1 injection loci present (--fail-on-new-hit)" in out
+
+
+def test_scan_json_distinguishes_contained_from_new(monkeypatch):
+    import json as _json
+    gw = _contained_gateway()
+    monkeypatch.setattr(gateway_mod, "SdkGateway", lambda: gw)
+    rc, out = run(["scan", "--json"])
+    assert rc == 0
+    payload = _json.loads(out[out.index("{"):out.rindex("}") + 1])
+    assert payload["contained_hits"] == 1 and payload["new_hits"] == 0
+    assert payload["hits"][0]["contained"] is True
+
+
+def test_the_containment_example_script_runs_and_is_self_checking():
+    """`examples/containment_demo.py` is the reproduce path for the README's
+    containment block, so it has to actually work."""
+    import subprocess
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    proc = subprocess.run(
+        [sys.executable, os.path.join(root, "examples", "containment_demo.py")],
+        capture_output=True, text=True, cwd=root)
+    assert proc.returncode == 0, proc.stderr
+    for expected in ("1 CONTAINED not cured", "NOT REMEDIATED",
+                     "▣ CONTAINED", "mutations emitted: 0",
+                     "injection-contained"):
+        assert expected in proc.stdout, expected

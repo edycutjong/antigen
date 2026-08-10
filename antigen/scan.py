@@ -139,6 +139,11 @@ class ScanHit:
     detection: Detection
     doc_title: str | None = None    # for document loci: the (parent, title) identity
     doc_parent: str | None = None
+    #: True when this entity already carries `CONTAINED_TAG` — i.e. Antigen has
+    #: already found this, filed it, and established that it CANNOT be defused on
+    #: this tool surface. It is still a live payload and is still reported; what it
+    #: is not is NEWS. See `ScanReport.new_hits`.
+    contained: bool = False
 
     @property
     def key(self) -> tuple[str, str]:
@@ -237,6 +242,29 @@ class ScanReport:
         return bool(self.degraded_reasons)
 
     @property
+    def contained_hits(self) -> list[ScanHit]:
+        """Hits on entities already tagged `injection-contained` by a previous cure.
+
+        Still live payloads. Still reported, every run, deliberately. But already
+        triaged, already filed, and — on this tool surface — already established as
+        unfixable, so they are not the same operational event as a new finding.
+        """
+        return [h for h in self.hits if h.contained]
+
+    @property
+    def new_hits(self) -> list[ScanHit]:
+        """Hits that are NOT already-contained — i.e. everything actionable.
+
+        This is what `--fail-on-new-hit` gates on. The distinction exists because
+        `CONTAINED_TAG` was, until now, a write-only tag: `cure` wrote it and nothing
+        read it, so a single poisoned Looker dashboard turned an adopter's nightly
+        `scan --fail-on-hit` red permanently with no supported way to acknowledge it —
+        reintroducing, as designed behaviour, the never-goes-green-again failure this
+        project fixed as a bug in an earlier round.
+        """
+        return [h for h in self.hits if not h.contained]
+
+    @property
     def scope_empty(self) -> bool:
         """True when the operator's own filter — not a blackout — read nothing.
 
@@ -263,6 +291,11 @@ class ScanReport:
             f"{hidden} hidden in zero-width Unicode",
         ]
         parts += [f"{n} via {t}" for t, n in sorted(by_tool.items())]
+        # Only on a run that has one, so the documented `./run.sh` / `demo` output
+        # stays byte-identical on a catalog with nothing contained.
+        if self.contained_hits:
+            parts.append(f"{len(self.contained_hits)} already-contained "
+                         "(reported, NOT curable on this tool surface)")
         if self.skipped_quarantined:
             parts.append(f"{self.skipped_quarantined} already-quarantined (skipped)")
         if self.scope is not None:
@@ -297,18 +330,24 @@ def scan(gateway: Gateway, *, skip_quarantined: bool = True,
                 continue
 
             entity_flagged = False
+            # Already triaged as un-defusable by a previous cure. NOT skipped — the
+            # payload is live and must keep being reported — but marked, so CI can
+            # tell "the dashboard we already filed" from "something new".
+            is_contained = CONTAINED_TAG in ent.tags
 
             d = detect(ent.description)
             if d.flagged:
                 hits.append(ScanHit(ent.urn, Locus.ENTITY, None,
-                                    "get_entities", ent.description, d))
+                                    "get_entities", ent.description, d,
+                                    contained=is_contained))
                 entity_flagged = True
 
             for col in ent.columns.values():
                 dc = detect(col.description)
                 if dc.flagged:
                     hits.append(ScanHit(ent.urn, Locus.COLUMN, col.field_path,
-                                        "get_entities", col.description, dc))
+                                        "get_entities", col.description, dc,
+                                        contained=is_contained))
                     entity_flagged = True
 
             if not entity_flagged:

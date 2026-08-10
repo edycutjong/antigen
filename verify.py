@@ -67,28 +67,36 @@ def part_a(live: bool = False, verbose: bool = True) -> dict:
 
     t0 = time.perf_counter()
 
-    report = scan(gw)
+    # `skip_quarantined=False`, and it is load-bearing rather than a convenience.
+    #
+    # `scan`'s default skips entities tagged `injection-quarantined`, which is right
+    # for a production sweep (idempotency) and WRONG for this harness. `verify.py`
+    # plants nothing itself: `seed_corpus.py` runs first and re-plants all 12 payloads
+    # over whatever is there. On a catalog that was already used once, those entities
+    # carry a quarantine tag from the PREVIOUS run — so the default sweep skipped the
+    # freshly-planted payloads it was pointed at, found 0 of 12, and failed.
+    #
+    # The symptom was `./run.sh live` passing on run 1 and failing on runs 2 and 3,
+    # with a diagnostic that told the operator to `datahub docker nuke` their DataHub
+    # — a destructive remedy for a stale tag. The proof was reading the tag instead of
+    # the text. `cure` below then re-cures them correctly on its own, because its
+    # idempotency guard is drift-aware: the re-planted payload does not match the
+    # stamped content hash, so the entity is treated as re-poisoned rather than as
+    # already handled.
+    report = scan(gw, skip_quarantined=False)
     # A live GMS mints its own document URNs, so re-key doc fixtures onto them.
     fixtures = align_document_fixtures(fixtures, report)
     corpus_hits = [h for h in report.hits if h.key in fixtures]
     if len(corpus_hits) != 12 and live:
-        # Distinguish "already cured" from "never seeded". Both leave the scan with
-        # too few corpus hits, but only one of them is an actual failure — and
-        # running `antigen demo` before `verify.py --live` is the obvious mistake,
-        # because verify performs its own scan+cure and needs a poisoned graph.
-        already = report.skipped_quarantined
-        hint = (
-            "the catalog is already CURED — `verify.py --live` runs its own "
-            f"scan+cure, so it needs a freshly poisoned graph ({already} entities "
-            "are quarantine-tagged and were skipped). Reset and re-seed:\n"
-            "      datahub docker nuke && datahub docker quickstart\n"
+        # With the tag no longer hiding anything, too few corpus hits means the corpus
+        # is genuinely not on the graph — not that it was cured earlier.
+        raise Failure(
+            f"scan flagged {len(corpus_hits)}/12 authored corpus loci: the corpus "
+            "does not appear to be planted. Re-seed it (this is safe to repeat — "
+            "seeding overwrites in place and a previous run's tags no longer hide "
+            "anything):\n"
             "      python seed_catalog.py && python -m antigen.register_properties\n"
-            "      python seed_corpus.py && python verify.py --live"
-        ) if already else (
-            "the corpus does not appear to be planted — run `python seed_catalog.py` "
-            "then `python seed_corpus.py` first (see DEMO.md)."
-        )
-        raise Failure(f"scan flagged {len(corpus_hits)}/12 authored corpus loci: {hint}")
+            "      python seed_corpus.py && python verify.py --live")
     _check(len(corpus_hits) == 12,
            f"scan flagged {len(corpus_hits)}/12 authored corpus loci")
 

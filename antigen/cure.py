@@ -81,6 +81,12 @@ PAYLOAD_SHA_PROP = "antigen.payloadSha256"
 LAST_SCANNED_PROP = "antigen.lastScanned"
 INCIDENTS_FOLDER = "Antigen/Incidents"
 
+#: Printed in place of a forensic-record URN when there is not one to print —
+#: a dry run writes nothing, and a live `save_document` that failed returns
+#: `{"success": False, "urn": None}`. Deliberately NOT URN-shaped: an operator
+#: must never be handed a string that looks resolvable and is not.
+UNASSIGNED_INCIDENT_URN = "(not written — no URN assigned)"
+
 #: Remediation modes. `excise` is fixture-backed exact removal (the demo corpus);
 #: `excise-span` is detector-span removal on a live field (`--excise-span`);
 #: `quarantine-field` replaces the whole field.
@@ -216,17 +222,27 @@ def existing_incident_urns(gateway: Gateway) -> dict[str, str]:
 
 
 def _has_drifted(entity: Entity) -> bool:
-    """True if a stamped entity's content no longer matches its stamped hash.
+    """True if an entity's content no longer matches its stamped hash.
 
-    An UNSTAMPED entity reads as drifted: it carries the quarantine tag without the
-    tamper-evidence hash that proves a cure completed, so there is nothing to be
-    idempotent against and the safe answer is to cure it. Identical arithmetic to
-    `rescan.rescan`, deliberately — the command that DETECTS re-poisoning and the
-    command that REPAIRS it must not disagree about what re-poisoning is.
+    Identical arithmetic to `rescan.rescan`, deliberately — the command that DETECTS
+    re-poisoning and the command that REPAIRS it must not disagree about what
+    re-poisoning is.
+
+    The missing-stamp case splits on whether the entity's type CAN be stamped:
+
+    * **Stampable type, no stamp** — it carries a handled-by-Antigen tag without the
+      tamper-evidence hash that proves the pass completed, so a previous run was
+      interrupted. There is nothing to be idempotent against and the safe answer is
+      to do the work: drifted.
+    * **Unstampable type, no stamp** — permanent and expected, not evidence of
+      anything. Antigen's structured-property definitions do not cover `corpuser`, so
+      a contained `corpuser` can never carry a hash. Calling that "drifted" would fail
+      the idempotency guard on every single run and re-emit a tag plus a fresh aspect
+      version forever, while changing nothing about the entity.
     """
     stamped = entity.structured_properties.get(CONTENT_SHA_PROP)
     if not stamped:
-        return True
+        return supports_structured_properties(entity.urn)
     return _sha256(canonical_content(entity)) != stamped
 
 
@@ -454,7 +470,11 @@ class ContainedLocus:
 @dataclass
 class CureResult:
     actions: list[CureAction] = field(default_factory=list)
-    skipped: list[str] = field(default_factory=list)   # already-cured (idempotency)
+    #: Entities a PRIOR run already handled and that have not drifted since —
+    #: cured (quarantined) or CONTAINED. Named 'handled' rather than 'cured'
+    #: because a contained locus is emphatically not cured, and this list is what
+    #: keeps a steady-state re-run from re-emitting its tag and aspect versions.
+    skipped: list[str] = field(default_factory=list)
     #: Detected, recorded, NOT defused — see :class:`ContainedLocus`.
     contained: list[ContainedLocus] = field(default_factory=list)
 
@@ -479,7 +499,7 @@ class CureResult:
         s = (f"cured {len(self.actions)} loci ({excised} excised{span_part}, "
              f"{quarantined} field-quarantined)")
         if self.skipped:
-            s += f" | {len(self.skipped)} already-cured (idempotent no-op)"
+            s += f" | {len(self.skipped)} already handled (idempotent no-op)"
         # Same rule as the DEGRADED banner in `scan`: a confident count must never
         # stand alone over a run that did not finish the job.
         if self.contained:
@@ -579,8 +599,18 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
         # The drift test is the same one `rescan` uses — stamped hash vs. the hash of
         # the content as it reads now — so the two commands agree by construction
         # rather than by coincidence.
+        # The tag that proves a prior pass handled this entity is QUARANTINE_TAG for a
+        # cured locus and CONTAINED_TAG for a contained one. Testing only the former
+        # made containment CHURN: a contained locus never carries the quarantine tag
+        # (deliberately — see `scan.CONTAINED_TAG`), so it failed the guard on every
+        # subsequent run and re-emitted a tag, three properties and a fresh
+        # `lastScanned` aspect version, forever. `certify` was fixed for exactly this
+        # and the containment path reintroduced it one command over. A steady-state
+        # re-run over an unchanged catalog must write NOTHING, contained loci included.
+        handled_before = QUARANTINE_TAG in ent.tags or CONTAINED_TAG in ent.tags \
+            if ent is not None else False
         if ent is not None and hit.urn not in seen_this_run \
-                and QUARANTINE_TAG in ent.tags \
+                and handled_before \
                 and not _has_drifted(ent):
             result.skipped.append(hit.urn)
             continue
@@ -601,7 +631,6 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
         # real catalog into one document title and overwrite each other's evidence.
         payload_id = fx.payload_id if fx else f"adhoc-{payload_sha[:12]}"
         incident_title = f"antigen-incident-{payload_id}"
-        incident_urn = f"urn:li:document:{INCIDENTS_FOLDER}/{incident_title}"
 
         banner = inert_banner(
             cleaned,
@@ -683,7 +712,15 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
         # so it links through `related_documents` instead; passing a document URN as
         # an asset is how you get a dangling edge on a live GMS.
         is_doc = hit.locus is Locus.DOCUMENT
-        gateway.save_document(
+        # THE URN IS THE SERVER'S, NEVER OURS. This used to be synthesised as
+        # `urn:li:document:{INCIDENTS_FOLDER}/{incident_title}` — a well-formed URN
+        # that `exists()` returns False for on a live GMS, because DataHub mints
+        # `urn:li:document:shared-<uuid>`. Antigen printed it as the forensic
+        # record's address in `containment_report()`, which is containment's ONLY
+        # operator handle, so the one pointer a contained locus offered led nowhere.
+        # `save_document` returns the real URN; when it cannot (a dry run writes
+        # nothing), say so instead of inventing an identifier that looks verifiable.
+        incident_urn = gateway.save_document(
             title=incident_title,
             content=_forensic_report(hit, payload_id, content_sha, payload_sha,
                                      timestamp, mode, has_payload_file=fx is not None,
@@ -692,7 +729,7 @@ def cure(gateway: Gateway, hits: list[ScanHit], *,
             urn=incident_ledger.get(incident_title),
             related_assets=None if is_doc else [hit.urn],
             related_documents=[hit.urn] if is_doc else None,
-        )
+        ) or incident_ledger.get(incident_title) or UNASSIGNED_INCIDENT_URN
 
         if contained:
             result.contained.append(ContainedLocus(

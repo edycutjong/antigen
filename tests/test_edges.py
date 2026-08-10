@@ -209,7 +209,7 @@ def test_cure_skips_prior_run_cured_entity():
     # skipped (the prior-run guard); the 2 doc loci carry no tag so they re-overwrite
     # in place (idempotent no-op on content).
     res = cure(gw, hits, fixtures=fixtures)
-    assert len(res.skipped) >= 10 and "already-cured" in res.summary()
+    assert len(res.skipped) >= 10 and "already handled" in res.summary()
     assert all(a.locus.value == "kb-document" for a in res.actions)
 
 

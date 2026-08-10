@@ -177,10 +177,13 @@ def cmd_scan(args) -> int:
             "entities_enumerated": report.entities_enumerated,
             "entities_in_scope": report.entities_in_scope,
             "entities_scanned": report.entities_scanned,
+            "contained_hits": len(report.contained_hits),
+            "new_hits": len(report.new_hits),
             "hits": [{"urn": h.urn, "locus": h.locus.value,
                       "field_path": h.field_path, "source_tool": h.source_tool,
                       "signals": h.detection.signals,
-                      "hidden_unicode": h.detection.hidden_unicode}
+                      "hidden_unicode": h.detection.hidden_unicode,
+                      "contained": h.contained}
                      for h in report.hits],
         }, indent=2))
     else:
@@ -188,7 +191,12 @@ def cmd_scan(args) -> int:
         for h in report.hits:
             loc = f" ::{h.field_path}" if h.field_path else ""
             zw = " [hidden-unicode]" if h.detection.hidden_unicode else ""
-            print(f"  ⚑ {h.urn}{loc}  ({h.detection.safe_summary}){zw}  via {h.source_tool}")
+            # A contained locus is a live payload that Antigen has already filed and
+            # already established it cannot fix. Marking it differently is the whole
+            # point: on sweep #2 it was byte-indistinguishable from fresh poison.
+            mark = "▣ CONTAINED" if h.contained else "⚑"
+            print(f"  {mark} {h.urn}{loc}  ({h.detection.safe_summary}){zw}  "
+                  f"via {h.source_tool}")
     if report.scope is not None and report.scope_empty:
         # Loud on stderr, but exit 0 and NOT a degradation: the operator asked for
         # this set and it is empty. A CI log still shows the line, so a typo'd filter
@@ -198,10 +206,27 @@ def cmd_scan(args) -> int:
               "scanned. That is your scope, not a blackout; widen it or drop it to "
               "sweep the catalog.", file=sys.stderr)
     _warn_degraded(report.degraded_reasons)
-    if args.fail_on_hit and report.hits:
-        print(f"\nFAIL: {len(report.hits)} injection loci present (--fail-on-hit).",
+    # `--fail-on-new-hit` is the acknowledged-containment gate. `--fail-on-hit` still
+    # means every live payload, which is the right default for a security control;
+    # but a contained locus is permanent until a human edits the field in the DataHub
+    # UI, so a nightly `--fail-on-hit` goes red forever on the first poisoned
+    # dashboard with no supported way to say "yes, we know". That is the
+    # never-goes-green-again failure this project fixed as a bug elsewhere, and it
+    # trains operators to ignore the job. `--fail-on-new-hit` lets the pipeline reach
+    # steady green on a catalog whose ONLY remaining findings are contained, while
+    # still failing loudly the moment anything new appears or a cured field is
+    # re-poisoned. It never suppresses the finding — the count is printed either way.
+    gated = report.new_hits if args.fail_on_new_hit else report.hits
+    if (args.fail_on_hit or args.fail_on_new_hit) and gated:
+        flag = "--fail-on-new-hit" if args.fail_on_new_hit else "--fail-on-hit"
+        print(f"\nFAIL: {len(gated)} injection loci present ({flag}).",
               file=sys.stderr)
         return 2 if report.degraded else 1
+    if args.fail_on_new_hit and report.contained_hits:
+        print(f"\nNOTICE: {len(report.contained_hits)} CONTAINED locus/loci are still "
+              "live and were NOT counted as a failure (--fail-on-new-hit). They "
+              "cannot be defused on this tool surface; clear them in the DataHub UI "
+              "or at the ingestion source.", file=sys.stderr)
     return 2 if report.degraded else 0
 
 
@@ -309,14 +334,25 @@ def cmd_certify(args) -> int:
     gw, _ = _gateway(args)
     target, plan = _writer(args, gw)
     report = scan(target)
+    # REFUSE BEFORE WRITING, not after. `agent-safe-certified` is the one thing
+    # Antigen writes that is a positive assertion rather than a warning — it tells a
+    # downstream operator "this entity was read and is clean". The comment here used
+    # to say certifying off a degraded sweep was "the worst possible thing to get
+    # wrong" and then did it anyway: `certify()` ran first and the degradation was
+    # only reported afterwards, so a partial read still stamped the badge and merely
+    # exited 2 about it.
+    if report.degraded:
+        _warn_degraded(report.degraded_reasons)
+        print("REFUSED: `antigen certify` writes a positive safety assertion "
+              "(`agent-safe-certified`), so it will not run off a degraded sweep — "
+              "an entity that was never read must never be certified. Nothing was "
+              "written. Fix the degradation above and re-run.", file=sys.stderr)
+        return 2
     result = certify(target, report.clean_entity_urns, clock=_clock())
     if plan is not None:
-        rc = _print_plan(plan, "certify")
-        return 2 if _warn_degraded(report.degraded_reasons) else rc
+        return _print_plan(plan, "certify")
     print(result.summary())
-    # Certifying off a degraded sweep would stamp `agent-safe-certified` on entities
-    # whose neighbours were never read — the worst possible thing to get wrong.
-    return 2 if _warn_degraded(report.degraded_reasons) else 0
+    return 0
 
 
 def cmd_detect(args) -> int:
@@ -431,6 +467,17 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("scan", help="sweep the catalog for injections")
     add_offline(sp)
     sp.add_argument("--fail-on-hit", action="store_true", help="exit 1 if any hit (CI)")
+    sp.add_argument("--fail-on-new-hit", action="store_true",
+                    help="exit 1 only for hits NOT already tagged "
+                         "`injection-contained` by a previous cure. A contained "
+                         "locus is a live payload Antigen has already filed and "
+                         "CANNOT defuse on this tool surface (chart / dashboard / "
+                         "dataFlow / dataJob / corpuser), so it is permanent until a "
+                         "human clears it — and a nightly --fail-on-hit would be red "
+                         "forever because of it. This is the flag for a scheduled "
+                         "job: green on acknowledged containment, loud on anything "
+                         "new or re-poisoned. Contained loci are still printed and "
+                         "still counted in the summary.")
     sp.add_argument("--json", action="store_true")
     sp.add_argument("--urn-contains", metavar="PATTERN", default=None,
                     help="scope the sweep to URNs containing PATTERN — entities AND "
