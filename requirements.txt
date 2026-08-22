@@ -9,7 +9,7 @@
 
 # --- live DataHub path (scan/cure against a real GMS) ---
 datahub-agent-context[langchain]==1.7.0.4
-acryl-datahub==1.6.0.6
+acryl-datahub==1.7.0.4
 
 # --- victim-agent hijack demo (Part B, reported/non-gating) ---
 langchain>=0.3
