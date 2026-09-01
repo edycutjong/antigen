@@ -18,7 +18,7 @@ dependencies = []
 
 [project.optional-dependencies]
 live = [
-  "datahub-agent-context[langchain]==1.7.0.4",
+  "datahub-agent-context[langchain]==1.7.0.7",
   "acryl-datahub==1.7.0.4",
 ]
 demo = [
