@@ -873,17 +873,18 @@ classes in [`examples/`](examples/) are exactly what its context layer would hav
 
 ### Open-source contribution
 
-**Four artifacts are filed upstream to DataHub-org repositories, plus a public correction
-I filed on my own RFC. All four are OPEN and unmerged — no *human* has reviewed any of them
-(the only review on any of the four is from `cubic-dev-ai[bot]`, an automated reviewer), and
-nothing here is claimed as accepted:**
+**Four artifacts were filed upstream to DataHub-org repositories, plus a public correction
+I filed on my own RFC. Status as of 2026-09-11: the RFC issue (#201) is open; the three pull
+requests were closed by me on 2026-08-15, unmerged. No *human* reviewed any of the four
+(the only review was from `cubic-dev-ai[bot]`, an automated reviewer), and nothing here is
+claimed as accepted. The patches remain readable at the links below:**
 
 | Upstream artifact | Repo | State |
 |---|---|---|
-| [**#19034** — fix(agent-context): read existing description for all supported entity types](https://github.com/datahub-project/datahub/pull/19034) (+96/−3, 4 files, 3 commits) | **`datahub-project/datahub`** — the core repo | open, `mergeable`, labelled `community-contribution`, all required checks passing, zero failures |
+| [**#19034** — fix(agent-context): read existing description for all supported entity types](https://github.com/datahub-project/datahub/pull/19034) (+96/−3, 4 files, 3 commits) | **`datahub-project/datahub`** — the core repo | **closed by author 2026-08-15, not merged**; was labelled `community-contribution` with all required checks passing |
 | [**#201** — RFC: opt-in output-sanitization hint](https://github.com/acryldata/mcp-server-datahub/issues/201) (+ the [correction comment](https://github.com/acryldata/mcp-server-datahub/issues/201#issuecomment-5231646943) retracting one of its findings) | `acryldata/mcp-server-datahub` | open, awaiting review |
-| [**#202** — docs(tools): document prerequisites and supported types](https://github.com/acryldata/mcp-server-datahub/pull/202) (+24/−6, 4 files) | `acryldata/mcp-server-datahub` | open, mergeable |
-| [**#124** — feat: add `antigen-scan` prompt-injection skill](https://github.com/datahub-project/datahub-skills/pull/124) (**+765/−0, 13 files**) | `datahub-project/datahub-skills` | open, mergeable, Conventional-Commit check green |
+| [**#202** — docs(tools): document prerequisites and supported types](https://github.com/acryldata/mcp-server-datahub/pull/202) (+24/−6, 4 files) | `acryldata/mcp-server-datahub` | **closed by author 2026-08-15, not merged** |
+| [**#124** — feat: add `antigen-scan` prompt-injection skill](https://github.com/datahub-project/datahub-skills/pull/124) (**+765/−0, 13 files**) | `datahub-project/datahub-skills` | **closed by author 2026-08-15, not merged** |
 
 - **A PR to `datahub-project/datahub` itself** —
   [**#19034**](https://github.com/datahub-project/datahub/pull/19034), the core repo rather
@@ -973,7 +974,7 @@ nothing here is claimed as accepted:**
 - The `antigen` CLI is itself a reusable, installable control other DataHub builders can
   drop into CI.
 
-**Status, stated exactly.** All four are open. **None is merged, and no human other than
+**Status, stated exactly (2026-09-11).** The RFC issue is open; the three PRs were closed by me on 2026-08-15. **None is merged, and no human other than
 the author has commented on, reviewed or replied to any of them.** Counted precisely,
 because a vaguer sentence here would be doing work it has not earned — across all four
 artifacts there are **nine authored items: five by the author, four by bots**:
